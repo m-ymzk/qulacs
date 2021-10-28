@@ -1,10 +1,10 @@
 #!/bin/sh
-export TCSDS_PATH="/opt/FJSVstclanga/v1.1.0"
-export CC="${TCSDS_PATH}/bin/fcc -Nclang -Kfast -Knolargepage -lpthread"
-export CXX="${TCSDS_PATH}/bin/FCC -Nclang -Kfast -Knolargepage -lpthread"
+#export TCSDS_PATH="/opt/FJSVstclanga/v1.1.0"
+#export CC="${TCSDS_PATH}/bin/fcc -Nclang -Kfast -Knolargepage -lpthread"
+#export CXX="${TCSDS_PATH}/bin/FCC -Nclang -Kfast -Knolargepage -lpthread"
 
-GCC_COMMAND="fcc"
-GXX_COMMAND="FCC"
+GCC_COMMAND="mpifcc"
+GXX_COMMAND="mpiFCC"
 
 mkdir ./build
 cd ./build
