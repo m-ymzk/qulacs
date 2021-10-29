@@ -8,8 +8,8 @@ CXX := mpiFCC
 BUILDDIR := build
 BUILDDIR := $(abspath $(BUILDDIR))
 
-CFLAGS   := -Nclang -I../include -fopenmp -Knolargepage -lpthread
-CXXFLAGS := -Nclang -I../include -fopenmp -Knolargepage -lpthread
+CFLAGS   := -Nclang -v -I../include -fopenmp -Knolargepage -lpthread
+CXXFLAGS := -Nclang -Wno-inconsistent-missing-override -I../include -fopenmp -Knolargepage -lpthread
 
 CFLAGS   += -std=c14
 CXXFLAGS += -std=c++14
