@@ -33,7 +33,7 @@ $(warning CXXFLAGS = $(CXXFLAGS))
 #OLD_SHELL := $(SHELL)
 #SHELL = $(warning [Making: $@]   [Dependencies: $^]   [Changed: $?])$(OLD_SHELL)
 
-TARGET := qtest qbench
+TARGET := qtest qbench mpiqbench
 
 .PHONY : all clean test $(POCL_DIR)
 .DEFAULT : all
