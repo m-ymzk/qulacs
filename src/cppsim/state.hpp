@@ -15,8 +15,11 @@ extern "C"{
 #include <csim/init_ops.h>
 #endif
 
+#include <cassert>
 #include "type.hpp"
 #include "utility.hpp"
+#include <mpi.h>
+//#include "MPIutil.hpp"
 #include <vector>
 #include <iostream>
 
@@ -27,15 +30,20 @@ class QuantumStateBase{
 protected:
     ITYPE _dim;
     UINT _qubit_count;
-	bool _is_state_vector;
+    UINT _inner_qc; /**< \~japanese-en ノード内量子ビット数 */
+    UINT _outer_qc = 0; /**< \~japanese-en ノード外量子ビット数 */
+    int _rank = 0; /**< \~japanese-en ノード外量子ビット数 */
+    int _size = 1; /**< \~japanese-en cluster size(=MPI world size) */
+    bool _is_state_vector;
     std::vector<UINT> _classical_register;
     UINT _device_number;
-	void* _cuda_stream;
+    void* _cuda_stream;
 public:
     const UINT& qubit_count; /**< \~japanese-en 量子ビット数 */
     const ITYPE& dim; /**< \~japanese-en 量子状態の次元 */
     const std::vector<UINT>& classical_register; /**< \~japanese-en 古典ビットのレジスタ */
     const UINT& device_number;
+    //MPIutil mpiutil;
     /**
      * \~japanese-en コンストラクタ
      * 
@@ -44,17 +52,40 @@ public:
     QuantumStateBase(UINT qubit_count_, bool is_state_vector):
         qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
     {
+        //const UINT _outer_size = 4; // MPI_Size
+        //MPI_Comm_rank(MPI_COMM_WORLD,&this->_rank);
+        //MPI_Comm_size(MPI_COMM_WORLD,&this->_size);
+        this->_inner_qc = qubit_count_;
         this->_qubit_count = qubit_count_;
-        this->_dim = 1ULL << qubit_count_;
-		this->_is_state_vector = is_state_vector;
+        this->_dim = 1ULL << _inner_qc; // qubit_count_;
+        this->_is_state_vector = is_state_vector;
         this->_device_number=0;
+        std::cout << "# debug0:" << this->_rank << ", " << this->_inner_qc << ", " << this->_outer_qc << std::endl;
+    }
+    QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
+        qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
+    {
+        //const UINT _outer_size = 4; // MPI_Size
+        MPI_Comm_rank(comm, &this->_rank);
+        MPI_Comm_size(comm, &this->_size);
+        assert(!(_size & (_size - 1))); // mpi-size must be power of 2
+        
+        if (qubit_count_>2) this->_outer_qc = std::log2(this->_size); // log(outer_size)
+        this->_inner_qc = qubit_count_ - this->_outer_qc;
+
+        this->_qubit_count = qubit_count_;
+        this->_dim = 1ULL << _inner_qc; // qubit_count_;
+        this->_is_state_vector = is_state_vector;
+        this->_device_number=0;
+        std::cout << "# debug1:" << this->_rank << ", " << this->_inner_qc << ", " << this->_outer_qc << std::endl;
     }
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
         qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
     {
+        assert(false); // "not supported in mpi-mode"
         this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << qubit_count_;
-		this->_is_state_vector = is_state_vector;
+        this->_is_state_vector = is_state_vector;
         this->_device_number = device_number_;
     }
     /**
@@ -62,12 +93,12 @@ public:
      */
     virtual ~QuantumStateBase(){}
 
-	/**
-	 * \~japanese-en 量子状態が状態ベクトルか密度行列かを判定する
-	 */
-	virtual bool is_state_vector() const {
-		return this->_is_state_vector;
-	}
+    /**
+     * \~japanese-en 量子状態が状態ベクトルか密度行列かを判定する
+     */
+    virtual bool is_state_vector() const {
+    	return this->_is_state_vector;
+    }
 
     /**
      * \~japanese-en 量子状態を計算基底の0状態に初期化する
@@ -180,19 +211,19 @@ public:
      */
     virtual CTYPE* data_c() const = 0;
 
-	/**
-	 * \~japanese-en 量子状態をC++の<code>std::complex\<double\></code>の配列として新たに確保する
-	 *
-	 * @return 複素ベクトルのポインタ
-	 */
-	virtual CPPCTYPE* duplicate_data_cpp() const = 0;
-
-	/**
-	 * \~japanese-en 量子状態をcsimのComplex型の配列として新たに確保する。
-	 *
-	 * @return 複素ベクトルのポインタ
-	 */
-	virtual CTYPE* duplicate_data_c() const = 0;
+    /**
+     * \~japanese-en 量子状態をC++の<code>std::complex\<double\></code>の配列として新たに確保する
+     *
+     * @return 複素ベクトルのポインタ
+     */
+    virtual CPPCTYPE* duplicate_data_cpp() const = 0;
+    
+    /**
+     * \~japanese-en 量子状態をcsimのComplex型の配列として新たに確保する。
+     *
+     * @return 複素ベクトルのポインタ
+     */
+    virtual CTYPE* duplicate_data_c() const = 0;
 
     /**
      * \~japanese-en 量子状態を足しこむ
@@ -289,9 +320,9 @@ public:
         return os;
     }
 
-	virtual void* get_cuda_stream() const {
-		return this->_cuda_stream;
-	}
+    virtual void* get_cuda_stream() const {
+        return this->_cuda_stream;
+    }
 };
 
 class QuantumStateCpu : public QuantumStateBase{
@@ -305,6 +336,10 @@ public:
      * @param qubit_count_ 量子ビット数
      */
     QuantumStateCpu(UINT qubit_count_) : QuantumStateBase(qubit_count_, true){
+        this->_state_vector = reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
+        initialize_quantum_state(this->data_c(), _dim);
+    }
+    QuantumStateCpu(UINT qubit_count_, MPI_Comm comm) : QuantumStateBase(qubit_count_, comm, true){
         this->_state_vector = reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
         initialize_quantum_state(this->data_c(), _dim);
     }
@@ -507,18 +542,17 @@ public:
 		return new_data;
 	}
 
-
-
     /**
      * \~japanese-en 量子状態を足しこむ
      */
     virtual void add_state(const QuantumStateBase* state) override{
-		if (state->get_device_name() == "gpu") {
-			std::cerr << "State vector on GPU cannot be added to that on CPU" << std::endl;
-			return;
-		}
+    	if (state->get_device_name() == "gpu") {
+            std::cerr << "State vector on GPU cannot be added to that on CPU" << std::endl;
+            return;
+    	}
         state_add(state->data_c(), this->data_c(), this->dim);
     }
+
     /**
      * \~japanese-en 複素数をかける
      */
@@ -532,11 +566,11 @@ public:
     }
 
     virtual void multiply_elementwise_function(const std::function<CPPCTYPE(ITYPE)> &func) override{
-		CPPCTYPE* state = this->data_cpp();
-		for (ITYPE idx = 0; idx < dim; ++idx) {
-			state[idx] *= (CPPCTYPE)func(idx);
-		}
-	}
+    	CPPCTYPE* state = this->data_cpp();
+    	for (ITYPE idx = 0; idx < dim; ++idx) {
+    		state[idx] *= (CPPCTYPE)func(idx);
+    	}
+    }
 
     /**
      * \~japanese-en 量子状態を測定した際の計算基底のサンプリングを行う
@@ -563,10 +597,10 @@ public:
         }
         return result;
     }
-	virtual std::vector<ITYPE> sampling(UINT sampling_count, UINT random_seed) override {
-		random.set_seed(random_seed);
-		return this->sampling(sampling_count);
-	}
+    virtual std::vector<ITYPE> sampling(UINT sampling_count, UINT random_seed) override {
+    	random.set_seed(random_seed);
+    	return this->sampling(sampling_count);
+    }
 
 };
 
@@ -581,7 +615,7 @@ namespace state {
      * @return 内積の値
      */
     CPPCTYPE DllExport inner_product(const QuantumState* state_bra, const QuantumState* state_ket);
-	DllExport QuantumState* tensor_product(const QuantumState* state_left, const QuantumState* state_right);
-	DllExport QuantumState* permutate_qubit(const QuantumState* state, std::vector<UINT> qubit_order);
-	DllExport QuantumState* drop_qubit(const QuantumState* state, std::vector<UINT> target, std::vector<UINT> projection);
+    DllExport QuantumState* tensor_product(const QuantumState* state_left, const QuantumState* state_right);
+    DllExport QuantumState* permutate_qubit(const QuantumState* state, std::vector<UINT> qubit_order);
+    DllExport QuantumState* drop_qubit(const QuantumState* state, std::vector<UINT> target, std::vector<UINT> projection);
 }

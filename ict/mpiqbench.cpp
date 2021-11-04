@@ -25,7 +25,7 @@ void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas){
     for (int i = 0; i < (num_dmy + num_meas); ++i) {
         dt = -1*get_realtime();
 
-        QuantumState state(nqubits);
+        QuantumState state(nqubits, MPI_COMM_WORLD);
         state.set_Haar_random_state();
     
         // Build Circuit
