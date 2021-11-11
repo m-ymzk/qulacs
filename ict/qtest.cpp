@@ -7,10 +7,18 @@
 
 int main(){
     QuantumState state(3);
-    state.set_Haar_random_state();
+    std::cout << state.to_string() << std::endl;
 
+    //state.set_Haar_random_state();
     QuantumCircuit circuit(3);
     circuit.add_X_gate(0);
+    circuit.add_X_gate(1);
+    circuit.add_X_gate(2);
+    circuit.add_H_gate(1);
+    circuit.add_H_gate(2);
+    circuit.update_quantum_state(&state);
+    std::cout << state.to_string() << std::endl;
+
     auto merged_gate = gate::merge(gate::CNOT(0,1),gate::Y(1));
     circuit.add_gate(merged_gate);
     circuit.add_RX_gate(1,0.5);
