@@ -18,8 +18,10 @@ extern "C"{
 #include <cassert>
 #include "type.hpp"
 #include "utility.hpp"
+#ifdef _USE_MPI
 //#include <mpi.h>
-#include "MPIutil.hpp"
+#include "csim/MPIutil.h"
+#endif
 #include <vector>
 #include <iostream>
 
@@ -40,9 +42,11 @@ protected:
     int _rank = 0; /**< \~japanese-en ノード外量子ビット数 */
     int _size = 1; /**< \~japanese-en cluster size(=MPI world size) */
     MPI_Comm _comm;
-    MPIutil mpiutil;
+    //MPIutil *mpiutil = &MPIutil::getMPIutil();
 public:
     const UINT& qubit_count; /**< \~japanese-en 量子ビット数 */
+    const UINT& inner_qc; /**< \~japanese-en ノード内量子ビット数 */
+    const UINT& inner_qc_mask; /**< \~japanese-en ノード内量子mask (=2^_inner_qc - 1) */
     const ITYPE& dim; /**< \~japanese-en 量子状態の次元 */
     const std::vector<UINT>& classical_register; /**< \~japanese-en 古典ビットのレジスタ */
     const UINT& device_number;
@@ -52,7 +56,8 @@ public:
      * @param qubit_count_ 量子ビット数
      */
     QuantumStateBase(UINT qubit_count_, bool is_state_vector):
-        qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
+        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        classical_register(_classical_register), device_number(_device_number)
     {
         this->_inner_qc = qubit_count_;
         this->_inner_qc_mask = (1 << _inner_qc) - 1;
@@ -62,11 +67,14 @@ public:
         this->_device_number=0;
     }
     QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
-        qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
+        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        classical_register(_classical_register), device_number(_device_number)
     {
-        //const UINT _outer_size = 4; // MPI_Size
-        this->_rank = mpiutil.get_rank(comm);
-        this->_size = mpiutil.get_size(comm);
+        //MPIutil s;
+        MPIutil m = get_instance();
+        m->set_comm(comm);
+        this->_rank = m->get_rank();
+        this->_size = m->get_size();
         assert(!(_size & (_size - 1))); // mpi-size must be power of 2
         
         if (qubit_count_>2) this->_outer_qc = std::log2(this->_size); // log(outer_size)
@@ -80,7 +88,8 @@ public:
         std::cout << "# debug1:" << this->_rank << ", " << this->_inner_qc << ", " << this->_outer_qc << std::endl;
     }
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
-        qubit_count(_qubit_count), dim(_dim), classical_register(_classical_register), device_number(_device_number)
+        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        classical_register(_classical_register), device_number(_device_number)
     {
         assert(false); // "not supported in mpi-mode"
         this->_qubit_count = qubit_count_;
@@ -289,18 +298,19 @@ public:
      * @return 生成した文字列
      */
     virtual std::string to_string() const {
+        const ITYPE MAX_OUTPUT_ELEMS = 128;
         std::stringstream os;
-        ITYPE _dim_out = std::min(this->dim, (ITYPE)16);
+        ITYPE _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
         ComplexVector eigen_state(_dim_out);
         auto data = this->data_cpp();
         for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
         os << " *** Quantum State ***" << std::endl;
         os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
         os << " * Qubit Count : " << this->qubit_count
-           << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << this->_inner_qc_mask << std::endl;
+           << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
         os << " * Dimension   : " << this->dim << std::endl;
-        if (this->dim>16){
-            os << " * state vector is too long(>16), so the first 16 elements are output." << std::endl;
+        if (this->dim > MAX_OUTPUT_ELEMS){
+            os << " * state vector is too long, so the first" << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
         }
         os << " * State vector : \n" << eigen_state << std::endl;
         return os.str();

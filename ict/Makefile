@@ -25,8 +25,10 @@ else
     CXXFLAGS += -Kfast -DNDEBUG
     DEBUG_FLAG =
 endif
+CFLAGS   += -D_USE_MPI
+CXXFLAGS += -D_USE_MPI
 
-$(warning MAKE = $(MAKE))
+#$(warning MAKE = $(MAKE))
 $(warning CXX = $(CXX))
 $(warning CXXFLAGS = $(CXXFLAGS))
 

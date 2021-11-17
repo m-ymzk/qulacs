@@ -5,6 +5,7 @@ from qulacs import QuantumCircuit, QuantumState
 from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix
 from qulacs.circuit import QuantumCircuitOptimizer as QCO
 from time import time
+from mpi4py import MPI
 
 def get_option():
     argparser = ArgumentParser()
@@ -40,6 +41,9 @@ def build_circuit(nqubits, depth, pairs):
     return circuit
 
 if __name__ == '__main__':
+    comm = MPI.COMM_WORLD
+    print("MPI rank/size:",comm.rank, comm.size)
+
     args = get_option()
     tstart = time()
     nqubits=args.nqubits
@@ -65,7 +69,10 @@ if __name__ == '__main__':
         t2=time()
         circuit.update_quantum_state(st)
         t3=time()
-        print("# time update :", t2-t1, t3-t2)
+        if comm.rank==0:
+            print("# time update :", t2-t1, t3-t2)
+            print("# circuit ", circuit.to_string())
+            print("# state ", st.to_string())
 
     else:
         t1=time()

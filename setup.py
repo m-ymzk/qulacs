@@ -66,8 +66,8 @@ class CMakeBuild(build_ext):
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
         elif True:
-            cmake_args += ['-DCMAKE_C_COMPILER=fcc']
-            cmake_args += ['-DCMAKE_CXX_COMPILER=FCC']
+            cmake_args += ['-DCMAKE_C_COMPILER=mpifcc']
+            cmake_args += ['-DCMAKE_CXX_COMPILER=mpiFCC']
 
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j20']

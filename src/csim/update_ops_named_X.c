@@ -1,9 +1,14 @@
+#include <stdio.h>
 
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+#ifdef _USE_MPI
+#include "MPIutil.h"
 #endif
 
 #ifdef _USE_SIMD
@@ -181,6 +186,17 @@ void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 #endif
 
+void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+#ifdef _USE_MPI
+    MPIutil m = get_instance();
+    int rank, size;
+    rank = m->get_rank();
+    size = m->get_size();
+    if (rank==0){
+        printf("#debug(namedX)\n");
+    }
+#endif
+}
 
 /*
 

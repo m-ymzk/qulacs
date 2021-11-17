@@ -54,6 +54,9 @@ public:
     ClsXGate(UINT target_qubit_index) {
         this->_update_func = X_gate;
 		this->_update_func_dm = dm_X_gate;
+#ifdef _USE_MPI
+		this->_update_func_mpi = X_gate_mpi;
+#endif
 #ifdef _USE_GPU
 		this->_update_func_gpu = X_gate_host;
 #endif
