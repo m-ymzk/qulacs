@@ -40,11 +40,11 @@ static int get_tag() {
 static void mpisendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank) {
     int tag0 = get_tag();
     //if (peer_rank
-    int mpi_tag1 = tag0 + (mpirank & 0xFFFE);
+    int mpi_tag1 = tag0 + ((mpirank & peer_rank)<<1) + (mpirank > peer_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
     //int mpi_tag1 = tag0 + (mpirank & 0xFFFE);
     //int mpi_tag2 = mpi_tag1 ^ 1;
-    printf("#mpisendrecv: %d, %d, %d, %d, %d", count, mpirank, peer_rank, mpi_tag1, mpi_tag2);
+    printf("#%d: mpisendrecv: %d, %d, %d, %d, %d\n", mpirank, count, mpirank, peer_rank, mpi_tag1, mpi_tag2);
     MPI_Sendrecv(sendbuf, count, MPI_DOUBLE, peer_rank, mpi_tag1,
                  recvbuf, count, MPI_DOUBLE, peer_rank, mpi_tag2,
                  mpicomm, &mpistat);

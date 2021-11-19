@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
     //QuantumState state1(nqubits, (MPI_Comm)((intptr_t)MPI_COMM_WORLD+1)); // MPI_Comm warning check.
     //std::cout << state.to_string() << std::endl;
 
-    state.set_Haar_random_state(1+_rank);
+    //state.set_Haar_random_state(1+_rank);
     //std::cout << state.to_string() << std::endl;
 
     dt += get_realtime();
@@ -43,8 +43,8 @@ int main(int argc, char *argv[]){
 
     circuit.add_X_gate(0);
     circuit.add_X_gate(1);
-    circuit.add_X_gate(2);
-    circuit.add_X_gate(3);
+    circuit.add_X_gate(nqubits - 2);
+    circuit.add_X_gate(nqubits - 1);
     circuit.update_quantum_state(&state);
 
     MPI_Barrier(MPI_COMM_WORLD);

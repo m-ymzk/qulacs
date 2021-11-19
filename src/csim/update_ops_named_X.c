@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "constant.h"
 #include "update_ops.h"
@@ -186,15 +188,32 @@ void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 #endif
 
+#define _MALLOC_AND_CHECK(ptr, type, size)                             \
+  if (size != 0) {                                                     \
+    ptr = (type *)malloc(sizeof(type) * size);                         \
+    if (ptr == NULL) {                                                 \
+      fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__, \
+              __LINE__);                                               \
+      exit(1);                                                         \
+    }                                                                  \
+  }
+
 void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
 #ifdef _USE_MPI
     MPIutil m = get_instance();
     int rank, size;
     rank = m->get_rank();
     size = m->get_size();
-    if (rank==0){
-        printf("#debug(namedX)\n");
-    }
+    double* t = NULL;
+    //const int TMP_SIZE = 1024 * 1024 * 16;
+    _MALLOC_AND_CHECK(t, double, dim << 1);
+    int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
+    int peer_rank = rank ^ peer_rank_bit;
+    printf("#%d :debug(sendrecv) %lld, %d, size=%lld\n", rank, dim, peer_rank, dim);
+    m->mpisendrecv(state, t, dim * 2, peer_rank);
+    memcpy(t, state, dim * 16);
+    free(t);
+
 #endif
 }
 
