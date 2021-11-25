@@ -98,6 +98,7 @@ void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UI
     for (UINT i = 0; i < thread_count; ++i) {
         normalizer += norm_list[i];
     }
+    // TODO : multiply MPI_size or mpi_allreduce(normalizer)?
     normalizer = 1./sqrt(normalizer);
 
 #pragma omp parallel for

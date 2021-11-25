@@ -23,6 +23,8 @@ set(DEFAULT_USE_TEST Yes)
 #else()
 message(STATUS "## OPT_FLAGS: -Nclang -Kfast -Knolargepage -lpthread")
 set(DEFAULT_OPT_FLAGS "-Nclang -Kfast -Knolargepage -lpthread")
+#message(STATUS "## OPT_FLAGS: -Nclang -g -Knolargepage -lpthread")
+#set(DEFAULT_OPT_FLAGS "-Nclang -g -Knolargepage -lpthread")
 set(DEFAULT_USE_SIMD No)
 #endif()
 

@@ -6,7 +6,6 @@
 #include "utility.hpp"
 
 #ifdef _USE_MPI
-//#include <mpi.h>
 #include "csim/MPIutil.h"
 #endif
 
@@ -57,6 +56,7 @@ public:
 #endif
 		}
 		else {
+            std::cout << "#update qstate-1qubit, dm " << state->inner_qc << ", " << this->_target_qubit_list[0].index() << std::endl;
 			_update_func_dm(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 		}
     };

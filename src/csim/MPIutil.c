@@ -22,6 +22,10 @@ static void set_comm(MPI_Comm c) {
     }
 }
 
+static int usempi() {
+    return (int)mpicomm; // if mpi didn't initialized, return false(0)
+}
+
 static int get_rank() {
     return mpirank;
 }
@@ -35,6 +39,10 @@ static int get_tag() {
     mpitag += 1<<20; // max 1M-ranks
     pthread_mutex_unlock(&mutex);
     return mpitag;
+}
+
+static void barrier() {
+    MPI_Barrier(mpicomm);
 }
 
 static void mpisendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank) {
@@ -83,6 +91,8 @@ MPIutil get_instance() {
     mpiutil->get_rank = get_rank;
     mpiutil->get_size = get_size;
     mpiutil->get_tag = get_tag;
+    mpiutil->usempi = usempi;
+    mpiutil->barrier = barrier;
     mpiutil->mpisendrecv = mpisendrecv;
     mpitag = 0;
     return mpiutil;

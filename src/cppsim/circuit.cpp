@@ -14,6 +14,10 @@
 #include "gate_factory.hpp"
 #include "pauli_operator.hpp"
 #include "observable.hpp"
+#ifdef _USE_MPI
+#include "csim/MPIutil.h"
+#endif
+
 
 bool check_gate_index(const QuantumCircuit* circuit, const QuantumGateBase* gate);
 
@@ -24,6 +28,10 @@ void QuantumCircuit::update_quantum_state(QuantumStateBase* state){
 	}
 
     for(const auto& gate : this->_gate_list){
+#ifdef _USE_MPI
+        MPIutil m = get_instance();
+        if (m->usempi) m->barrier();
+#endif
         gate->update_quantum_state(state);
     }
 }

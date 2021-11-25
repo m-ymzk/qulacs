@@ -310,7 +310,7 @@ public:
            << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
         os << " * Dimension   : " << this->dim << std::endl;
         if (this->dim > MAX_OUTPUT_ELEMS){
-            os << " * state vector is too long, so the first" << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
+            os << " * state vector is too long, so the first " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
         }
         os << " * State vector : \n" << eigen_state << std::endl;
         return os.str();

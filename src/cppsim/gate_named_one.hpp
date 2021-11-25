@@ -157,6 +157,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = S_gate_host;
 #endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = S_gate_mpi;
+#endif
         this->_name = "S";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
         this->_gate_property = FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -180,6 +183,9 @@ public:
 		this->_update_func_dm = dm_Sdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = Sdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = Sdag_gate_mpi;
 #endif
         this->_name = "Sdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
@@ -205,6 +211,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = T_gate_host;
 #endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = T_gate_mpi;
+#endif
         this->_name = "T";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
         this->_gate_property = FLAG_GAUSSIAN;
@@ -228,6 +237,9 @@ public:
 		this->_update_func_dm = dm_Tdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = Tdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = Tdag_gate_mpi;
 #endif
         this->_name = "Tdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));

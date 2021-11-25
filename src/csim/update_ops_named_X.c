@@ -198,24 +198,23 @@ void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
     }                                                                  \
   }
 
-void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
 #ifdef _USE_MPI
+void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
     MPIutil m = get_instance();
     int rank, size;
     rank = m->get_rank();
     size = m->get_size();
     double* t = NULL;
     //const int TMP_SIZE = 1024 * 1024 * 16;
-    _MALLOC_AND_CHECK(t, double, dim << 1);
+    _MALLOC_AND_CHECK(t, double, dim * 2);
     int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
     int peer_rank = rank ^ peer_rank_bit;
-    printf("#%d :debug(sendrecv) %lld, %d, size=%lld\n", rank, dim, peer_rank, dim);
+    printf("#%d :debug(sendrecv) peer_rank=%d, size=%lld\n", rank, peer_rank, dim);
     m->mpisendrecv(state, t, dim * 2, peer_rank);
     memcpy(t, state, dim * 16);
     free(t);
-
-#endif
 }
+#endif
 
 /*
 

@@ -19,10 +19,11 @@ extern "C" {
 typedef struct {
     /* int a; */
     void (*set_comm)(MPI_Comm c);
-    //int (*getcomm)();
+    int (*usempi)();
     int (*get_rank)();
     int (*get_size)();
     int (*get_tag)();
+    void (*barrier)();
     void (*mpisendrecv)(void *sendbuf, void *recvbuf, int count, int peer_rank);
 } *MPIutil;
 
