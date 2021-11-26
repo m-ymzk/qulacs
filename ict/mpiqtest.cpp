@@ -8,19 +8,32 @@
 #include <cppsim/gate_merge.hpp>
 #include "mpi.h"
 
-double get_realtime(void)
-{
+double get_realtime(void) {
     struct timespec t;
     //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec + (double)t.tv_nsec*1e-9;
 }
 
-int main(int argc, char *argv[]){
+void print_state_in_rank_order(QuantumState* state) {
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    for (int i=0; i<rank; i++){
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    std::cout << state->to_string() << std::endl;
+    for (int i=0; i<(size - rank); i++){
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+}
+
+int main(int argc, char *argv[]) {
     double dt;
-    int _rank;
+    int _rank, _size;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &_size);
     std::cout << "Rank " << _rank << ", PID " << getpid() << std::endl << std::flush;
     int i = 0;
     //while (i == _rank) sleep(1); // for debug
@@ -34,7 +47,17 @@ int main(int argc, char *argv[]){
     //std::cout << state.to_string() << std::endl;
 
     state.set_Haar_random_state(1+_rank);
+
+    print_state_in_rank_order(&state);
+    /*
+    for (int i=0; i<_rank; i++){
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
     std::cout << state.to_string() << std::endl;
+    for (int i=0; i<(_size - _rank); i++){
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    */
 
     dt += get_realtime();
     std::cout << "#rank, time: " << _rank << ", " << dt << std::endl;
@@ -51,10 +74,11 @@ int main(int argc, char *argv[]){
     circuit.add_T_gate(nqubits - 1);
     circuit.update_quantum_state(&state);
 
-    std::cout << state.to_string() << std::endl;
+    print_state_in_rank_order(&state);
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
+
     return 0;
 
 //    circuit.add_X_gate(0);

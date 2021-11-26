@@ -4,10 +4,11 @@
 #include <stdlib.h>
 #include "MPIutil.h"
 
-static MPI_Comm mpicomm;
+static MPI_Comm mpicomm = 0;
 static int mpirank = 0;
 static int mpisize = 0;
 static int mpitag = 0;
+static int initialized = 0; // initialized = 1;
 static MPIutil mpiutil;
 static MPI_Status mpistat;
 static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
@@ -15,6 +16,7 @@ static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 static void set_comm(MPI_Comm c) {
     if (mpicomm == 0) {
         mpicomm = c;
+        initialized = 1;
         MPI_Comm_rank(mpicomm, &mpirank);
         MPI_Comm_size(mpicomm, &mpisize);
     } else if (mpicomm != c) { 
@@ -23,7 +25,7 @@ static void set_comm(MPI_Comm c) {
 }
 
 static int usempi() {
-    return (int)mpicomm; // if mpi didn't initialized, return false(0)
+    return initialized; // if mpi didn't initialized, return false(0)
 }
 
 static int get_rank() {
@@ -75,6 +77,14 @@ static void mpisendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank) 
     //        break;
 }
 
+/*
+static void send_osstr(char *sendbuf, int len) {
+}
+
+static void recv_osstr(char *recvbuf, int len) {
+}
+*/
+
 MPIutil get_instance() {
     static int entered;
     int flag = (entered == 1);
@@ -94,6 +104,8 @@ MPIutil get_instance() {
     mpiutil->usempi = usempi;
     mpiutil->barrier = barrier;
     mpiutil->mpisendrecv = mpisendrecv;
+    //mpiutil->recv_osstr = recv_osstr;
+    //mpiutil->send_osstr = send_osstr;
     mpitag = 0;
     return mpiutil;
 }

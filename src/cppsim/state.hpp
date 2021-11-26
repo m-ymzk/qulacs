@@ -70,7 +70,6 @@ public:
         qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
-        //MPIutil s;
         MPIutil m = get_instance();
         m->set_comm(comm);
         this->_rank = m->get_rank();
@@ -298,21 +297,34 @@ public:
      * @return 生成した文字列
      */
     virtual std::string to_string() const {
-        const ITYPE MAX_OUTPUT_ELEMS = 128;
+        const ITYPE MAX_OUTPUT_ELEMS = 8; // per rank.
         std::stringstream os;
         ITYPE _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
         ComplexVector eigen_state(_dim_out);
         auto data = this->data_cpp();
+        MPIutil m = get_instance();
+
         for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
-        os << " *** Quantum State ***" << std::endl;
-        os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
-        os << " * Qubit Count : " << this->qubit_count
-           << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
-        os << " * Dimension   : " << this->dim << std::endl;
-        if (this->dim > MAX_OUTPUT_ELEMS){
-            os << " * state vector is too long, so the first " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
+        if (_rank == 0){
+            os << " *** Quantum State ***" << std::endl;
+            os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
+            os << " * Qubit Count : " << this->qubit_count
+               << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
+            os << " * Dimension   : " << this->dim << std::endl;
+            if (this->dim > MAX_OUTPUT_ELEMS){
+                os << " * state vector is too long, so the first " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
+            }
+            if (_size == 1)
+                os << " * State vector: \n" << eigen_state << std::endl;
+            else
+                os << " * State vector (rank 0): \n" << eigen_state << std::endl;
         }
-        os << " * State vector : \n" << eigen_state << std::endl;
+        else {
+            os << " * State vector (rank " << _rank << "): \n" << eigen_state << std::endl;
+            //os.seekg(0, std::ios::end);
+            //int len = (int)os.tellg();
+            //os.seekg(0, std::ios::beg);
+        }
         return os.str();
     }
     

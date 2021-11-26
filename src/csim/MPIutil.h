@@ -24,6 +24,8 @@ typedef struct {
     int (*get_size)();
     int (*get_tag)();
     void (*barrier)();
+    //void (*send_osstr)(char* sendbuf, int len);
+    //void (*recv_osstr)(char* recvbuf, int len);
     void (*mpisendrecv)(void *sendbuf, void *recvbuf, int count, int peer_rank);
 } *MPIutil;
 
