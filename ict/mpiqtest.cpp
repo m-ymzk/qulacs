@@ -19,13 +19,15 @@ void print_state_in_rank_order(QuantumState* state) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    for (int i=0; i<rank; i++){
+    std::cout << std::flush;
+    for (int i=0; i < rank + 1; i++){
         MPI_Barrier(MPI_COMM_WORLD);
     }
     std::cout << state->to_string() << std::endl;
-    for (int i=0; i<(size - rank); i++){
+    for (int i=0; i < (size - rank); i++){
         MPI_Barrier(MPI_COMM_WORLD);
     }
+    std::cout << std::flush;
 }
 
 int main(int argc, char *argv[]) {
@@ -60,7 +62,7 @@ int main(int argc, char *argv[]) {
     */
 
     dt += get_realtime();
-    std::cout << "#rank, time: " << _rank << ", " << dt << std::endl;
+    std::cout << "#rank, time: " << _rank << ", " << dt << std::endl << std::flush;
 
     QuantumCircuit circuit(nqubits);
 

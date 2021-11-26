@@ -11,11 +11,11 @@ int main(){
 
     //state.set_Haar_random_state();
     QuantumCircuit circuit(3);
-    circuit.add_X_gate(0);
-    circuit.add_X_gate(1);
-    circuit.add_X_gate(2);
-    circuit.add_T_gate(1);
-    circuit.add_T_gate(2);
+    circuit.add_CNOT_gate(0,1);
+    //circuit.add_X_gate(1);
+    //circuit.add_X_gate(2);
+    //circuit.add_T_gate(1);
+    //circuit.add_T_gate(2);
     circuit.update_quantum_state(&state);
     std::cout << state.to_string() << std::endl;
     return 0;

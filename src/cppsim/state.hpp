@@ -297,7 +297,7 @@ public:
      * @return 生成した文字列
      */
     virtual std::string to_string() const {
-        const ITYPE MAX_OUTPUT_ELEMS = 8; // per rank.
+        ITYPE MAX_OUTPUT_ELEMS = std::max(2, 256 / _size); // per rank.
         std::stringstream os;
         ITYPE _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
         ComplexVector eigen_state(_dim_out);
@@ -312,7 +312,10 @@ public:
                << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
             os << " * Dimension   : " << this->dim << std::endl;
             if (this->dim > MAX_OUTPUT_ELEMS){
-                os << " * state vector is too long, so the first " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
+                if (_size == 1)
+                    os << " * state vector is too long, so the " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
+                else
+                    os << " * state vector is too long, so the (" << MAX_OUTPUT_ELEMS << " x " << _size << ") elements are output." << std::endl;
             }
             if (_size == 1)
                 os << " * State vector: \n" << eigen_state << std::endl;
