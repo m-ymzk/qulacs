@@ -21,6 +21,8 @@
 #include <Eigen/QR>
 
 namespace gate{
+using namespace std::complex_literals;
+
     ComplexMatrix get_IBMQ_matrix(double theta, double phi, double lambda);
 
 	QuantumGateBase* Identity(UINT qubit_index){

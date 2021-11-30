@@ -2,12 +2,12 @@
 cmake_minimum_required(VERSION 2.8)
 
 ##### Check GCC version #####
-if(${CMAKE_C_COMPILER_VERSION} VERSION_LESS 7.0.0)
-	message(FATAL_ERROR, "gcc >= 7.0.0 is required.")
-endif()
-if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 7.0.0)
-	message(FATAL_ERROR, "g++ >= 7.0.0 is required.")
-endif()
+#if(${CMAKE_C_COMPILER_VERSION} VERSION_LESS 7.0.0)
+#	message(FATAL_ERROR, "gcc >= 7.0.0 is required.")
+#endif()
+#if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 7.0.0)
+#	message(FATAL_ERROR, "g++ >= 7.0.0 is required.")
+#endif()
 
 
 ##### Set default behavior #####
@@ -15,15 +15,15 @@ set(DEFAULT_USE_OMP Yes)
 set(DEFAULT_USE_GPU No)
 set(DEFAULT_USE_PYTHON Yes)
 set(DEFAULT_USE_TEST Yes)
-if(("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "^x86.*") OR ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "AMD64"))
-	message(STATUS "SIMD SUPPORT: Yes")
-	set(DEFAULT_OPT_FLAGS "-mtune=native -march=native -mfpmath=both")
-	set(DEFAULT_USE_SIMD Yes)
-else()
-	message(STATUS "SIMD SUPPORT: No")
-	set(DEFAULT_OPT_FLAGS "-mtune=native -march=native")
-	set(DEFAULT_USE_SIMD No)
-endif()
+#if(("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "^x86.*") OR ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "AMD64"))
+#	message(STATUS "SIMD SUPPORT: Yes")
+#	set(DEFAULT_OPT_FLAGS "-mtune=native")
+#	set(DEFAULT_USE_SIMD Yes)
+#else()
+message(STATUS "## OPT_FLAGS: -Nclang -Kfast -Knolargepage -lpthread")
+set(DEFAULT_OPT_FLAGS "-Nclang -Kfast -Knolargepage -lpthread")
+set(DEFAULT_USE_SIMD No)
+#endif()
 
 if(NOT DEFINED USE_SIMD)
 	set(USE_SIMD ${DEFAULT_USE_SIMD})
@@ -73,6 +73,7 @@ set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR})
 ExternalProject_Add(
     eigen
     URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
+    PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/complex_literals.patch
     PREFIX ${EIGEN_BUILD_DIR}
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -137,17 +138,17 @@ endif()
 
 ##### set warnings #####
 if(NOT USE_GPU)
-	set(WARNING_C "-Wall -Wextra -Werror=undef -Wlogical-op -Wmissing-include-dirs \
-	 -Wpointer-arith -Winit-self -Wfloat-equal -Wsuggest-attribute=noreturn \
+	set(WARNING_C "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	 -Wpointer-arith -Winit-self -Wfloat-equal \
 	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
 	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
-	 -Wimplicit-fallthrough=5 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
+	 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
 	 -Wnested-externs -fdiagnostics-color=auto")
-	set(WARNING_CPP "-Wall -Wextra -Werror=undef -Wlogical-op -Wmissing-include-dirs \
-	 -Wpointer-arith -Winit-self -Wfloat-equal -Wsuggest-attribute=noreturn \
+	set(WARNING_CPP "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	 -Wpointer-arith -Winit-self -Wfloat-equal \
 	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
 	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
-	 -Wimplicit-fallthrough=5 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
+	 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
 	 -fdiagnostics-color=auto")
 endif()
 
@@ -178,22 +179,23 @@ endif()
 if(MSYS OR MINGW OR UNIX OR APPLE)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 
 	# GCC>=8.0.0 requires C++14 for building python
-	if(8.0.0 VERSION_LESS ${CMAKE_CXX_COMPILER_VERSION})
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
-	else()
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-	endif()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+        #if(8.0.0 VERSION_LESS ${CMAKE_CXX_COMPILER_VERSION})
+        	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
+        #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
+        #else()
+        #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+        #endif()
+        #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 	# set for literals of imaginary number
-	if(NOT MINGW)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fext-numeric-literals")
-	endif()
+        if(NOT MINGW)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        endif()
 
 	if(USE_OMP)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
@@ -206,6 +208,9 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 		add_compile_options("-fPIC")
 	endif()
 
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+	add_compile_options("-fPIC")
+
 	if(USE_SIMD)
 		add_compile_options("-D _USE_SIMD")
 	endif()
@@ -213,9 +218,9 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${OPT_FLAGS}")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OPT_FLAGS}")
 
-	if(8.0.0 VERSION_LESS ${CMAKE_CXX_COMPILER_VERSION})
-		set(PYBIND11_CPP_STANDARD -std=gnu++14)
-	endif()
+        #if(8.0.0 VERSION_LESS ${CMAKE_CXX_COMPILER_VERSION})
+        	set(PYBIND11_CPP_STANDARD -std=gnu++14)
+        #endif()
 
 elseif(MSVC)
 	SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})

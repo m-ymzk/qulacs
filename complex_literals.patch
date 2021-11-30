@@ -1,0 +1,11 @@
+--- /Eigen/src/Core/MatrixBase.h
++++ /Eigen/src/Core/MatrixBase.h
+@@ -12,6 +12,7 @@
+ #define EIGEN_MATRIXBASE_H
+
++using namespace std::complex_literals;
+ namespace Eigen {
+
+ /** \class MatrixBase
+   * \ingroup Core_Module
+
