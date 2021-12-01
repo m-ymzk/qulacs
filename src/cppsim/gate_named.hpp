@@ -20,8 +20,10 @@ protected:
 	typedef void (T_GPU_UPDATE_FUNC)(UINT, void*, ITYPE, void*, UINT);
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
-	T_UPDATE_FUNC_MPI* _update_func_mpi;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
+#ifdef _USE_MPI
+	T_UPDATE_FUNC_MPI* _update_func_mpi;
+#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_OneQubit() {};
@@ -42,15 +44,10 @@ public:
 			}
 #else
 #ifdef _USE_MPI
-            // index, state, dim
-            if (state->inner_qc > this->_target_qubit_list[0].index()) {
-                std::cout << "#update qstate-1qubit, inner " << state->inner_qc << ", " << this->_target_qubit_list[0].index() << std::endl;
-			    _update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
-            } else {
-                std::cout << "#update qstate-1qubit, outer " << state->inner_qc << ", " << this->_target_qubit_list[0].index() << std::endl;
-                _update_func_mpi(this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
-            }
+            // index, state, dim, inner_qc
+            _update_func_mpi(this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
 #else //#ifdef _USE_MPI
+            // index, state, dim
 			_update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 #endif //#ifdef _USE_MPI
 #endif
@@ -84,10 +81,14 @@ public:
 class QuantumGate_TwoQubit : public QuantumGateBase{
 protected:
     typedef void (T_UPDATE_FUNC)(UINT, UINT, CTYPE*, ITYPE);
+    typedef void (T_UPDATE_FUNC_MPI)(UINT, UINT, CTYPE*, ITYPE, UINT);
 	typedef void (T_GPU_UPDATE_FUNC)(UINT, UINT, void*, ITYPE, void*, UINT);
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
+#ifdef _USE_MPI
+	T_UPDATE_FUNC_MPI* _update_func_mpi;
+#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_TwoQubit() {};
@@ -110,7 +111,9 @@ public:
 #ifdef _USE_MPI
             // index x 2, state, dim
             if (state->inner_qc > this->_target_qubit_list[0].index()) {
-			    _update_func(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim);
+                std::cout << "#update qstate-2qubit " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
+                    << ", " << this->_target_qubit_list[1].index() << std::endl;
+			    _update_func_mpi(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim, state->inner_qc);
             }
 #else //#ifdef _USE_MPI
 			_update_func(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim);
@@ -145,10 +148,14 @@ public:
 class QuantumGate_OneControlOneTarget : public QuantumGateBase {
 protected:
     typedef void (T_UPDATE_FUNC)(UINT, UINT, CTYPE*, ITYPE);
+    typedef void (T_UPDATE_FUNC_MPI)(UINT, UINT, CTYPE*, ITYPE, UINT);
 	typedef void (T_GPU_UPDATE_FUNC)(UINT, UINT, void*, ITYPE, void*, UINT);
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
+#ifdef _USE_MPI
+	T_UPDATE_FUNC_MPI* _update_func_mpi;
+#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_OneControlOneTarget() {};
@@ -168,8 +175,15 @@ public:
 				_update_func(this->_control_qubit_list[0].index(), this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 			}
 #else
+#ifdef _USE_MPI
+            // control-index, target-index, data, dim
+            std::cout << "#update qstate-controled1qubit " << state->inner_qc << ", " << this->_control_qubit_list[0].index()
+                << ", " << this->_target_qubit_list[0].index() << std::endl;
+			_update_func_mpi(this->_control_qubit_list[0].index(), this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
+#else //#ifdef _USE_MPI
             // control-index, target-index, data, dim
 			_update_func(this->_control_qubit_list[0].index(), this->_target_qubit_list[0].index(), state->data_c(), state->dim);
+#endif //#ifdef _USE_MPI
 #endif
 		}
 		else {

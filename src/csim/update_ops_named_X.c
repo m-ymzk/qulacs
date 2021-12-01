@@ -188,31 +188,21 @@ void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 #endif
 
-#define _MALLOC_AND_CHECK(ptr, type, size)                             \
-  if (size != 0) {                                                     \
-    ptr = (type *)malloc(sizeof(type) * size);                         \
-    if (ptr == NULL) {                                                 \
-      fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__, \
-              __LINE__);                                               \
-      exit(1);                                                         \
-    }                                                                  \
-  }
-
 #ifdef _USE_MPI
 void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
-    MPIutil m = get_instance();
-    int rank, size;
-    rank = m->get_rank();
-    size = m->get_size();
-    double* t = NULL;
-    //const int TMP_SIZE = 1024 * 1024 * 16;
-    _MALLOC_AND_CHECK(t, double, dim * 2);
-    int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
-    int peer_rank = rank ^ peer_rank_bit;
-    printf("#%d :debug(sendrecv) peer_rank=%d, size=%lld\n", rank, peer_rank, dim);
-    m->mpisendrecv(state, t, dim * 2, peer_rank);
-    memcpy(t, state, dim * 16);
-    free(t);
+    if (target_qubit_index < inner_qc){
+        X_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_instance();
+        const int rank = m->get_rank();
+        CTYPE* t = NULL;
+        const int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
+        const int peer_rank = rank ^ peer_rank_bit;
+        _MALLOC_AND_CHECK(t, CTYPE, dim);
+        m->mpisendrecv(state, t, dim * 2, peer_rank); // CTYPE = MPI_DOUBLE * 2
+        memcpy(t, state, dim * sizeof(CTYPE));
+        free(t);
+    }
 }
 #endif
 

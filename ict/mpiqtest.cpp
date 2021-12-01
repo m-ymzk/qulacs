@@ -27,7 +27,7 @@ void print_state_in_rank_order(QuantumState* state) {
     for (int i=0; i < (size - rank); i++){
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    std::cout << std::flush;
+    //std::cout << std::flush;
 }
 
 int main(int argc, char *argv[]) {
@@ -74,6 +74,10 @@ int main(int argc, char *argv[]) {
     circuit.add_T_gate(1);
     circuit.add_T_gate(nqubits - 2);
     circuit.add_T_gate(nqubits - 1);
+    circuit.add_CNOT_gate(0, 1);
+    circuit.add_CNOT_gate(0, nqubits - 1);
+    circuit.add_CNOT_gate(nqubits - 1, 0);
+    circuit.add_CNOT_gate(nqubits - 1, nqubits - 2);
     circuit.update_quantum_state(&state);
 
     print_state_in_rank_order(&state);

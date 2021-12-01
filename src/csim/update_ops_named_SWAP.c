@@ -6,6 +6,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -249,7 +253,22 @@ void SWAP_gate_parallel_simd(UINT target_qubit_index_0, UINT target_qubit_index_
 #endif
 #endif
 
-
+#ifdef _USE_MPI
+void SWAP_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (control_qubit_index < inner_qc){
+        if (target_qubit_index < inner_qc){
+            SWAP_gate(control_qubit_index, target_qubit_index, state, dim);
+        }
+    } else {
+        //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
+        //MPIutil m = get_instance();
+        //int rank = m->get_rank();
+        //if (rank & tgt_rank_bit){
+            //single_qubit_phase_gate(ISOUTERQB, phase, state, dim);
+        //} // if else, nothing to do.
+    }
+}
+#endif
 
 /*
 #ifdef _OPENMP
