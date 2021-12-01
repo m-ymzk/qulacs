@@ -187,7 +187,7 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-        #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 
 	# GCC>=8.0.0 requires C++14 for building python
@@ -201,8 +201,7 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 
 	# set for literals of imaginary number
         if(NOT MINGW)
-            #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fext-numeric-literals")
-        	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         endif()
 
 	if(USE_OMP)
@@ -215,6 +214,7 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 		add_compile_options("-fPIC")
 	endif()
+
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 	add_compile_options("-fPIC")
 
