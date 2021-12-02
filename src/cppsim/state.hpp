@@ -323,10 +323,12 @@ public:
                 os << " * State vector (rank 0): \n" << eigen_state << std::endl;
         }
         else {
-            os << " * State vector (rank " << _rank << "): \n" << eigen_state << std::endl;
-            //os.seekg(0, std::ios::end);
-            //int len = (int)os.tellg();
-            //os.seekg(0, std::ios::beg);
+            if (this->_outer_qc > 0) {
+                os << " * State vector (rank " << _rank << "): \n" << eigen_state << std::endl;
+                //os.seekg(0, std::ios::end);
+                //int len = (int)os.tellg();
+                //os.seekg(0, std::ios::beg);
+            }
         }
         return os.str();
     }
