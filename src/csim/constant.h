@@ -28,7 +28,7 @@
 #define SINPI8 0.382683432365090
 
 //! magic-qubit-number: index_qubit is in outer_qb.
-#define ISOUTERQB 9999
+#define IS_OUTER_QB 9999
 
 //! list of Pauli matrix I,X,Y,Z
 extern const CTYPE PAULI_MATRIX[4][4];

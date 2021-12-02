@@ -76,7 +76,7 @@ void single_qubit_phase_gate_single_unroll(UINT target_qubit_index, CTYPE phase,
 			state[state_index] *= phase;
 		}
 	}
-	else if (target_qubit_index == ISOUTERQB) {
+	else if (target_qubit_index == IS_OUTER_QB) {
 		// target_qubit_index is in outer_qb.
 		ITYPE state_index;
 		for (state_index = 1; state_index < dim; state_index++) {
@@ -108,7 +108,7 @@ void single_qubit_phase_gate_parallel_unroll(UINT target_qubit_index, CTYPE phas
 		for (state_index = 1; state_index < dim; state_index += 2) {
 			state[state_index] *= phase;
 		}
-	} else if (target_qubit_index == ISOUTERQB) {
+	} else if (target_qubit_index == IS_OUTER_QB) {
 		ITYPE state_index;
 #pragma omp parallel for
 		for (state_index = 1; state_index < dim; state_index++) {
@@ -141,7 +141,7 @@ void single_qubit_phase_gate_single_simd(UINT target_qubit_index, CTYPE phase, C
 		for (state_index = 1; state_index < dim; state_index += 2) {
 			state[state_index] *= phase;
 		}
-	} else if (target_qubit_index == ISOUTERQB) {
+	} else if (target_qubit_index == IS_OUTER_QB) {
 		ITYPE state_index;
 		for (state_index = 1; state_index < dim; state_index++) {
 			state[state_index] *= phase;
@@ -178,7 +178,7 @@ void single_qubit_phase_gate_parallel_simd(UINT target_qubit_index, CTYPE phase,
 		for (state_index = 1; state_index < dim; state_index += 2) {
 			state[state_index] *= phase;
 		}
-	} else if (target_qubit_index == ISOUTERQB) {
+	} else if (target_qubit_index == IS_OUTER_QB) {
 		ITYPE state_index;
 #pragma omp parallel for
 		for (state_index = 1; state_index < dim; state_index++) {
@@ -206,14 +206,14 @@ void single_qubit_phase_gate_parallel_simd(UINT target_qubit_index, CTYPE phase,
 
 #ifdef _USE_MPI
 void single_qubit_phase_gate_mpi(UINT target_qubit_index, CTYPE phase, CTYPE *state, ITYPE dim, UINT inner_qc) {
-    if (target_qubit_index < inner_qc){
+    if (target_qubit_index < inner_qc) {
         single_qubit_phase_gate(target_qubit_index, phase, state, dim);
     } else {
-        int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
+        int target_rank_bit = 1 << (target_qubit_index - inner_qc);
         MPIutil m = get_instance();
         int rank = m->get_rank();
-        if (rank & tgt_rank_bit){
-            //single_qubit_phase_gate(ISOUTERQB, phase, state, dim);
+        if (rank & target_rank_bit) {
+            single_qubit_phase_gate(IS_OUTER_QB, phase, state, dim);
         } // if else, nothing to do.
 //#pragma omp barrier
     }

@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
     circuit.add_CNOT_gate(0, 1);
     circuit.add_CNOT_gate(0, nqubits - 1);
     circuit.add_CNOT_gate(nqubits - 1, 0);
+    circuit.add_CNOT_gate(nqubits - 2, nqubits - 1);
     circuit.add_CNOT_gate(nqubits - 1, nqubits - 2);
     circuit.update_quantum_state(&state);
 

@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
@@ -76,7 +77,17 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index, 
 	const ITYPE high_mask = ~(max_qubit_mask - 1);
 
 	ITYPE state_index = 0;
-	if (target_qubit_index == 0) {
+	if (control_qubit_index == IS_OUTER_QB) {
+		for (state_index = 0; state_index < (loop_dim * 2); ++state_index) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&(~low_mask)) << 1);
+			ITYPE basis_index_1 = basis_index_0 + target_mask;
+			CTYPE temp = state[basis_index_0];
+			state[basis_index_0] = state[basis_index_1];
+			state[basis_index_1] = temp;
+		}
+	}
+	else if (target_qubit_index == 0) {
 		// swap neighboring two basis
 		for (state_index = 0; state_index < loop_dim; ++state_index) {
 			ITYPE basis_index = ((state_index&mid_mask) << 1)
@@ -336,30 +347,33 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
             free(t);
         }
     } else {
-        if (target_qubit_index < inner_qc){
-            printf("#enter CNOT_gate_mpi, c-outer, t-inner\n");
-            printf("#Not Implemented\n");
-            //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
-            //MPIutil m = get_instance();
-            //int rank = m->get_rank();
-            //if (rank & tgt_rank_bit){
-                //single_qubit_phase_gate(ISOUTERQB, phase, state, dim);
-            //} // if else, nothing to do.
+        if (target_qubit_index < inner_qc) {
+            int target_rank_bit = 1 << (target_qubit_index - inner_qc);
+            printf("#enter CNOT_gate_mpi, c-outer, t-inner, %d\n", target_qubit_index);
+            MPIutil m = get_instance();
+            int rank = m->get_rank();
+            if (rank & target_rank_bit) {
+                CNOT_gate(IS_OUTER_QB, target_qubit_index, state, dim);
+            } // if else, nothing to do.
         } else {
             printf("#enter CNOT_gate_mpi, c-outer, t-outer\n");
-            printf("#Not Implemented\n");
-            //MPIutil m = get_instance();
-            //int rank, size;
-            //rank = m->get_rank();
-            //size = m->get_size();
-            //double* t = NULL;
-            ////const int TMP_SIZE = 1024 * 1024 * 16;
-            //_MALLOC_AND_CHECK(t, double, dim * 2);
-            //int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
-            //int peer_rank = rank ^ peer_rank_bit;
-            //m->mpisendrecv(state, t, dim * 2, peer_rank);
-            //memcpy(t, state, dim * 16);
-            //free(t);
+            int control_rank_bit0 = 1 << (control_qubit_index - inner_qc);
+            int target_rank_bit1 = 1 << (target_qubit_index - inner_qc);
+            MPIutil m = get_instance();
+            int rank = m->get_rank();
+			if (rank & control_rank_bit0) {
+                double* t = NULL;
+                _MALLOC_AND_CHECK(t, double, dim * 2);
+                int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
+                int peer_rank = rank ^ peer_rank_bit;
+                printf("#%d: call mpisendrecv, dim*2 = %lld, peer_rank=%d\n", rank, dim*2, peer_rank);
+                m->mpisendrecv(state, t, dim * 2, peer_rank);
+                memcpy(t, state, dim * 16);
+                free(t);
+            }
+			else {
+				m->get_tag(); // dummy to count up tag
+			}
         }
     }
 }
