@@ -33,7 +33,6 @@ protected:
     ITYPE _dim;
     UINT _qubit_count;
     UINT _inner_qc; /**< \~japanese-en ノード内量子ビット数 */
-    UINT _inner_qc_mask; /**< \~japanese-en ノード内量子mask (=2^_inner_qc - 1) */
     UINT _outer_qc = 0; /**< \~japanese-en ノード外量子ビット数 */
     bool _is_state_vector;
     std::vector<UINT> _classical_register;
@@ -46,7 +45,6 @@ protected:
 public:
     const UINT& qubit_count; /**< \~japanese-en 量子ビット数 */
     const UINT& inner_qc; /**< \~japanese-en ノード内量子ビット数 */
-    const UINT& inner_qc_mask; /**< \~japanese-en ノード内量子mask (=2^_inner_qc - 1) */
     const ITYPE& dim; /**< \~japanese-en 量子状態の次元 */
     const std::vector<UINT>& classical_register; /**< \~japanese-en 古典ビットのレジスタ */
     const UINT& device_number;
@@ -56,18 +54,17 @@ public:
      * @param qubit_count_ 量子ビット数
      */
     QuantumStateBase(UINT qubit_count_, bool is_state_vector):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         this->_inner_qc = qubit_count_;
-        this->_inner_qc_mask = (1 << _inner_qc) - 1;
         this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << _inner_qc; // qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number=0;
     }
     QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         MPIutil m = get_instance();
@@ -76,18 +73,24 @@ public:
         this->_size = m->get_size();
         assert(!(_size & (_size - 1))); // mpi-size must be power of 2
         
-        if (qubit_count_>2) this->_outer_qc = std::log2(this->_size); // log(outer_size)
-        this->_inner_qc = qubit_count_ - this->_outer_qc;
-        this->_inner_qc_mask = (1 << _inner_qc) - 1;
+        int log_nodes = std::log2(this->_size);
+        if (qubit_count_ > log_nodes) { // minimum inner_qc=1
+            this->_inner_qc = qubit_count_ - log_nodes;
+            this->_outer_qc = log_nodes;
+        }
+        else {
+            this->_inner_qc = qubit_count_;
+            this->_outer_qc = 0;
+        }
 
         this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << _inner_qc; // qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number=0;
-        std::cout << "# debug1:" << this->_rank << ", " << this->_inner_qc << ", " << this->_outer_qc << std::endl;
+        std::cout << "#" << this ->_rank << ": make state vector: inner_qc= " << this->_inner_qc << ", outer_qc= " << this->_outer_qc << std::endl;
     }
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), inner_qc_mask(_inner_qc_mask), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         assert(false); // "not supported in mpi-mode"
@@ -400,7 +403,10 @@ public:
         }
         set_zero_state();
         _state_vector[0] = 0.;
-        _state_vector[comp_basis & this->_inner_qc_mask] = 1.;
+        std::cout << "#" << this ->_rank << ": set computational basis: comp_basis= " << comp_basis << ", outer_qc= " << this->_outer_qc << std::endl;
+        if (comp_basis >> this->inner_qc == this->_rank) {
+            _state_vector[comp_basis & (_dim - 1)] = 1.;
+        }
     }
     /**
      * \~japanese-en 量子状態をHaar randomにサンプリングされた量子状態に初期化する

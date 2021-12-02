@@ -215,7 +215,6 @@ void single_qubit_phase_gate_mpi(UINT target_qubit_index, CTYPE phase, CTYPE *st
         if (rank & target_rank_bit) {
             single_qubit_phase_gate(IS_OUTER_QB, phase, state, dim);
         } // if else, nothing to do.
-//#pragma omp barrier
     }
 }
 #endif

@@ -200,7 +200,7 @@ void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         const int peer_rank = rank ^ peer_rank_bit;
         _MALLOC_AND_CHECK(t, CTYPE, dim);
         m->mpisendrecv(state, t, dim * 2, peer_rank); // CTYPE = MPI_DOUBLE * 2
-        memcpy(t, state, dim * sizeof(CTYPE));
+        memcpy(state, t, dim * sizeof(CTYPE));
         free(t);
     }
 }

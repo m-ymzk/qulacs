@@ -368,7 +368,7 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
                 int peer_rank = rank ^ peer_rank_bit;
                 printf("#%d: call mpisendrecv, dim*2 = %lld, peer_rank=%d\n", rank, dim*2, peer_rank);
                 m->mpisendrecv(state, t, dim * 2, peer_rank);
-                memcpy(t, state, dim * 16);
+                memcpy(state, t, dim * sizeof(CTYPE));
                 free(t);
             }
 			else {
@@ -380,16 +380,15 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
 
 void CNOT_gate_single_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *tmp, ITYPE dim) {
     printf("#enter CNOT_gate_single_unroll_mpi\n");
-	const ITYPE loop_dim = dim / 4;
+	const ITYPE loop_dim = dim / 2;
 
 	const ITYPE control_mask = 1ULL << control_qubit_index;
 
 	const UINT min_qubit_index = control_qubit_index;
 	const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
-	const ITYPE max_qubit_mask = dim - 1;
+	const ITYPE max_qubit_mask = dim;
 	const ITYPE low_mask = min_qubit_mask - 1;
 	const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
-	const ITYPE high_mask = ~(max_qubit_mask - 1);
 
 	ITYPE state_index = 0;
 	if (control_qubit_index == 0) {
@@ -397,7 +396,6 @@ void CNOT_gate_single_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *
 		for (state_index = 0; state_index < loop_dim; ++state_index) {
 			ITYPE basis_index_0 = (state_index&low_mask)
 				+ ((state_index&mid_mask) << 1)
-				+ ((state_index&high_mask) << 2)
 				+ control_mask;
 			state[basis_index_0] = tmp[basis_index_0];
 		}
@@ -407,7 +405,6 @@ void CNOT_gate_single_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
 			ITYPE basis_index_0 = (state_index&low_mask)
 				+ ((state_index&mid_mask) << 1)
-				+ ((state_index&high_mask) << 2)
 				+ control_mask;
 			state[basis_index_0] = tmp[basis_index_0];
 			state[basis_index_0 + 1] = tmp[basis_index_0 + 1];
@@ -418,17 +415,15 @@ void CNOT_gate_single_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *
 #ifdef _OPENMP
 void CNOT_gate_parallel_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *tmp, ITYPE dim) {
     printf("#enter CNOT_gate_parallel_unroll_mpi\n");
-	const ITYPE loop_dim = dim / 4;
+	const ITYPE loop_dim = dim / 2;
 
 	const ITYPE control_mask = 1ULL << control_qubit_index;
 
 	const UINT min_qubit_index = control_qubit_index;
-	const UINT max_qubit_index = dim - 1;
 	const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
-	const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+	const ITYPE max_qubit_mask = dim;
 	const ITYPE low_mask = min_qubit_mask - 1;
 	const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
-	const ITYPE high_mask = ~(max_qubit_mask - 1);
 
 	ITYPE state_index = 0;
 	if (control_qubit_index == 0) {
@@ -437,7 +432,6 @@ void CNOT_gate_parallel_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE
 		for (state_index = 0; state_index < loop_dim; ++state_index) {
 			ITYPE basis_index_0 = (state_index&low_mask)
 				+ ((state_index&mid_mask) << 1)
-				+ ((state_index&high_mask) << 2)
 				+ control_mask;
 			state[basis_index_0] = tmp[basis_index_0];
 		}
@@ -448,7 +442,6 @@ void CNOT_gate_parallel_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
 			ITYPE basis_index_0 = (state_index&low_mask)
 				+ ((state_index&mid_mask) << 1)
-				+ ((state_index&high_mask) << 2)
 				+ control_mask;
 			state[basis_index_0] = tmp[basis_index_0];
 			state[basis_index_0 + 1] = tmp[basis_index_0 + 1];
