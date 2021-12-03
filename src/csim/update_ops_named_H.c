@@ -1,9 +1,16 @@
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+#ifdef _USE_MPI
+#include "MPIutil.h"
 #endif
 
 #ifdef _USE_SIMD
@@ -213,6 +220,77 @@ void H_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 #endif
 
+#ifdef _USE_MPI
+void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (target_qubit_index < inner_qc){
+        H_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_instance();
+        const int rank = m->get_rank();
+        CTYPE* t = NULL;
+        const int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
+        const int peer_rank = rank ^ peer_rank_bit;
+        _MALLOC_AND_CHECK(t, CTYPE, dim);
+        m->mpisendrecv(state, t, dim * 2, peer_rank); // CTYPE = MPI_DOUBLE * 2
+
+		#ifdef _OPENMP
+			UINT threshold = 13;
+			if (dim < (((ITYPE)1) << threshold)) {
+				H_gate_single_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+			}
+			else {
+				H_gate_parallel_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+			}
+		#else
+			H_gate_single_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+		#endif
+        free(t);
+    }
+}
+
+void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
+	const ITYPE loop_dim = dim;
+	const double sqrt2inv = 1. / sqrt(2.);
+	ITYPE state_index = 0;
+	for (state_index = 0; state_index < loop_dim; state_index += 2) {
+		CTYPE temp_a0 = state[state_index];
+		CTYPE temp_a1 = t[state_index];
+		CTYPE temp_b0 = state[state_index + 1];
+		CTYPE temp_b1 = t[state_index + 1];
+		if (flag) {
+			state[state_index] = (t[state_index] - state[state_index])*sqrt2inv;
+			state[state_index + 1] = (t[state_index + 1] - state[state_index + 1])*sqrt2inv;
+		}
+		else {
+			state[state_index] = (temp_a0 + temp_a1)*sqrt2inv;
+			state[state_index + 1] = (temp_b0 + temp_b1)*sqrt2inv;
+		}
+	}
+}
+
+#ifdef _OPENMP
+void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
+	const ITYPE loop_dim = dim;
+	const double sqrt2inv = 1. / sqrt(2.);
+	ITYPE state_index = 0;
+#pragma omp parallel for
+	for (state_index = 0; state_index < loop_dim; state_index += 2) {
+		CTYPE temp_a0 = state[state_index];
+		CTYPE temp_a1 = state[state_index];
+		CTYPE temp_b0 = state[state_index + 1];
+		CTYPE temp_b1 = state[state_index + 1];
+		if (flag) {
+			state[state_index] = (temp_a0 - temp_a1)*sqrt2inv;
+			state[state_index + 1] = (temp_b0 - temp_b1)*sqrt2inv;
+		}
+		else {
+			state[state_index] = (temp_a0 + temp_a1)*sqrt2inv;
+			state[state_index + 1] = (temp_b0 + temp_b1)*sqrt2inv;
+		}
+	}
+}
+#endif //#ifdef _OPENMP
+#endif //#ifdef _USE_MPI
 
 /*
 #ifdef _OPENMP

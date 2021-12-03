@@ -21,8 +21,9 @@ extern "C"{
  * \~japanese-en Identityゲート
  */
 class ClsIGate : public QuantumGate_OneQubit{
-    static void idling(UINT,CTYPE*,ITYPE){};
+    static void idling(UINT, CTYPE*, ITYPE){};
 	static void idling_gpu(UINT, void*, ITYPE, void*, UINT) {};
+    static void idling_mpi(UINT, CTYPE*, ITYPE, UINT){};
 public:
     /**
      * \~japanese-en コンストラクタ
@@ -33,6 +34,7 @@ public:
         this->_update_func = ClsIGate::idling;
 		this->_update_func_dm = ClsIGate::idling;
 		this->_update_func_gpu = ClsIGate::idling_gpu;
+		this->_update_func_mpi = ClsIGate::idling_mpi;
 		this->_name = "I";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE | FLAG_Y_COMMUTE | FLAG_Z_COMMUTE ));
         this->_gate_property = FLAG_PAULI | FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -54,11 +56,11 @@ public:
     ClsXGate(UINT target_qubit_index) {
         this->_update_func = X_gate;
 		this->_update_func_dm = dm_X_gate;
-#ifdef _USE_MPI
-		this->_update_func_mpi = X_gate_mpi;
-#endif
 #ifdef _USE_GPU
 		this->_update_func_gpu = X_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = X_gate_mpi;
 #endif
         this->_name = "X";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE ));
@@ -131,6 +133,9 @@ public:
 		this->_update_func_dm = dm_H_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = H_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = H_gate_mpi;
 #endif
 	    this->_name = "H";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));

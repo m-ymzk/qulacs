@@ -21,9 +21,7 @@ protected:
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
-#ifdef _USE_MPI
 	T_UPDATE_FUNC_MPI* _update_func_mpi;
-#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_OneQubit() {};
@@ -86,9 +84,7 @@ protected:
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
-#ifdef _USE_MPI
 	T_UPDATE_FUNC_MPI* _update_func_mpi;
-#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_TwoQubit() {};
@@ -153,9 +149,7 @@ protected:
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
-#ifdef _USE_MPI
 	T_UPDATE_FUNC_MPI* _update_func_mpi;
-#endif
     ComplexMatrix _matrix_element;
 
     QuantumGate_OneControlOneTarget() {};
@@ -214,10 +208,12 @@ public:
 class QuantumGate_OneQubitRotation : public QuantumGateBase{
 protected:
 	typedef void (T_UPDATE_FUNC)(UINT, double, CTYPE*, ITYPE);
+	typedef void (T_UPDATE_FUNC_MPI)(UINT, double, CTYPE*, ITYPE, UINT);
 	typedef void (T_GPU_UPDATE_FUNC)(UINT, double, void*, ITYPE, void*, UINT);
 	T_UPDATE_FUNC* _update_func;
 	T_UPDATE_FUNC* _update_func_dm;
 	T_GPU_UPDATE_FUNC* _update_func_gpu;
+	T_UPDATE_FUNC_MPI* _update_func_mpi;
     ComplexMatrix _matrix_element;
     double _angle;
 
@@ -238,8 +234,15 @@ public:
 				_update_func(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim);
 			}
 #else
+#ifdef _USE_MPI
+            // control-index, target-index, data, dim
+            std::cout << "#update qstate-OneQubitRotation " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
+                << ", " << _angle << std::endl;
+			_update_func_mpi(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim, state->inner_qc);
+#else //#ifdef _USE_MPI
             // index, angle, data, dim
 			_update_func(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim);
+#endif //#ifdef _USE_MPI
 #endif
 		}
 		else {

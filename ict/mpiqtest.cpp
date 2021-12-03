@@ -43,14 +43,15 @@ int main(int argc, char *argv[]) {
 
     int nqubits = atoi(argv[1]);
 
-    dt = -1*get_realtime();
     QuantumState state(nqubits, MPI_COMM_WORLD);
     //QuantumState state1(nqubits, (MPI_Comm)((intptr_t)MPI_COMM_WORLD+1)); // MPI_Comm warning check.
     //std::cout << state.to_string() << std::endl;
 
-    state.set_Haar_random_state(1+_rank);
+    //state.set_Haar_random_state(1+_rank);
+    //state.set_computational_basis(0b00010);
+    state.set_computational_basis(0b0011);
 
-    print_state_in_rank_order(&state);
+    //print_state_in_rank_order(&state);
     /*
     for (int i=0; i<_rank; i++){
         MPI_Barrier(MPI_COMM_WORLD);
@@ -61,25 +62,38 @@ int main(int argc, char *argv[]) {
     }
     */
 
-    dt += get_realtime();
-    std::cout << "#rank, time: " << _rank << ", " << dt << std::endl << std::flush;
+    dt = -1*get_realtime();
 
     QuantumCircuit circuit(nqubits);
 
-    circuit.add_X_gate(0);
-    circuit.add_X_gate(1);
-    circuit.add_X_gate(nqubits - 2);
-    circuit.add_X_gate(nqubits - 1);
-    circuit.add_T_gate(0);
-    circuit.add_T_gate(1);
-    circuit.add_T_gate(nqubits - 2);
-    circuit.add_T_gate(nqubits - 1);
-    circuit.add_CNOT_gate(0, 1);
-    circuit.add_CNOT_gate(0, nqubits - 1);
-    circuit.add_CNOT_gate(nqubits - 1, 0);
-    circuit.add_CNOT_gate(nqubits - 2, nqubits - 1);
-    circuit.add_CNOT_gate(nqubits - 1, nqubits - 2);
+    //circuit.add_X_gate(0);
+    //for (int i=0; i<100; ++i) {
+    //    int index = atoi(argv[2]);
+    //    circuit.add_X_gate(index);
+    //}
+    //circuit.add_X_gate(nqubits - 2);
+    //circuit.add_X_gate(nqubits - 1);
+    gate::Identity(nqubits - 1)->update_quantum_state(&state);
+    //circuit.add_RX_gate(atoi(argv[2]), 0.5);
+    circuit.add_H_gate(0);
+    circuit.add_H_gate(1);
+    circuit.add_H_gate(2);
+    circuit.add_H_gate(nqubits - 2);
+    circuit.add_H_gate(nqubits - 1);
+    //circuit.add_T_gate(0);
+    //circuit.add_T_gate(1);
+    //circuit.add_T_gate(nqubits - 2);
+    //circuit.add_T_gate(nqubits - 1);
+    //circuit.add_CNOT_gate(0, 3);
+    //circuit.add_CNOT_gate(0, 1);
+    //circuit.add_CNOT_gate(1, 0);
+    //circuit.add_CNOT_gate(0, nqubits - 1);
+    //circuit.add_CNOT_gate(nqubits - 1, 0);
+    //circuit.add_CNOT_gate(nqubits - 2, nqubits - 1);
+    //circuit.add_CNOT_gate(nqubits - 1, nqubits - 2);
     circuit.update_quantum_state(&state);
+    dt += get_realtime();
+    std::cout << "#rank, time: " << _rank << ", " << dt << std::endl << std::flush;
 
     print_state_in_rank_order(&state);
 

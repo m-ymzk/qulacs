@@ -404,7 +404,7 @@ public:
         set_zero_state();
         _state_vector[0] = 0.;
         std::cout << "#" << this ->_rank << ": set computational basis: comp_basis= " << comp_basis << ", outer_qc= " << this->_outer_qc << std::endl;
-        if (comp_basis >> this->inner_qc == this->_rank) {
+        if (comp_basis >> this->inner_qc == (ITYPE)this->_rank) {
             _state_vector[comp_basis & (_dim - 1)] = 1.;
         }
     }
