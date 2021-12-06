@@ -67,7 +67,7 @@ public:
         qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
-        MPIutil m = get_instance();
+        MPIutil m = get_mpiutil();
         m->set_comm(comm);
         this->_rank = m->get_rank();
         this->_size = m->get_size();
@@ -305,7 +305,7 @@ public:
         ITYPE _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
         ComplexVector eigen_state(_dim_out);
         auto data = this->data_cpp();
-        MPIutil m = get_instance();
+        MPIutil m = get_mpiutil();
 
         for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
         if (_rank == 0){

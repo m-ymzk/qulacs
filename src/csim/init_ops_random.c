@@ -8,6 +8,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 // state randomization
 unsigned long xor128(unsigned long* state);
 double random_uniform(unsigned long* state);
@@ -37,6 +41,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
     const int ignore_first = 40;
     double norm = 0.;
     unsigned long random_state[4];
+    MPIutil m = get_mpiutil();
     srand(seed);
     random_state[0] = rand();
     random_state[1] = rand();
@@ -50,6 +55,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
         state[index] = r1 + 1.i * r2;
         norm += r1 * r1 + r2 * r2;
     }
+    norm = m->s_D_allreduce(norm);
     norm = sqrt(norm);
     for (ITYPE index = 0; index < dim; ++index) {
         state[index] /= norm;

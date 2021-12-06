@@ -326,13 +326,13 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
             CNOT_gate(control_qubit_index, target_qubit_index, state, dim);
         } else {
             printf("#enter CNOT_gate_mpi, c-inner, t-outer\n");
-            const MPIutil m = get_instance();
+            const MPIutil m = get_mpiutil();
             const int rank = m->get_rank();
             CTYPE* t = NULL;
             const int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
             const int peer_rank = rank ^ peer_rank_bit;
             _MALLOC_AND_CHECK(t, CTYPE, dim); // get all data(tmp.)
-            m->mpisendrecv(state, t, dim * 2, peer_rank); // CTYPE = MPI_DOUBLE * 2
+            m->m_DC_sendrecv(state, t, dim, peer_rank);
 #ifdef _OPENMP
 			UINT threshold = 13;
 			if (dim < (((ITYPE)1) << threshold)) {
@@ -350,7 +350,7 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
         if (target_qubit_index < inner_qc) {
             int target_rank_bit = 1 << (target_qubit_index - inner_qc);
             printf("#enter CNOT_gate_mpi, c-outer, t-inner, %d\n", target_qubit_index);
-            MPIutil m = get_instance();
+            MPIutil m = get_mpiutil();
             int rank = m->get_rank();
             if (rank & target_rank_bit) {
                 CNOT_gate(IS_OUTER_QB, target_qubit_index, state, dim);
@@ -359,15 +359,15 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
             printf("#enter CNOT_gate_mpi, c-outer, t-outer\n");
             int control_rank_bit0 = 1 << (control_qubit_index - inner_qc);
             int target_rank_bit1 = 1 << (target_qubit_index - inner_qc);
-            MPIutil m = get_instance();
+            MPIutil m = get_mpiutil();
             int rank = m->get_rank();
 			if (rank & control_rank_bit0) {
                 double* t = NULL;
                 _MALLOC_AND_CHECK(t, double, dim * 2);
                 int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
                 int peer_rank = rank ^ peer_rank_bit;
-                printf("#%d: call mpisendrecv, dim*2 = %lld, peer_rank=%d\n", rank, dim*2, peer_rank);
-                m->mpisendrecv(state, t, dim * 2, peer_rank);
+                printf("#%d: call m_DC_sendrecv, dim = %lld, peer_rank=%d\n", rank, dim, peer_rank);
+                m->m_DC_sendrecv(state, t, dim, peer_rank);
                 memcpy(state, t, dim * sizeof(CTYPE));
                 free(t);
             }

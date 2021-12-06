@@ -47,9 +47,9 @@ int main(int argc, char *argv[]) {
     //QuantumState state1(nqubits, (MPI_Comm)((intptr_t)MPI_COMM_WORLD+1)); // MPI_Comm warning check.
     //std::cout << state.to_string() << std::endl;
 
-    //state.set_Haar_random_state(1+_rank);
+    state.set_Haar_random_state(1+_rank);
     //state.set_computational_basis(0b00010);
-    state.set_computational_basis(0b0011);
+    //state.set_computational_basis(0b0011);
 
     //print_state_in_rank_order(&state);
     /*

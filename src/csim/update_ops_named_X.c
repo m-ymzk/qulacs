@@ -193,13 +193,13 @@ void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
     if (target_qubit_index < inner_qc){
         X_gate(target_qubit_index, state, dim);
     } else {
-        const MPIutil m = get_instance();
+        const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         CTYPE* t = NULL;
         const int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int peer_rank = rank ^ peer_rank_bit;
         _MALLOC_AND_CHECK(t, CTYPE, dim);
-        m->mpisendrecv(state, t, dim * 2, peer_rank); // CTYPE = MPI_DOUBLE * 2
+        m->m_DC_sendrecv(state, t, dim, peer_rank);
         memcpy(state, t, dim * sizeof(CTYPE));
         free(t);
     }

@@ -210,7 +210,7 @@ void single_qubit_phase_gate_mpi(UINT target_qubit_index, CTYPE phase, CTYPE *st
         single_qubit_phase_gate(target_qubit_index, phase, state, dim);
     } else {
         int target_rank_bit = 1 << (target_qubit_index - inner_qc);
-        MPIutil m = get_instance();
+        MPIutil m = get_mpiutil();
         int rank = m->get_rank();
         if (rank & target_rank_bit) {
             single_qubit_phase_gate(IS_OUTER_QB, phase, state, dim);

@@ -29,7 +29,7 @@ void QuantumCircuit::update_quantum_state(QuantumStateBase* state){
 
     for(const auto& gate : this->_gate_list){
 #ifdef _USE_MPI
-        //MPIutil m = get_instance();
+        //MPIutil m = get_mpiutil();
         //if (m->usempi()) m->barrier();
 #endif
         gate->update_quantum_state(state);

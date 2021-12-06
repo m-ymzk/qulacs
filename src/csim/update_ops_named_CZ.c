@@ -231,7 +231,7 @@ void CZ_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state
         }
     } else {
         //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
-        //MPIutil m = get_instance();
+        //MPIutil m = get_mpiutil();
         //int rank = m->get_rank();
         //if (rank & tgt_rank_bit){
             //single_qubit_phase_gate(ISOUTERQB, phase, state, dim);
