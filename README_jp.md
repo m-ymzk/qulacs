@@ -4,27 +4,24 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)のインスタンス生成時に、MPI communicatorを渡し、全MPIランクで分散配置させる。MPIランク数よりも小さなqubit(N)の場合、すなわち 2^(N - k) < MPI_sizeの場合は分散配置しない。ここでkは、1プロセスあたりの最少qubit数で、定数（現状：k=0）
+- state(QuantumState型)のインスタンス生成時に、MPI communicatorを渡し、全MPIランクで分散配置させる。MPIランク数( $S$ )よりも小さなqubit( $N$ )の場合、すなわち ${N-k} \leqq log_2S$ の場合は分散配置しない。ここで $k$ は、1プロセスあたりの最少qubit数で、ソースで定義された定数（現状：$k=1$ ）
 - 対応関数及び範囲は、制限事項を参照
 
 <hr>
 
 ## build/install
-### pip, setup.py (TBD)
+### pip, setup.py (現状fcc and/or MPI版は未サポート)
 ```bash
 $ python setup.py install
 ```
 
 ### source build
 ```bash
-（proxyが必要な環境の場合）
-$ export https_proxy=${PROXY}
-$ export http_proxy=${https_proxy}
-
 ## make venv
 $ python3 -m venv venv
 $ . ./venv/bin/activate
 $ pip install -U pip wheel
+
 （富士通コンパイラ環境の有効化）
 $ export TCSDS_PATH="/opt/FJSVstclanga/v1.1.0"
 $ export PATH=${TCSDS_PATH}/bin:$PATH
@@ -42,24 +39,33 @@ $ ./script/build_fcc.sh
 $ cd ict
 $ make
 $ mpirun -n 4 mpiqtest 20
-
-（qulacsのpython libraryとしてのインストールの場合：現状fcc and/or MPI版は未サポート）
-$ cd [qulacs-rep. home]
-$ python setup.py install
 ```
 <hr>
 
 ## 制限事項
+
+- ビルド時のオプション：
+  | ビルドオプション | MPI-qulacs対応値 | 説明 |
+  | -------- | -------- | -------- |
+  | _MSC_VAR | False    | windows環境には未対応 |
+  | _USE_SIMD | False   | avx2を想定しているため使用しない |
+  | _OPENMP  | Ture     | OpenMP有効 |
+  | _USE_MPI | Ture     | MPI対応で追加 |
+
+- 現状、pythonからのインタフェースには未対応（MPI-Communicator型を渡すとエラーになる。参考になりそうなOSSが見つかっているが、未着手）
 - 上記以外の関数は未対応または動作未確認
+- _USE_SIMDに未対応(現状、AVX2の場合のみであるため)
 - mpiexecでの実行時に指定できるランク数は2のべき数のみに対応
+- X-gate, CNOT-gate処理において、ノード内stateと同量のメモリを一時的に確保する仮方式となっているため、ノード当たりの最大qubit数は1bit少ない、29 qubit(ComplexTYPE 512M = 8GiB)が最大
 - 現状の対応範囲は以下の通り
   - QuantumStateインスタンスの作成
     - QuantumState state(qubits)
     プロセス内のメモリに作成
     - QuantumState state(qubits, MPI_COMM)
-    可能な限りMPIプロセス数で分散して作成
-       - inner_qubits: １ノード内のqubits
-       - outer_qubits: 分散配置されたqubits (=log2(rank数))
+    可能な限りMPIプロセス数で分散して作成する
+    qubits => inner_qb + outer_qb に分割
+       - inner_qb: １ノード内のqubits
+       - outer_qb: 分散配置されたqubits (=log2(rank数))
 
     - state.to_string()
       state情報を出力
@@ -83,12 +89,18 @@ ToDo: 乱数をseedとして設定しているが、rank間で被る可能性あ
 ToDo: MPI実行時、rank毎にnormを出してしまっている。
 ToDo: mpiの各ランクで同じseedとならないように、seed + rankを推奨。（内部でrankを足してしまうような仕様が良いかも？）
 
-  - gate_X
-    ex. circuit.add_X_gate(qb);
-      - ノード内qubit(qb<=inner_qubits)は従来と同じ動きとなる
-      - 分散配置されたqubit(qb>inner_qubits)
-      rank番号の2bit表記：0b0000_0000
-
-  - gate_S, gate_Sdag, gate_T, gate_Tdag
-
+- 対応済みリスト（動作するもの全てではありません）
+  - QuantumState
+      - Constructor (with MPI-Communicator)
+      - set_computational_basis
+      - to_string (each rank output)
+  - gate
+      - CNOT
+      - H
+      - Identity
+      - S
+      - Sdag
+      - T
+      - Tdag
+      - X
 
