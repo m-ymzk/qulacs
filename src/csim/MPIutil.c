@@ -54,7 +54,7 @@ static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank
     int mpi_tag2 = mpi_tag1 ^ 1;
     //int mpi_tag1 = tag0 + (mpirank & 0xFFFE);
     //int mpi_tag2 = mpi_tag1 ^ 1;
-    printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count, mpirank, peer_rank, mpi_tag1, mpi_tag2);
+    //printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count, mpirank, peer_rank, mpi_tag1, mpi_tag2);
     MPI_Sendrecv(sendbuf, count, MPI_DOUBLE_COMPLEX, peer_rank, mpi_tag1,
                  recvbuf, count, MPI_DOUBLE_COMPLEX, peer_rank, mpi_tag2,
                  mpicomm, &mpistat);
@@ -78,10 +78,10 @@ static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank
 }
 
 static double s_D_allreduce(double a){
-    printf("#%d: s_D_allreduce: %f\n", mpirank, a);
+    //printf("#%d: s_D_allreduce: %f\n", mpirank, a);
     double ret;
     MPI_Allreduce(&a, &ret, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
-    if (mpirank == 0) printf("#%d: s_D_allreduce(result): %f\n", mpirank, ret);
+    //if (mpirank == 0) printf("#%d: s_D_allreduce(result): %f\n", mpirank, ret);
     return ret;
 }
 /*

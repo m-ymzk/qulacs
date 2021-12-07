@@ -31,12 +31,11 @@ $ export LD_LIBRARY_PATH="${TCSDS_PATH}/lib64:${LD_LIBRARY_PATH}"
 $ MPICC=mpifcc pip install mpi4py
 
 ## qulacs ライブラリのbiuld
-$ git clone https://github.com/qulacs/qulacs.git
-$ cd qulacs
+$ cd [qulacs-home]
 $ ./script/build_fcc.sh
 
 ## sample by ict-labs
-$ cd ict
+$ cd [qulacs-home]/ict
 $ make
 $ mpirun -n 4 mpiqtest 20
 ```
@@ -53,8 +52,6 @@ $ mpirun -n 4 mpiqtest 20
   | _USE_MPI  | True     | MPI対応で追加 |
 
 - 現状、pythonからのインタフェースには未対応（MPI-Communicator型を渡すとエラーになる。参考になりそうなOSSが見つかっているが、未着手）
-- 上記以外の関数は未対応または動作未確認
-- _USE_SIMDに未対応(現状、AVX2の場合のみであるため)
 - mpiexecでの実行時に指定できるランク数は2のべき数のみに対応
 - X-gate, CNOT-gate処理において、ノード内stateと同量のメモリを一時的に確保する仮方式となっているため、ノード当たりの最大qubit数は1bit少ない、29 qubit(ComplexTYPE 512M = 8GiB)が最大
 - 現状の対応範囲は以下の通り
@@ -82,11 +79,9 @@ $ mpirun -n 4 mpiqtest 20
         ```
   - state.set_Haar_random_state();
 各要素を乱数で初期化する。(norm=1)
-ToDo: MPI実行時、rank毎にnormを出してしまっている。
 ToDo: 乱数をseedとして設定しているが、rank間で被る可能性あり。（内部でrankを足してしまうような仕様が良いかも？）
   - state.set_Haar_random_state(seed);
 各要素を乱数で初期化する。(norm=1)
-ToDo: MPI実行時、rank毎にnormを出してしまっている。
 ToDo: mpiの各ランクで同じseedとならないように、seed + rankを推奨。（内部でrankを足してしまうような仕様が良いかも？）
 
 - 対応済みリスト（動作するもの全てではありません）

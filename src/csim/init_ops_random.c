@@ -41,7 +41,6 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
     const int ignore_first = 40;
     double norm = 0.;
     unsigned long random_state[4];
-    MPIutil m = get_mpiutil();
     srand(seed);
     random_state[0] = rand();
     random_state[1] = rand();
@@ -55,6 +54,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
         state[index] = r1 + 1.i * r2;
         norm += r1 * r1 + r2 * r2;
     }
+    MPIutil m = get_mpiutil();
     norm = m->s_D_allreduce(norm);
     norm = sqrt(norm);
     for (ITYPE index = 0; index < dim; ++index) {
@@ -104,7 +104,8 @@ void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UI
     for (UINT i = 0; i < thread_count; ++i) {
         normalizer += norm_list[i];
     }
-    // TODO : multiply MPI_size or mpi_allreduce(normalizer)?
+    MPIutil m = get_mpiutil();
+    normalizer = m->s_D_allreduce(normalizer);
     normalizer = 1./sqrt(normalizer);
 
 #pragma omp parallel for

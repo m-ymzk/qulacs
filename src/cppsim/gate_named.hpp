@@ -51,7 +51,7 @@ public:
 #endif
 		}
 		else {
-            std::cout << "#update qstate-1qubit, dm " << state->inner_qc << ", " << this->_target_qubit_list[0].index() << std::endl;
+            //std::cout << "#update qstate-1qubit, dm " << state->inner_qc << ", " << this->_target_qubit_list[0].index() << std::endl;
 			_update_func_dm(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 		}
     };
@@ -107,8 +107,8 @@ public:
 #ifdef _USE_MPI
             // index x 2, state, dim
             if (state->inner_qc > this->_target_qubit_list[0].index()) {
-                std::cout << "#update qstate-2qubit " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
-                    << ", " << this->_target_qubit_list[1].index() << std::endl;
+                //std::cout << "#update qstate-2qubit " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
+                //    << ", " << this->_target_qubit_list[1].index() << std::endl;
 			    _update_func_mpi(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim, state->inner_qc);
             }
 #else //#ifdef _USE_MPI
@@ -171,8 +171,8 @@ public:
 #else
 #ifdef _USE_MPI
             // control-index, target-index, data, dim
-            std::cout << "#update qstate-controled1qubit " << state->inner_qc << ", " << this->_control_qubit_list[0].index()
-                << ", " << this->_target_qubit_list[0].index() << std::endl;
+            //std::cout << "#update qstate-controled1qubit " << state->inner_qc << ", " << this->_control_qubit_list[0].index()
+            //    << ", " << this->_target_qubit_list[0].index() << std::endl;
 			_update_func_mpi(this->_control_qubit_list[0].index(), this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
 #else //#ifdef _USE_MPI
             // control-index, target-index, data, dim
@@ -236,8 +236,8 @@ public:
 #else
 #ifdef _USE_MPI
             // control-index, target-index, data, dim
-            std::cout << "#update qstate-OneQubitRotation " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
-                << ", " << _angle << std::endl;
+            //std::cout << "#update qstate-OneQubitRotation " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
+            //    << ", " << _angle << std::endl;
 			_update_func_mpi(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim, state->inner_qc);
 #else //#ifdef _USE_MPI
             // index, angle, data, dim

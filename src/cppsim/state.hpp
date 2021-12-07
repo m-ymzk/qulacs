@@ -87,7 +87,7 @@ public:
         this->_dim = 1ULL << _inner_qc; // qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number=0;
-        std::cout << "#" << this ->_rank << ": make state vector: inner_qc= " << this->_inner_qc << ", outer_qc= " << this->_outer_qc << std::endl;
+        //std::cout << "#" << this ->_rank << ": make state vector: inner_qc= " << this->_inner_qc << ", outer_qc= " << this->_outer_qc << std::endl;
     }
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
         qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
@@ -403,7 +403,7 @@ public:
         }
         set_zero_state();
         _state_vector[0] = 0.;
-        std::cout << "#" << this ->_rank << ": set computational basis: comp_basis= " << comp_basis << ", outer_qc= " << this->_outer_qc << std::endl;
+        //std::cout << "#" << this ->_rank << ": set computational basis: comp_basis= " << comp_basis << ", outer_qc= " << this->_outer_qc << std::endl;
         if (comp_basis >> this->inner_qc == (ITYPE)this->_rank) {
             _state_vector[comp_basis & (_dim - 1)] = 1.;
         }
