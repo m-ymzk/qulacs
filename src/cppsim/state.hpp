@@ -300,30 +300,41 @@ public:
      * @return 生成した文字列
      */
     virtual std::string to_string() const {
-        ITYPE MAX_OUTPUT_ELEMS = std::max(2, 256 / _size); // per rank.
+        const ITYPE MAX_OUTPUT_ELEMS = 256;
         std::stringstream os;
-        ITYPE _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
+        ITYPE _dim_out;
+        if (this->_outer_qc > 0)
+            _dim_out = std::max((ITYPE)2, std::min(MAX_OUTPUT_ELEMS / _size, this->dim));
+        else
+            _dim_out = std::min(this->dim, MAX_OUTPUT_ELEMS);
+
         ComplexVector eigen_state(_dim_out);
         auto data = this->data_cpp();
         MPIutil m = get_mpiutil();
 
-        for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
+        UINT j=0;
+        for (UINT i = _dim - _dim_out; i < _dim; ++i) eigen_state[j++] = data[i];
+        //for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
         if (_rank == 0){
             os << " *** Quantum State ***" << std::endl;
-            os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
-            os << " * Qubit Count : " << this->qubit_count
-               << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
-            os << " * Dimension   : " << this->dim << std::endl;
-            if (this->dim > MAX_OUTPUT_ELEMS){
-                if (_size == 1)
-                    os << " * state vector is too long, so the " << MAX_OUTPUT_ELEMS << " elements are output." << std::endl;
-                else
-                    os << " * state vector is too long, so the (" << MAX_OUTPUT_ELEMS << " x " << _size << ") elements are output." << std::endl;
-            }
-            if (_size == 1)
+            //os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
+            if (this->_outer_qc == 0) {
+                os << " * Qubit Count : " << this->qubit_count << std::endl;
+                os << " * Dimension   : " << this->dim << std::endl;
+                if (_dim_out < this->dim) {
+                    os << " * state vector is too long, so the " << _dim_out << " elements are output." << std::endl;
+                }
                 os << " * State vector: \n" << eigen_state << std::endl;
-            else
+            }
+            else {
+                os << " * Qubit Count : " << this->qubit_count
+                   << " (inner / outer : " << this->_inner_qc << " / " << this->_outer_qc << " )" << std::endl;
+                os << " * Dimension   : " << this->dim * _size << std::endl;
+                if (_dim_out < this->dim) {
+                    os << " * state vector is too long, so the (" << _dim_out << " x " << _size << ") elements are output." << std::endl;
+                }
                 os << " * State vector (rank 0): \n" << eigen_state << std::endl;
+            }
         }
         else {
             if (this->_outer_qc > 0) {
