@@ -6,7 +6,6 @@
 #include <cppsim/observable.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_merge.hpp>
-#include "mpi.h"
 
 double get_realtime(void) {
     struct timespec t;
