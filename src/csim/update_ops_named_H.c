@@ -228,26 +228,29 @@ void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         CTYPE* t = NULL;
-        const int peer_rank_bit = 1 << (target_qubit_index - inner_qc);
-        const int peer_rank = rank ^ peer_rank_bit;
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+        const int pair_rank = rank ^ pair_rank_bit;
         _MALLOC_AND_CHECK(t, CTYPE, dim);
-        m->m_DC_sendrecv(state, t, dim, peer_rank);
+        m->m_DC_sendrecv(state, t, dim, pair_rank);
 
 		#ifdef _OPENMP
 			UINT threshold = 13;
 			if (dim < (((ITYPE)1) << threshold)) {
-				H_gate_single_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+				H_gate_single_unroll_mpi(t, state, dim, rank & pair_rank_bit);
 			}
 			else {
-				H_gate_parallel_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+				H_gate_parallel_unroll_mpi(t, state, dim, rank & pair_rank_bit);
 			}
 		#else
-			H_gate_single_unroll_mpi(t, state, dim, rank & peer_rank_bit);
+			H_gate_single_unroll_mpi(t, state, dim, rank & pair_rank_bit);
 		#endif
         free(t);
     }
 }
 
+// flag: My qubit(target in outer_qubit) value.
+//       0: My value is 0, transfered is 1.
+//       1: My value is 1, transfered is 0.
 void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
 	const ITYPE loop_dim = dim;
 	const double sqrt2inv = 1. / sqrt(2.);
@@ -258,12 +261,12 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
 		CTYPE temp_b0 = state[state_index + 1];
 		CTYPE temp_b1 = t[state_index + 1];
 		if (flag) {
-			state[state_index] = (t[state_index] - state[state_index])*sqrt2inv;
-			state[state_index + 1] = (t[state_index + 1] - state[state_index + 1])*sqrt2inv;
-		}
-		else {
 			state[state_index] = (temp_a0 + temp_a1)*sqrt2inv;
 			state[state_index + 1] = (temp_b0 + temp_b1)*sqrt2inv;
+		}
+		else {
+			state[state_index] = (temp_a0 - temp_a1)*sqrt2inv;
+			state[state_index + 1] = (temp_b0 - temp_b1)*sqrt2inv;
 		}
 	}
 }
@@ -276,16 +279,16 @@ void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
 #pragma omp parallel for
 	for (state_index = 0; state_index < loop_dim; state_index += 2) {
 		CTYPE temp_a0 = state[state_index];
-		CTYPE temp_a1 = state[state_index];
+		CTYPE temp_a1 = t[state_index];
 		CTYPE temp_b0 = state[state_index + 1];
-		CTYPE temp_b1 = state[state_index + 1];
+		CTYPE temp_b1 = t[state_index + 1];
 		if (flag) {
-			state[state_index] = (temp_a0 - temp_a1)*sqrt2inv;
-			state[state_index + 1] = (temp_b0 - temp_b1)*sqrt2inv;
-		}
-		else {
 			state[state_index] = (temp_a0 + temp_a1)*sqrt2inv;
 			state[state_index + 1] = (temp_b0 + temp_b1)*sqrt2inv;
+		}
+		else {
+			state[state_index] = (temp_a0 - temp_a1)*sqrt2inv;
+			state[state_index + 1] = (temp_b0 - temp_b1)*sqrt2inv;
 		}
 	}
 }
