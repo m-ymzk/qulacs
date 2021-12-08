@@ -47,30 +47,30 @@ static void barrier() {
     MPI_Barrier(mpicomm);
 }
 
-static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int peer_rank) {
+static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
-    //if (peer_rank
-    int mpi_tag1 = tag0 + ((mpirank & peer_rank)<<1) + (mpirank > peer_rank);
+    //if (pair_rank
+    int mpi_tag1 = tag0 + ((mpirank & pair_rank)<<1) + (mpirank > pair_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
     //int mpi_tag1 = tag0 + (mpirank & 0xFFFE);
     //int mpi_tag2 = mpi_tag1 ^ 1;
-    //printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count, mpirank, peer_rank, mpi_tag1, mpi_tag2);
-    MPI_Sendrecv(sendbuf, count, MPI_DOUBLE_COMPLEX, peer_rank, mpi_tag1,
-                 recvbuf, count, MPI_DOUBLE_COMPLEX, peer_rank, mpi_tag2,
+    //printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count, mpirank, pair_rank, mpi_tag1, mpi_tag2);
+    MPI_Sendrecv(sendbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+                 recvbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag2,
                  mpicomm, &mpistat);
     /*
     MPI_Isend(sendbuf, sendcount, MPI_DOUBLE,
-              peer_rank, mpi_tag, comm, & (send_request));
+              pair_rank, mpi_tag, comm, & (send_request));
     MPI_Irecv(recvbuf, recvcount, MPI_DOUBLE,
-              peer_rank, mpi_tag ^ 0x1, comm, & (recv_request));
+              pair_rank, mpi_tag ^ 0x1, comm, & (recv_request));
     */
         //case TypeISend:
         //    MPI_Isend(sendbuf, sendcount, MPI_DOUBLE,
-        //              peer_rank, mpi_tag, comm, & (send_request));
+        //              pair_rank, mpi_tag, comm, & (send_request));
         //    break;
         //case TypeIRecv:
         //    MPI_Irecv(recvbuf, recvcount, MPI_DOUBLE,
-        //              peer_rank, mpi_tag ^ 0x1, comm, & (recv_request));
+        //              pair_rank, mpi_tag ^ 0x1, comm, & (recv_request));
     //        break;
     //    default:
     //        //assert(0); // "Undefined communication type is given"

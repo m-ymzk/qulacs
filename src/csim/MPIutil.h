@@ -27,7 +27,7 @@ typedef struct {
     double (*s_D_allreduce)();
     //void (*send_osstr)(char* sendbuf, int len);
     //void (*recv_osstr)(char* recvbuf, int len);
-    void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int peer_rank);
+    void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int pair_rank);
 } *MPIutil;
 
 MPIutil get_mpiutil(void);
