@@ -48,6 +48,7 @@ public:
     const ITYPE& dim; /**< \~japanese-en 量子状態の次元 */
     const std::vector<UINT>& classical_register; /**< \~japanese-en 古典ビットのレジスタ */
     const UINT& device_number;
+
     /**
      * \~japanese-en コンストラクタ
      * 
@@ -59,10 +60,12 @@ public:
     {
         this->_inner_qc = qubit_count_;
         this->_qubit_count = qubit_count_;
-        this->_dim = 1ULL << _inner_qc; // qubit_count_;
+        this->_dim = 1ULL << qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number=0;
     }
+
+#ifdef _USE_MPI
     QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
         qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
@@ -89,6 +92,8 @@ public:
         this->_device_number=0;
         //std::cout << "#" << this ->_rank << ": make state vector: inner_qc= " << this->_inner_qc << ", outer_qc= " << this->_outer_qc << std::endl;
     }
+#endif
+
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
         qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
@@ -99,6 +104,7 @@ public:
         this->_is_state_vector = is_state_vector;
         this->_device_number = device_number_;
     }
+
     /**
      * \~japanese-en デストラクタ
      */
@@ -388,7 +394,7 @@ public:
     }
     QuantumStateCpu(UINT qubit_count_, MPI_Comm comm) : QuantumStateBase(qubit_count_, comm, true){
         this->_state_vector = reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
-        initialize_quantum_state_rank(this->data_c(), _dim, _rank);
+        initialize_quantum_state_mpi(this->data_c(), _dim, _rank);
     }
     /**
      * \~japanese-en デストラクタ
