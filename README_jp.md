@@ -79,15 +79,17 @@ $ mpirun -n 4 mpiqtest 20
         ```
   - state.set_Haar_random_state();
 各要素を乱数で初期化する。(norm=1)
-ToDo: 乱数をseedとして設定しているが、rank間で被る可能性あり。（内部でrankを足してしまうような仕様が良いかも？）
+注意事項：内部で乱数をseedとして設定しているが、rank間で被る可能性があるため、マルチノードでの使用は推奨しない。
   - state.set_Haar_random_state(seed);
 各要素を乱数で初期化する。(norm=1)
-ToDo: mpiの各ランクで同じseedとならないように、seed + rankを推奨。（内部でrankを足してしまうような仕様が良いかも？）
+注意事項：mpiの各ランクで同じseedとならないように、seed + rankの設定を推奨。
+注意事項：分割有無、分割数が異なる場合、同じseedを設定しても、作成される状態は異なる
 
 - 対応済みリスト（動作するもの全てではありません）
   - QuantumState
       - Constructor (with MPI-Communicator)
       - set_computational_basis
+      - set_Haar_random_state
       - to_string (each rank output)
   - gate
       - CNOT
