@@ -8,6 +8,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 // state randomization
 unsigned long xor128(unsigned long* state);
 double random_uniform(unsigned long* state);
@@ -50,6 +54,10 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
         state[index] = r1 + 1.i * r2;
         norm += r1 * r1 + r2 * r2;
     }
+#ifdef _USE_MPI
+    MPIutil m = get_mpiutil();
+    norm = m->s_D_allreduce(norm);
+#endif
     norm = sqrt(norm);
     for (ITYPE index = 0; index < dim; ++index) {
         state[index] /= norm;
@@ -98,6 +106,10 @@ void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UI
     for (UINT i = 0; i < thread_count; ++i) {
         normalizer += norm_list[i];
     }
+#ifdef _USE_MPI
+    MPIutil m = get_mpiutil();
+    normalizer = m->s_D_allreduce(normalizer);
+#endif
     normalizer = 1./sqrt(normalizer);
 
 #pragma omp parallel for

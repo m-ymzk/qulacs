@@ -1,9 +1,16 @@
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+#ifdef _USE_MPI
+#include "MPIutil.h"
 #endif
 
 #ifdef _USE_SIMD
@@ -74,11 +81,11 @@ void X_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			ITYPE basis_index_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
 			ITYPE basis_index_1 = basis_index_0 + mask;
 			CTYPE temp0 = state[basis_index_0];
-			CTYPE temp1 = state[basis_index_0+1];
+			CTYPE temp1 = state[basis_index_0 + 1];
 			state[basis_index_0] = state[basis_index_1];
-			state[basis_index_0+1] = state[basis_index_1+1];
+			state[basis_index_0 + 1] = state[basis_index_1 + 1];
 			state[basis_index_1] = temp0;
-			state[basis_index_1+1] = temp1;
+			state[basis_index_1 + 1] = temp1;
 		}
 	}
 }
@@ -181,6 +188,23 @@ void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 #endif
 
+#ifdef _USE_MPI
+void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (target_qubit_index < inner_qc){
+        X_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        CTYPE* t = NULL;
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+        const int pair_rank = rank ^ pair_rank_bit;
+        _MALLOC_AND_CHECK(t, CTYPE, dim);
+        m->m_DC_sendrecv(state, t, dim, pair_rank);
+        memcpy(state, t, dim * sizeof(CTYPE));
+        free(t);
+    }
+}
+#endif
 
 /*
 

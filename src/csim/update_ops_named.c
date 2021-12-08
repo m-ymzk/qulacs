@@ -29,6 +29,20 @@ void T_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim){
 void Tdag_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim){
     single_qubit_phase_gate(target_qubit_index, (1.-1.i)/sqrt(2.), state, dim);
 }
+#ifdef _USE_MPI
+void S_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc){
+    single_qubit_phase_gate_mpi(target_qubit_index, 1.i, state, dim, inner_qc);
+}
+void Sdag_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc){
+    single_qubit_phase_gate_mpi(target_qubit_index, -1.i, state, dim, inner_qc);
+}
+void T_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc){
+    single_qubit_phase_gate_mpi(target_qubit_index, (1.+1.i)/sqrt(2.), state, dim, inner_qc);
+}
+void Tdag_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc){
+    single_qubit_phase_gate_mpi(target_qubit_index, (1.-1.i)/sqrt(2.), state, dim, inner_qc);
+}
+#endif
 void sqrtX_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim){
     single_qubit_dense_matrix_gate(target_qubit_index, SQRT_X_GATE_MATRIX, state, dim);
 }

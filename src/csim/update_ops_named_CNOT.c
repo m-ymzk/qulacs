@@ -1,9 +1,15 @@
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+#ifdef _USE_MPI
+#include "MPIutil.h"
 #endif
 
 #ifdef _USE_SIMD
@@ -71,7 +77,17 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index, 
 	const ITYPE high_mask = ~(max_qubit_mask - 1);
 
 	ITYPE state_index = 0;
-	if (target_qubit_index == 0) {
+	if (control_qubit_index == IS_OUTER_QB) {
+		for (state_index = 0; state_index < (loop_dim * 2); ++state_index) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&(~low_mask)) << 1);
+			ITYPE basis_index_1 = basis_index_0 + target_mask;
+			CTYPE temp = state[basis_index_0];
+			state[basis_index_0] = state[basis_index_1];
+			state[basis_index_1] = temp;
+		}
+	}
+	else if (target_qubit_index == 0) {
 		// swap neighboring two basis
 		for (state_index = 0; state_index < loop_dim; ++state_index) {
 			ITYPE basis_index = ((state_index&mid_mask) << 1)
@@ -300,8 +316,142 @@ void CNOT_gate_parallel_simd(UINT control_qubit_index, UINT target_qubit_index, 
 	}
 }
 #endif
-
 #endif
+
+#ifdef _USE_MPI
+void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (control_qubit_index < inner_qc){
+        if (target_qubit_index < inner_qc){
+            //printf("#enter CNOT_gate_mpi, c-inner, t-inner\n");
+            CNOT_gate(control_qubit_index, target_qubit_index, state, dim);
+        } else {
+            //printf("#enter CNOT_gate_mpi, c-inner, t-outer\n");
+            const MPIutil m = get_mpiutil();
+            const int rank = m->get_rank();
+            CTYPE* t = NULL;
+            const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+            const int pair_rank = rank ^ pair_rank_bit;
+            // get all data from pair rank.(same target-qubit)
+            _MALLOC_AND_CHECK(t, CTYPE, dim);
+            m->m_DC_sendrecv(state, t, dim, pair_rank);
+#ifdef _OPENMP
+			UINT threshold = 13;
+			if (dim < (((ITYPE)1) << threshold)) {
+				CNOT_gate_single_unroll_mpi(control_qubit_index, state, t, dim);
+			}
+			else {
+				CNOT_gate_parallel_unroll_mpi(control_qubit_index, state, t, dim);
+			}
+#else
+			CNOT_gate_single_unroll_mpi(control_qubit_index, state, t, dim);
+#endif
+            free(t);
+        }
+    } else {
+        if (target_qubit_index < inner_qc) {
+            int target_rank_bit = 1 << (target_qubit_index - inner_qc);
+            //printf("#enter CNOT_gate_mpi, c-outer, t-inner, %d\n", target_qubit_index);
+            MPIutil m = get_mpiutil();
+            int rank = m->get_rank();
+            if (rank & target_rank_bit) {
+                CNOT_gate(IS_OUTER_QB, target_qubit_index, state, dim);
+            } // if else, nothing to do.
+        } else {
+            //printf("#enter CNOT_gate_mpi, c-outer, t-outer\n");
+            int control_rank_bit0 = 1 << (control_qubit_index - inner_qc);
+            int target_rank_bit1 = 1 << (target_qubit_index - inner_qc);
+            MPIutil m = get_mpiutil();
+            int rank = m->get_rank();
+			if (rank & control_rank_bit0) {
+                double* t = NULL;
+                _MALLOC_AND_CHECK(t, double, dim * 2);
+                int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+                int pair_rank = rank ^ pair_rank_bit;
+                //printf("#%d: call m_DC_sendrecv, dim = %lld, pair_rank=%d\n", rank, dim, pair_rank);
+                m->m_DC_sendrecv(state, t, dim, pair_rank);
+                memcpy(state, t, dim * sizeof(CTYPE));
+                free(t);
+            }
+			else {
+				m->get_tag(); // dummy to count up tag
+			}
+        }
+    }
+}
+
+// CNOT_gate_mpi, control_qubit_index is inner, target_qubit_index is outer.
+void CNOT_gate_single_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *target, ITYPE dim) {
+    //printf("#enter CNOT_gate_single_unroll_mpi\n");
+	const ITYPE loop_dim = dim / 2;
+
+	const ITYPE control_mask = 1ULL << control_qubit_index;
+
+	const UINT min_qubit_index = control_qubit_index;
+	const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+	const ITYPE max_qubit_mask = dim;
+	const ITYPE low_mask = min_qubit_mask - 1;
+	const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+
+	ITYPE state_index = 0;
+	if (control_qubit_index == 0) {
+		// no neighboring swap
+		for (state_index = 0; state_index < loop_dim; ++state_index) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&mid_mask) << 1)
+				+ control_mask;
+			state[basis_index_0] = target[basis_index_0];
+		}
+	}
+	else {
+		// a,a+1 is swapped to a^m, a^m+1, respectively
+		for (state_index = 0; state_index < loop_dim; state_index += 2) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&mid_mask) << 1)
+				+ control_mask;
+			state[basis_index_0] = target[basis_index_0];
+			state[basis_index_0 + 1] = target[basis_index_0 + 1];
+		}
+	}
+}
+
+#ifdef _OPENMP
+void CNOT_gate_parallel_unroll_mpi(UINT control_qubit_index, CTYPE *state, CTYPE *target, ITYPE dim) {
+    //printf("#enter CNOT_gate_parallel_unroll_mpi\n");
+	const ITYPE loop_dim = dim / 2;
+
+	const ITYPE control_mask = 1ULL << control_qubit_index;
+
+	const UINT min_qubit_index = control_qubit_index;
+	const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+	const ITYPE max_qubit_mask = dim;
+	const ITYPE low_mask = min_qubit_mask - 1;
+	const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+
+	ITYPE state_index = 0;
+	if (control_qubit_index == 0) {
+		// no neighboring swap
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; ++state_index) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&mid_mask) << 1)
+				+ control_mask;
+			state[basis_index_0] = target[basis_index_0];
+		}
+	}
+	else {
+		// a,a+1 is swapped to a^m, a^m+1, respectively
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; state_index += 2) {
+			ITYPE basis_index_0 = (state_index&low_mask)
+				+ ((state_index&mid_mask) << 1)
+				+ control_mask;
+			state[basis_index_0] = target[basis_index_0];
+			state[basis_index_0 + 1] = target[basis_index_0 + 1];
+		}
+	}
+}
+#endif //#ifdef _OPENMP
+#endif //#ifdef _USE_MPI
 
 /*
 

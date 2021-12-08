@@ -3,6 +3,16 @@
 #include "type.h"
 #include "constant.h"
 
+#define _MALLOC_AND_CHECK(ptr, type, size)                             \
+  if (size != 0) {                                                     \
+    ptr = (type *)malloc(sizeof(type) * size);                         \
+    if (ptr == NULL) {                                                 \
+      fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__, \
+              __LINE__);                                               \
+      exit(1);                                                         \
+    }                                                                  \
+  }
+
 /**
  * Insert 0 to qubit_index-th bit of basis_index. basis_mask must be 1ULL << qubit_index.
  */

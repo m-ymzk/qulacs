@@ -25,15 +25,17 @@ else
     CXXFLAGS += -Kfast -DNDEBUG
     DEBUG_FLAG =
 endif
+CFLAGS   += -D_USE_MPI
+CXXFLAGS += -D_USE_MPI
 
-$(warning MAKE = $(MAKE))
+#$(warning MAKE = $(MAKE))
 $(warning CXX = $(CXX))
 $(warning CXXFLAGS = $(CXXFLAGS))
 
 #OLD_SHELL := $(SHELL)
 #SHELL = $(warning [Making: $@]   [Dependencies: $^]   [Changed: $?])$(OLD_SHELL)
 
-TARGET := qtest qbench
+TARGET := qtest qbench mpiqtest mpiqbench
 
 .PHONY : all clean test $(POCL_DIR)
 .DEFAULT : all

@@ -21,8 +21,9 @@ extern "C"{
  * \~japanese-en Identityゲート
  */
 class ClsIGate : public QuantumGate_OneQubit{
-    static void idling(UINT,CTYPE*,ITYPE){};
+    static void idling(UINT, CTYPE*, ITYPE){};
 	static void idling_gpu(UINT, void*, ITYPE, void*, UINT) {};
+    static void idling_mpi(UINT, CTYPE*, ITYPE, UINT){};
 public:
     /**
      * \~japanese-en コンストラクタ
@@ -33,6 +34,7 @@ public:
         this->_update_func = ClsIGate::idling;
 		this->_update_func_dm = ClsIGate::idling;
 		this->_update_func_gpu = ClsIGate::idling_gpu;
+		this->_update_func_mpi = ClsIGate::idling_mpi;
 		this->_name = "I";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE | FLAG_Y_COMMUTE | FLAG_Z_COMMUTE ));
         this->_gate_property = FLAG_PAULI | FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -56,6 +58,9 @@ public:
 		this->_update_func_dm = dm_X_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = X_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = X_gate_mpi;
 #endif
         this->_name = "X";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE ));
@@ -81,6 +86,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = Y_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = Y_gate_mpi;
+#endif
         this->_name = "Y";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE ));
         this->_gate_property = FLAG_PAULI | FLAG_CLIFFORD;
@@ -105,6 +113,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = Z_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = Z_gate_mpi;
+#endif
 	    this->_name = "Z";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE ));
         this->_gate_property = FLAG_PAULI | FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -128,6 +139,9 @@ public:
 		this->_update_func_dm = dm_H_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = H_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = H_gate_mpi;
 #endif
 	    this->_name = "H";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
@@ -154,6 +168,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = S_gate_host;
 #endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = S_gate_mpi;
+#endif
         this->_name = "S";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
         this->_gate_property = FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -177,6 +194,9 @@ public:
 		this->_update_func_dm = dm_Sdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = Sdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = Sdag_gate_mpi;
 #endif
         this->_name = "Sdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
@@ -202,6 +222,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = T_gate_host;
 #endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = T_gate_mpi;
+#endif
         this->_name = "T";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
         this->_gate_property = FLAG_GAUSSIAN;
@@ -225,6 +248,9 @@ public:
 		this->_update_func_dm = dm_Tdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = Tdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		this->_update_func_mpi = Tdag_gate_mpi;
 #endif
         this->_name = "Tdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
@@ -250,6 +276,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = sqrtX_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = sqrtX_gate_mpi;
+#endif
         this->_name = "sqrtX";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE));
         this->_gate_property = FLAG_CLIFFORD;
@@ -273,6 +302,9 @@ public:
 		this->_update_func_dm = dm_sqrtXdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = sqrtXdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = sqrtXdag_gate_mpi;
 #endif
         this->_name = "sqrtXdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE));
@@ -298,6 +330,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = sqrtY_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = sqrtY_gate_mpi;
+#endif
         this->_name = "sqrtY";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
         this->_gate_property = FLAG_CLIFFORD;
@@ -321,6 +356,9 @@ public:
 		this->_update_func_dm = dm_sqrtYdag_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = sqrtYdag_gate_host;
+#endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = sqrtYdag_gate_mpi;
 #endif
         this->_name = "sqrtYdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
@@ -346,6 +384,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = P0_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = P0_gate_mpi;
+#endif
         this->_name = "Projection-0";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
         this->_gate_property = FLAG_CLIFFORD | FLAG_GAUSSIAN;
@@ -369,6 +410,9 @@ public:
 		this->_update_func_dm = dm_P1_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = P1_gate_host;
+#endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = P1_gate_mpi;
 #endif
         this->_name = "Projection-1";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
@@ -395,6 +439,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = RX_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = RX_gate_mpi;
+#endif
         this->_name = "X-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE ));
         this->_matrix_element = ComplexMatrix::Zero(2,2);
@@ -419,6 +466,9 @@ public:
 #ifdef _USE_GPU
 		this->_update_func_gpu = RY_gate_host;
 #endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = RY_gate_mpi;
+#endif
         this->_name = "Y-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
         this->_matrix_element = ComplexMatrix::Zero(2, 2);
@@ -442,6 +492,9 @@ public:
 		this->_update_func_dm = dm_RZ_gate;
 #ifdef _USE_GPU
 		this->_update_func_gpu = RZ_gate_host;
+#endif
+#ifdef _USE_MPI
+		//this->_update_func_mpi = RZ_gate_mpi;
 #endif
         this->_name = "Z-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
