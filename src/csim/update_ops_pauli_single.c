@@ -48,8 +48,7 @@ void single_qubit_Pauli_rotation_gate(UINT target_qubit_index, UINT Pauli_operat
 	}
 }
 
-void RX_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
-	CTYPE matrix[4];
+static inline void _get_matrix_RX(double angle, CTYPE* matrix){
 	double c, s;
 	c = cos(angle / 2);
 	s = sin(angle / 2);
@@ -57,11 +56,28 @@ void RX_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
 	matrix[1] = 1.i*s;
 	matrix[2] = 1.i*s;
 	matrix[3] = c;
+}
+
+void RX_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
+	CTYPE matrix[4];
+	_get_matrix_RX(angle, matrix);
 	single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
 }
 
-void RY_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
+#ifdef _USE_MPI
+void RX_gate_mpi(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim, UINT inner_qc) {
 	CTYPE matrix[4];
+	_get_matrix_RX(angle, matrix);
+	if (target_qubit_index < inner_qc){
+	    single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
+	}
+	else {
+		single_qubit_dense_matrix_gate_mpi(target_qubit_index, matrix, state, dim, inner_qc);
+	}
+}
+#endif
+
+static inline void _get_matrix_RY(double angle, CTYPE* matrix){
 	double c, s;
 	c = cos(angle / 2);
 	s = sin(angle / 2);
@@ -69,17 +85,50 @@ void RY_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
 	matrix[1] = s;
 	matrix[2] = -s;
 	matrix[3] = c;
+}
+
+void RY_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
+	CTYPE matrix[4];
+	_get_matrix_RY(angle, matrix);
 	single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
 }
 
-void RZ_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
-	CTYPE diagonal_matrix[2];
+#ifdef _USE_MPI
+void RY_gate_mpi(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim, UINT inner_qc) {
+	CTYPE matrix[4];
+	_get_matrix_RY(angle, matrix);
+	if (target_qubit_index < inner_qc){
+	    single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
+	}
+	else {
+		single_qubit_dense_matrix_gate_mpi(target_qubit_index, matrix, state, dim, inner_qc);
+	}
+}
+#endif
+
+static inline void _get_matrix_RZ(double angle, CTYPE* diagonal_matrix){
 	double c, s;
 	c = cos(angle / 2);
 	s = sin(angle / 2);
 	diagonal_matrix[0] = c + 1.i*s;
 	diagonal_matrix[1] = c - 1.i*s;
-	single_qubit_diagonal_matrix_gate(target_qubit_index, diagonal_matrix, state, dim);
+}
+
+void RZ_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
+	CTYPE diagonal_matrix[2];
+	_get_matrix_RZ(angle, diagonal_matrix);
+    single_qubit_diagonal_matrix_gate(target_qubit_index, diagonal_matrix, state, dim);
+}
+	
+void RZ_gate_mpi(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim, UINT inner_qc) {
+	CTYPE diagonal_matrix[2];
+	_get_matrix_RZ(angle, diagonal_matrix);
+	if (target_qubit_index < inner_qc){
+	    single_qubit_diagonal_matrix_gate(target_qubit_index, diagonal_matrix, state, dim);
+	}
+	else {
+	    single_qubit_diagonal_matrix_gate_mpi(target_qubit_index, diagonal_matrix, state, dim, inner_qc);
+	}
 }
 
 

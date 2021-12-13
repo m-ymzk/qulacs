@@ -87,6 +87,7 @@ public:
 		this->_update_func_gpu = Y_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = Y_gate_mpi;
 #endif
         this->_name = "Y";
@@ -114,6 +115,7 @@ public:
 		this->_update_func_gpu = Z_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = Z_gate_mpi;
 #endif
 	    this->_name = "Z";
@@ -304,6 +306,7 @@ public:
 		this->_update_func_gpu = sqrtXdag_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = sqrtXdag_gate_mpi;
 #endif
         this->_name = "sqrtXdag";
@@ -331,6 +334,7 @@ public:
 		this->_update_func_gpu = sqrtY_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = sqrtY_gate_mpi;
 #endif
         this->_name = "sqrtY";
@@ -358,6 +362,7 @@ public:
 		this->_update_func_gpu = sqrtYdag_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = sqrtYdag_gate_mpi;
 #endif
         this->_name = "sqrtYdag";
@@ -385,6 +390,7 @@ public:
 		this->_update_func_gpu = P0_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = P0_gate_mpi;
 #endif
         this->_name = "Projection-0";
@@ -412,6 +418,7 @@ public:
 		this->_update_func_gpu = P1_gate_host;
 #endif
 #ifdef _USE_MPI
+        //TODO: implement
 		//this->_update_func_mpi = P1_gate_mpi;
 #endif
         this->_name = "Projection-1";
@@ -440,7 +447,7 @@ public:
 		this->_update_func_gpu = RX_gate_host;
 #endif
 #ifdef _USE_MPI
-		//this->_update_func_mpi = RX_gate_mpi;
+		this->_update_func_mpi = RX_gate_mpi;
 #endif
         this->_name = "X-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE ));
@@ -467,7 +474,7 @@ public:
 		this->_update_func_gpu = RY_gate_host;
 #endif
 #ifdef _USE_MPI
-		//this->_update_func_mpi = RY_gate_mpi;
+		this->_update_func_mpi = RY_gate_mpi;
 #endif
         this->_name = "Y-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
@@ -494,7 +501,7 @@ public:
 		this->_update_func_gpu = RZ_gate_host;
 #endif
 #ifdef _USE_MPI
-		//this->_update_func_mpi = RZ_gate_mpi;
+		this->_update_func_mpi = RZ_gate_mpi;
 #endif
         this->_name = "Z-rotation";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE));
