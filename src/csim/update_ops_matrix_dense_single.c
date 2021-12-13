@@ -10,6 +10,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -350,6 +354,80 @@ void single_qubit_dense_matrix_gate_parallel_simd(UINT target_qubit_index, const
 }
 #endif
 #endif
+
+#ifdef _USE_MPI
+void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (target_qubit_index < inner_qc){
+		single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
+    }
+	else {
+        const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        CTYPE* t = NULL;
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+        const int pair_rank = rank ^ pair_rank_bit;
+        _MALLOC_AND_CHECK(t, CTYPE, dim);
+        m->m_DC_sendrecv(state, t, dim, pair_rank);
+#ifdef _OPENMP
+		UINT threshold = 13;
+		if (dim < (((ITYPE)1) << threshold)) {
+			single_qubit_dense_matrix_gate_single_mpi(t, matrix, state, dim, rank & pair_rank_bit);
+		}
+		else {
+			single_qubit_dense_matrix_gate_parallel_mpi(t, matrix, state, dim, rank & pair_rank_bit);
+		}
+#else
+		single_qubit_dense_matrix_gate_single_mpi(t, matrix, state, dim, rank & pair_rank_bit);
+#endif
+		free(t);
+	}
+}
+
+void single_qubit_dense_matrix_gate_single_mpi(CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
+	for (ITYPE state_index = 0; state_index < dim; ++state_index) {
+		if (flag){ //val=1
+			// fetch values
+			CTYPE cval_0 = t[state_index];
+			CTYPE cval_1 = state[state_index];
+
+			// set values
+			state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
+		}
+		else { //val=0
+			// fetch values
+			CTYPE cval_0 = state[state_index];
+			CTYPE cval_1 = t[state_index];
+
+			// set values
+			state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
+		}
+	}
+}
+
+#ifdef _OPENMP
+void single_qubit_dense_matrix_gate_parallel_mpi(CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
+#pragma omp parallel for
+	for (ITYPE state_index = 0; state_index < dim; ++state_index) {
+		if (flag){ //val=1
+			// fetch values
+			CTYPE cval_0 = t[state_index];
+			CTYPE cval_1 = state[state_index];
+
+			// set values
+			state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
+		}
+		else { //val=0
+			// fetch values
+			CTYPE cval_0 = state[state_index];
+			CTYPE cval_1 = t[state_index];
+
+			// set values
+			state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
+		}
+	}
+}
+#endif
+#endif //#ifdef _USE_MPI
 
 /*
 
