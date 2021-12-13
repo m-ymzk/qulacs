@@ -56,7 +56,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
     }
 #ifdef _USE_MPI
     MPIutil m = get_mpiutil();
-    norm = m->s_D_allreduce(norm);
+    if (m->get_size() > 1) norm = m->s_D_allreduce(norm);
 #endif
     norm = sqrt(norm);
     for (ITYPE index = 0; index < dim; ++index) {
@@ -108,7 +108,7 @@ void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UI
     }
 #ifdef _USE_MPI
     MPIutil m = get_mpiutil();
-    normalizer = m->s_D_allreduce(normalizer);
+    if (m->get_size() > 1) normalizer = m->s_D_allreduce(normalizer);
 #endif
     normalizer = 1./sqrt(normalizer);
 
