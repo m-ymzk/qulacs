@@ -235,15 +235,15 @@ void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         m->m_DC_sendrecv(state, t, dim, pair_rank);
 
 #ifdef _OPENMP
-			UINT threshold = 13;
-			if (dim < (((ITYPE)1) << threshold)) {
-				H_gate_single_unroll_mpi(t, state, dim, rank & pair_rank_bit);
-			}
-			else {
-				H_gate_parallel_unroll_mpi(t, state, dim, rank & pair_rank_bit);
-			}
-#else
+		UINT threshold = 13;
+		if (dim < (((ITYPE)1) << threshold)) {
 			H_gate_single_unroll_mpi(t, state, dim, rank & pair_rank_bit);
+		}
+		else {
+			H_gate_parallel_unroll_mpi(t, state, dim, rank & pair_rank_bit);
+		}
+#else
+		H_gate_single_unroll_mpi(t, state, dim, rank & pair_rank_bit);
 #endif
         free(t);
     }
