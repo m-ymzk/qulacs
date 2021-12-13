@@ -33,21 +33,24 @@ int main(int argc, char *argv[]) {
     double dt;
     int _rank, _size;
     MPI_Init(&argc, &argv);
+    //int provided;
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &_size);
+    //std::cout << "Rank " << _rank << ", PID " << getpid() << ", provided=" << provided << std::endl << std::flush;
     std::cout << "Rank " << _rank << ", PID " << getpid() << std::endl << std::flush;
-    int i = 0;
-    //while (i == _rank) sleep(1); // for debug
+    int i = atoi(argv[1]);
+    while (i == _rank) sleep(1); // for debug
     MPI_Barrier(MPI_COMM_WORLD);
 
-    int nqubits = atoi(argv[1]);
+    int nqubits = atoi(argv[2]);
 
     QuantumState state(nqubits, MPI_COMM_WORLD);
     //QuantumState state1(nqubits, (MPI_Comm)((intptr_t)MPI_COMM_WORLD+1)); // MPI_Comm warning check.
     //std::cout << state.to_string() << std::endl;
 
-    state.set_Haar_random_state(1+_rank);
-    //state.set_computational_basis(0b00010);
+    //state.set_Haar_random_state(1+_rank);
+    state.set_computational_basis(0b00111);
     //state.set_computational_basis(0b0011);
 
     //print_state_in_rank_order(&state);
@@ -72,13 +75,26 @@ int main(int argc, char *argv[]) {
     //}
     //circuit.add_X_gate(nqubits - 2);
     //circuit.add_X_gate(nqubits - 1);
-    gate::Identity(nqubits - 1)->update_quantum_state(&state);
+    //gate::Identity(nqubits - 1)->update_quantum_state(&state);
     //circuit.add_RX_gate(atoi(argv[2]), 0.5);
+    /*
+    circuit.add_RX_gate(0, 0.5);
+    circuit.add_RX_gate(1, 0.25);
+    circuit.add_RX_gate(2, 0.125);
+    */
     circuit.add_H_gate(0);
     circuit.add_H_gate(1);
     circuit.add_H_gate(2);
-    circuit.add_H_gate(nqubits - 2);
-    circuit.add_H_gate(nqubits - 1);
+    circuit.add_RY_gate(0, 0.5);
+    circuit.add_RY_gate(1, 0.25);
+    circuit.add_RY_gate(2, 0.125);
+    /*
+    circuit.add_RZ_gate(0, 0.5);
+    circuit.add_RZ_gate(1, 0.25);
+    circuit.add_RZ_gate(2, 0.125);
+    */
+    //circuit.add_H_gate(nqubits - 2);
+    //circuit.add_H_gate(nqubits - 1);
     //circuit.add_T_gate(0);
     //circuit.add_T_gate(1);
     //circuit.add_T_gate(nqubits - 2);
@@ -90,13 +106,30 @@ int main(int argc, char *argv[]) {
     //circuit.add_CNOT_gate(nqubits - 1, 0);
     //circuit.add_CNOT_gate(nqubits - 2, nqubits - 1);
     //circuit.add_CNOT_gate(nqubits - 1, nqubits - 2);
+    //auto merged_gate = gate::merge(gate::CNOT(0,1),gate::Y(1));
+    //auto merged_gate = gate::merge(
+    //        gate::Identity(0),
+    //        gate::Identity(0));
+    //auto merged_gate = gate::merge(gate::X(0),gate::Identity(0));
+    //circuit.add_gate(merged_gate);
+    //circuit.add_RX_gate(1,0.5);
+
     circuit.update_quantum_state(&state);
     dt += get_realtime();
     std::cout << "#rank, time: " << _rank << ", " << dt << std::endl << std::flush;
 
+    //delete merged_gate;
+
     print_state_in_rank_order(&state);
+    /*
+    QuantumState state_in(nqubits);
+    state_in.load(&state);
+
+    if (_rank == 0) std::cout << state_in.to_string() << std::endl;
+    */
 
     MPI_Barrier(MPI_COMM_WORLD);
+    sleep(1);
     MPI_Finalize();
 
     return 0;

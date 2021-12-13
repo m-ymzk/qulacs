@@ -245,6 +245,7 @@ void get_extended_matrix(const QuantumGateBase* gate, const std::vector<TargetQu
 namespace gate {
     QuantumGateMatrix* merge(const QuantumGateBase* gate_first, const QuantumGateBase* gate_second) {
         // obtain updated qubit information
+        //std::cout << "#enter gate::merge" << std::endl;
         std::vector<TargetQubitInfo> new_target_list;
         std::vector<ControlQubitInfo> new_control_list;
         get_new_qubit_list(gate_first, gate_second, new_target_list, new_control_list);
