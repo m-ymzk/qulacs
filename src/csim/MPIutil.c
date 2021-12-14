@@ -84,6 +84,14 @@ static double s_D_allreduce(double a){
     //if (mpirank == 0) printf("#%d: s_D_allreduce(result): %f\n", mpirank, ret);
     return ret;
 }
+
+static int s_i_bcast(int a){
+    int ret = a;
+    //if (mpirank == 0) printf("#%d: s_ui_bcast(result): %d\n", mpirank, a);
+    MPI_Bcast(&ret, 1, MPI_INT, 0, mpicomm);
+    //printf("#%d: s_ui_bcast: %d\n", mpirank, ret);
+    return ret;
+}
 /*
 static void send_osstr(char *sendbuf, int len) {
 }
@@ -112,6 +120,7 @@ MPIutil get_mpiutil() {
     mpiutil->barrier = barrier;
     mpiutil->m_DC_sendrecv = m_DC_sendrecv; // multi, Double Complex, SendRecv
     mpiutil->s_D_allreduce = s_D_allreduce; // single, Double, Allreduce
+    mpiutil->s_i_bcast = s_i_bcast; // single, Int, Bcast
     //mpiutil->recv_osstr = recv_osstr;
     //mpiutil->send_osstr = send_osstr;
     mpitag = 0;
