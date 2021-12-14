@@ -3,12 +3,13 @@
 #include <csim/type.h>
 #include <Eigen/Core>
 #include <string>
+#include <vector>
 
-#ifdef __GNUC__
-#if __GNUC__ >= 8
+//#ifdef __GNUC__
+//#if __GNUC__ >= 8
 using namespace std::complex_literals;
-#endif
-#endif
+//#endif
+//#endif
 
 // random
 static UINT rand_int(UINT max) {

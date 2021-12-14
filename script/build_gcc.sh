@@ -1,4 +1,6 @@
 #!/bin/sh
+# if duplicate-definition error was occured,
+# rm -rf include build
 
 GCC_COMMAND="$C_COMPILER"
 GXX_COMMAND="$CXX_COMPILER"
@@ -16,20 +18,20 @@ GCC_VERSION=$($GCC_COMMAND -dumpfullversion -dumpversion | awk -F. '{printf "%2d
 if [ "$GCC_VERSION" -lt 80000 ]; then
   GCC_COMMAND=gcc-7
 elif [ "$GCC_VERSION" -lt 90000 ]; then
-  GCC_COMMAND=gcc-8
+  GCC_COMMAND=gcc
 fi
 
 GXX_VERSION=$($GXX_COMMAND -dumpfullversion -dumpversion | awk -F. '{printf "%2d%02d%02d", $1,$2,$3}')
 if [ "$GXX_VERSION" -lt 80000 ]; then
   GXX_COMMAND=g++-7
 elif [ "$GXX_VERSION" -lt 90000 ]; then
-  GXX_COMMAND=g++-8
+  GXX_COMMAND=g++
 fi
 
 mkdir ./build
 cd ./build
 cmake -G "Unix Makefiles" -D CMAKE_C_COMPILER=$GCC_COMMAND -D CMAKE_CXX_COMPILER=$GXX_COMMAND -D CMAKE_BUILD_TYPE=Release ..
-make
+make -j 40
 make python
 cd ../
 
