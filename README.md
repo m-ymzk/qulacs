@@ -1,6 +1,10 @@
-# mpi-qulacs 概説 [or fast-qulacs, distibuted-qulacs]
+# mpi-qulacs 概説
+
 ## base
-- qulacs v0.3.0 https://github.com/qulacs/qulacs.git
+- qulacs v0.3.0
+    - [code(original, github)](https://github.com/qulacs/qulacs.git)
+    - [code(mpi-qulacs, github)](https://github.com/m-ymzk/mpi-qulacs.git)
+    - [document](http://docs.qulacs.org/ja/latest/index.html)
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
@@ -31,11 +35,12 @@ $ export LD_LIBRARY_PATH="${TCSDS_PATH}/lib64:${LD_LIBRARY_PATH}"
 $ MPICC=mpifcc pip install mpi4py
 
 ## qulacs ライブラリのbiuld
-$ cd [qulacs-home]
+$ git clone https://github.com/qulacs/qulacs.git
+$ cd qulacs
 $ ./script/build_fcc.sh
 
 ## sample by ict-labs
-$ cd [qulacs-home]/ict
+$ cd ict
 $ make
 $ mpirun -n 4 mpiqtest 20
 ```
@@ -46,10 +51,10 @@ $ mpirun -n 4 mpiqtest 20
 - ビルド時のオプション：
   | ビルドオプション | MPI-qulacs対応値 | 説明 |
   | -------- | -------- | -------- |
-  | _MSC_VAR  | False    | windows環境には未対応 |
-  | _USE_SIMD | False    | avx2を想定しているため使用しない |
-  | _OPENMP   | True     | OpenMP有効 |
-  | _USE_MPI  | True     | MPI対応で追加 |
+  | _MSC_VAR | False    | windows環境には未対応 |
+  | _USE_SIMD | False   | avx2を想定しているため使用しない |
+  | _OPENMP  | Ture     | OpenMP有効 |
+  | _USE_MPI | Ture     | MPI対応で追加 |
 
 - 現状、pythonからのインタフェースには未対応（MPI-Communicator型を渡すとエラーになる。参考になりそうなOSSが見つかっているが、未着手）
 - mpiexecでの実行時に指定できるランク数は2のべき数のみに対応
@@ -77,13 +82,12 @@ $ mpirun -n 4 mpiqtest 20
           (0,0)
           ...
         ```
-  - state.set_Haar_random_state();
-各要素を乱数で初期化する。(norm=1)
-注意事項：内部で乱数をseedとして設定しているが、rank間で被る可能性があるため、マルチノードでの使用は推奨しない。
-  - state.set_Haar_random_state(seed);
-各要素を乱数で初期化する。(norm=1)
-注意事項：mpiの各ランクで同じseedとならないように、seed + rankの設定を推奨。
-注意事項：分割有無、分割数が異なる場合、同じseedを設定しても、作成される状態は異なる
+  - state.set_Haar_random_state() の注意事項
+各要素を乱数で初期化する。
+注意事項：内部で乱数をseedとして設定。ただし、マルチプロセス実行の場合、プロセス間で同一となる可能性があるため、使用は推奨しない。
+  - state.set_Haar_random_state(seed) の注意事項
+各要素を乱数で初期化する。
+注意事項：内部で、(seed + rank)を設定。よって、分割数が異なる場合、同じseedを設定しても、作成される状態は異なる。
 
 - 対応済みリスト（動作するもの全てではありません）
   - QuantumState
@@ -100,6 +104,78 @@ $ mpirun -n 4 mpiqtest 20
       - T
       - Tdag
       - X
+      - RX
+      - RY
+      - RZ
+      - DenseMatrix(w/o control, single only)
+
+- 未対応、未確認関数リスト（全てではありません）
+  - gate
+      - Y
+      - Z
+      - SqrtX
+      - SqrtXdag
+      - SqrtY
+      - SqrtYdag
+      - P0
+      - P1
+      (gate_named_one.hpp)
+      - U1
+      - U2
+      - U3
+      (QuantumGateMatrix)
+      - CZ
+      - SWAP
+ （ここまでで、tk_to_qulacsサポートOK?）
+      - TOFFOLI
+      - FREDKIN
+      - Pauli
+      - PauliRotation
+      - DenseMatrix
+      - SparseMatrix
+      - DiagonalMatrix
+      - RandomUnitary
+      - ReversibleBoolean
+      - StateReflection
+      - BitFlipNoise
+      - DephasingNoise
+      - IndependentXZNoise
+      - DepolarizingNoise
+      - TwoQubitDepolarizingNoise
+      - AmplitudeDampingNoise
+      - Measurement
+      - merge
+      - add
+      - to_matrix_gate
+      - Probabilistic
+      - ProbabilisticInstrument
+      - CPTP
+      - CP
+      - Instrument
+      - Adaptive
+  - QuantumState
+      - normalize
+      - copy
+      - load (mpi版では不要では？)
+      - get_vector (mpi版では不要では？)
+      - sampling
+  - DensityMatrix
+  - GeneralQuantumOperator
+  - Observable
+  - ParametricQuantumCircuit
+  - PauliOperator
+  - QuantumGateBase
+  - QuantumGateMatrix
+  - QuantumGate_SingleParameter
+  - QuantumCircuit
+  - QuantumCircuitOptimizer
+  - QuantumCircuitSimulator
+  - state
+      - inner_product
+      - tensor_product
+      - permutate_qubit
+      - drop_qubit
+      - partial_trace
 
 ## Example
 ### Python sample code
@@ -124,7 +200,7 @@ int main(){
     circuit.add_X_gate(0);
     //auto merged_gate = gate::merge(gate::CNOT(0,1),gate::Y(1));
     //circuit.add_gate(merged_gate);
-    //circuit.add_RX_gate(1,0.5);
+    circuit.add_RX_gate(1,0.5);
     circuit.update_quantum_state(&state);
 
     //Observable observable(3);
