@@ -5,11 +5,11 @@
 #include <string>
 #include <vector>
 
-//#ifdef __GNUC__
-//#if __GNUC__ >= 8
+#ifdef __GNUC__
+#if __GNUC__ >= 8
 using namespace std::complex_literals;
-//#endif
-//#endif
+#endif
+#endif
 
 // random
 static UINT rand_int(UINT max) {
@@ -150,7 +150,7 @@ static std::string convert_CTYPE_array_to_string(const CTYPE* state, ITYPE dim) 
 
 static Eigen::VectorXcd convert_CTYPE_array_to_eigen_vector(const CTYPE* state, ITYPE dim) {
     Eigen::VectorXcd vec(dim);
-    for (ITYPE i = 0; i < dim; ++i) vec[i] = (CTYPE)state[i];
+    for (ITYPE i = 0; i < dim; ++i) vec[i] = state[i];
     return vec;
 }
 
