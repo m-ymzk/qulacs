@@ -392,7 +392,7 @@ void SWAP_gate_single_simd(UINT target_qubit_index_0, UINT target_qubit_index_1,
 void SWAP_gate_parallel_unroll(UINT target_qubit_index_0, UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
 void SWAP_gate_parallel_simd(UINT target_qubit_index_0, UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
-DllExport void SWAP_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
+DllExport void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1, CTYPE* state, ITYPE dim, UINT inner_qc);
 #endif
 
 /**

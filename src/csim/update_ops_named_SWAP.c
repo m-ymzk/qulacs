@@ -254,12 +254,14 @@ void SWAP_gate_parallel_simd(UINT target_qubit_index_0, UINT target_qubit_index_
 #endif
 
 #ifdef _USE_MPI
-void SWAP_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
-    if (control_qubit_index < inner_qc){
-        if (target_qubit_index < inner_qc){
-            SWAP_gate(control_qubit_index, target_qubit_index, state, dim);
-        }
-    } else {
+void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    //unsigned int _inner_qc = count_population(dim-1);
+    UINT larger_qubit = target_qubit_index_0 > target_qubit_index_1 ? target_qubit_index_0: target_qubit_index_1;
+    UINT smaller_qubit = target_qubit_index_0 + target_qubit_index_1 - larger_qubit;
+    if (larger_qubit < inner_qc){
+        SWAP_gate(target_qubit_index_0, target_qubit_index_1, state, dim);
+    }
+    else {
         //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
         //MPIutil m = get_mpiutil();
         //int rank = m->get_rank();
