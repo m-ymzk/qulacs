@@ -32,6 +32,11 @@ void print_state_in_rank_order(QuantumState* state) {
 int main(int argc, char *argv[]) {
     double dt;
     int _rank, _size;
+    if (argc != 3) {
+        printf("USAGE: %s [debug-flag] [n-qubits]\n", argv[0]);
+        printf("  debug-flag: n-th rank is waiting before barrier.(-1: w/o waiting)\n");
+        exit(1);
+    }
     MPI_Init(&argc, &argv);
     //int provided;
     //MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
@@ -52,10 +57,10 @@ int main(int argc, char *argv[]) {
 
     //state.set_Haar_random_state();
     //state2.set_Haar_random_state();
-    //state.set_Haar_random_state(1);
+    state.set_Haar_random_state(1);
     //state2.set_Haar_random_state(1);
     //state.set_computational_basis(0b00111);
-    //state.set_computational_basis(0b0011);
+    state.set_computational_basis(0b0000);
 
     //print_state_in_rank_order(&state);
     /*
