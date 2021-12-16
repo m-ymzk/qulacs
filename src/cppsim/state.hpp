@@ -33,7 +33,7 @@ protected:
     ITYPE _dim;
     UINT _qubit_count;
     UINT _inner_qc; /**< \~japanese-en ノード内量子ビット数 */
-    UINT _outer_qc = 0; /**< \~japanese-en ノード外量子ビット数 */
+    UINT _outer_qc; /**< \~japanese-en ノード外量子ビット数 */
     bool _is_state_vector;
     std::vector<UINT> _classical_register;
     UINT _device_number;
@@ -45,6 +45,7 @@ protected:
 public:
     const UINT& qubit_count; /**< \~japanese-en 量子ビット数 */
     const UINT& inner_qc; /**< \~japanese-en ノード内量子ビット数 */
+    const UINT& outer_qc; /**< \~japanese-en ノード外量子ビット数 */
     const ITYPE& dim; /**< \~japanese-en 量子状態の次元 */
     const std::vector<UINT>& classical_register; /**< \~japanese-en 古典ビットのレジスタ */
     const UINT& device_number;
@@ -55,10 +56,11 @@ public:
      * @param qubit_count_ 量子ビット数
      */
     QuantumStateBase(UINT qubit_count_, bool is_state_vector):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), outer_qc(_outer_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         this->_inner_qc = qubit_count_;
+        this->_outer_qc = 0;
         this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << qubit_count_;
         this->_is_state_vector = is_state_vector;
@@ -67,7 +69,7 @@ public:
 
 #ifdef _USE_MPI
     QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), outer_qc(_outer_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         MPIutil m = get_mpiutil();
@@ -76,7 +78,7 @@ public:
         this->_size = m->get_size();
         assert(!(_size & (_size - 1))); // mpi-size must be power of 2
         
-        int log_nodes = std::log2(this->_size);
+        UINT log_nodes = std::log2(this->_size);
         if (qubit_count_ > log_nodes) { // minimum inner_qc=1
             this->_inner_qc = qubit_count_ - log_nodes;
             this->_outer_qc = log_nodes;
@@ -95,7 +97,7 @@ public:
 #endif
 
     QuantumStateBase(UINT qubit_count_, bool is_state_vector, UINT device_number_):
-        qubit_count(_qubit_count), inner_qc(_inner_qc), dim(_dim),
+        qubit_count(_qubit_count), inner_qc(_inner_qc), outer_qc(_outer_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         assert(false); // "not supported in mpi-mode"
@@ -319,8 +321,8 @@ public:
         MPIutil m = get_mpiutil();
 
         UINT j=0;
-        for (UINT i = _dim - _dim_out; i < _dim; ++i) eigen_state[j++] = data[i];
-        //for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
+        //for (UINT i = _dim - _dim_out; i < _dim; ++i) eigen_state[j++] = data[i];
+        for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
         if (_rank == 0){
             os << " *** Quantum State ***" << std::endl;
             //os << " * MPI rank / size : " << this->_rank << " / " << this->_size << std::endl;
@@ -429,13 +431,27 @@ public:
      * \~japanese-en 量子状態をHaar randomにサンプリングされた量子状態に初期化する
      */
     virtual void set_Haar_random_state() override{
-        initialize_Haar_random_state_with_seed(this->data_c(), _dim, random.int32());
+        int seed = random.int32();
+#ifdef _USE_MPI
+        MPIutil m = get_mpiutil();
+        int size = m->get_size();
+        if (size > 1) {
+            seed = m->s_i_bcast(seed);
+        }
+#endif //#ifdef _USE_MPI
+        initialize_Haar_random_state_with_seed(this->data_c(), _dim, this->_outer_qc, seed);
     }
     /**
      * \~japanese-en 量子状態をシードを用いてHaar randomにサンプリングされた量子状態に初期化する
      */
     virtual void set_Haar_random_state(UINT seed) override {
-        initialize_Haar_random_state_with_seed(this->data_c(), _dim,seed);
+        uint seed_rank = seed;
+#ifdef _USE_MPI
+        MPIutil m = get_mpiutil();
+        int rank = m->get_rank();
+        if (this->_outer_qc > 0) seed_rank += rank;
+#endif //#ifdef _USE_MPI
+        initialize_Haar_random_state_with_seed(this->data_c(), _dim, this->_outer_qc, seed_rank);
     }
     /**
      * \~japanese-en <code>target_qubit_index</code>の添え字の量子ビットを測定した時、0が観測される確率を計算する。
@@ -563,7 +579,10 @@ public:
     /**
      * \~japanese-en 量子状態が配置されているメモリを保持するデバイス名を取得する。
      */
-    virtual const std::string get_device_name() const override {return "cpu";}
+    virtual const std::string get_device_name() const override {
+        if (this->outer_qc == 0) return "cpu";
+        else return "cpu-multi";
+    }
 
     /**
      * \~japanese-en 量子状態のポインタをvoid*型として返す

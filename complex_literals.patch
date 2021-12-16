@@ -9,3 +9,13 @@
  /** \class MatrixBase
    * \ingroup Core_Module
 
+--- /Eigen/src/Core/Matrix.h
++++ /Eigen/src/Core/Matrix.h
+@@ -12,6 +12,7 @@
+ #define EIGEN_MATRIX_H
+
++using namespace std::complex_literals;
+ namespace Eigen {
+
+ namespace internal {
+ template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>

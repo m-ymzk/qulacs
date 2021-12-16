@@ -16,28 +16,38 @@
 unsigned long xor128(unsigned long* state);
 double random_uniform(unsigned long* state);
 double random_normal(unsigned long* state);
-void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT seed);
-void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT seed);
+void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
+void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
 
-void initialize_Haar_random_state(CTYPE *state, ITYPE dim) {
-	initialize_Haar_random_state_with_seed(state, dim, (unsigned)time(NULL));
+void initialize_Haar_random_state(CTYPE *state, ITYPE dim, UINT outer_qc) {
+    int seed = (int)time(NULL);
+    //printf("# enter init-Haar-rand-stat, %lld\n", dim);
+#ifdef _USE_MPI
+    MPIutil m = get_mpiutil();
+    int size = m->get_size();
+    if (size > 1) {
+        seed = m->s_i_bcast(seed);
+    }
+#endif //#ifdef _USE_MPI
+	initialize_Haar_random_state_with_seed(state, dim, outer_qc, seed);
 }
-void initialize_Haar_random_state_with_seed(CTYPE *state, ITYPE dim, UINT seed) {
+void initialize_Haar_random_state_with_seed(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed) {
+    //printf("# enter init-Haar-rand-stat(seed), %lld, %d\n", dim, seed);
 #ifdef _OPENMP
 	UINT threshold = 8;
 	if (dim < (((ITYPE)1) << threshold)) {
-		initialize_Haar_random_state_with_seed_single(state, dim, seed);
+		initialize_Haar_random_state_with_seed_single(state, dim, outer_qc, seed);
 	}
 	else {
-		initialize_Haar_random_state_with_seed_parallel(state, dim, seed);
+		initialize_Haar_random_state_with_seed_parallel(state, dim, outer_qc, seed);
 	}
 #else
-	initialize_Haar_random_state_with_seed_single(state, dim, seed);
+	initialize_Haar_random_state_with_seed_single(state, dim, outer_qc, seed);
 #endif
 }
 
 // single thread
-void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT seed) {
+void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed) {
     const int ignore_first = 40;
     double norm = 0.;
     unsigned long random_state[4];
@@ -56,7 +66,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
     }
 #ifdef _USE_MPI
     MPIutil m = get_mpiutil();
-    norm = m->s_D_allreduce(norm);
+    if (outer_qc > 0) norm = m->s_D_allreduce(norm);
 #endif
     norm = sqrt(norm);
     for (ITYPE index = 0; index < dim; ++index) {
@@ -64,7 +74,7 @@ void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT
     }
 }
 #ifdef _OPENMP
-void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT seed) {
+void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed) {
 	// multi thread
     const int ignore_first = 40;
     const UINT thread_count = omp_get_max_threads();
@@ -108,7 +118,7 @@ void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UI
     }
 #ifdef _USE_MPI
     MPIutil m = get_mpiutil();
-    normalizer = m->s_D_allreduce(normalizer);
+    if (outer_qc > 0) normalizer = m->s_D_allreduce(normalizer);
 #endif
     normalizer = 1./sqrt(normalizer);
 

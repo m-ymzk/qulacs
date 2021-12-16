@@ -41,12 +41,15 @@ public:
 				_update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 			}
 #else
-#ifdef _USE_MPI
             // index, state, dim, inner_qc
-            _update_func_mpi(this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
-#else //#ifdef _USE_MPI
-            // index, state, dim
-			_update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
+#ifdef _USE_MPI
+            if (state->outer_qc == 0)
+#endif //#ifdef _USE_MPI
+                // index, state, dim
+			    _update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
+#ifdef _USE_MPI
+            else
+                _update_func_mpi(this->_target_qubit_list[0].index(), state->data_c(), state->dim, state->inner_qc);
 #endif //#ifdef _USE_MPI
 #endif
 		}
@@ -238,7 +241,12 @@ public:
             // control-index, target-index, data, dim
             //std::cout << "#update qstate-OneQubitRotation " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
             //    << ", " << _angle << std::endl;
-			_update_func_mpi(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim, state->inner_qc);
+            if (state->outer_qc > 0){
+			    _update_func_mpi(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim, state->inner_qc);
+            }
+            else {
+			    _update_func(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim);
+            }
 #else //#ifdef _USE_MPI
             // index, angle, data, dim
 			_update_func(this->_target_qubit_list[0].index(), _angle, state->data_c(), state->dim);

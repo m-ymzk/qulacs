@@ -24,7 +24,8 @@ typedef struct {
     int (*get_size)();
     int (*get_tag)();
     void (*barrier)();
-    double (*s_D_allreduce)();
+    double (*s_D_allreduce)(double);
+    int (*s_i_bcast)(int);
     //void (*send_osstr)(char* sendbuf, int len);
     //void (*recv_osstr)(char* recvbuf, int len);
     void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int pair_rank);

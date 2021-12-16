@@ -25,6 +25,7 @@
 //void CNOT_gate_single(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 
 void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim) {
+    //printf("#enter control_qubit_index, %lld, %d, %d\n", dim, control_qubit_index, target_qubit_index);
 	//CNOT_gate_old_single(control_qubit_index, target_qubit_index, state, dim);
 	//CNOT_gate_old_parallel(control_qubit_index, target_qubit_index, state, dim);
 	//CNOT_gate_single(control_qubit_index, target_qubit_index, state, dim);
@@ -63,6 +64,7 @@ void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, 
 
 
 void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim) {
+    //printf("#enter CNOT_g_s_u, %lld, %d, %d\n", dim, control_qubit_index, target_qubit_index);
 	const ITYPE loop_dim = dim / 4;
 
 	const ITYPE target_mask = 1ULL << target_qubit_index;
@@ -78,13 +80,25 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index, 
 
 	ITYPE state_index = 0;
 	if (control_qubit_index == IS_OUTER_QB) {
-		for (state_index = 0; state_index < (loop_dim * 2); ++state_index) {
-			ITYPE basis_index_0 = (state_index&low_mask)
-				+ ((state_index&(~low_mask)) << 1);
-			ITYPE basis_index_1 = basis_index_0 + target_mask;
-			CTYPE temp = state[basis_index_0];
-			state[basis_index_0] = state[basis_index_1];
-			state[basis_index_1] = temp;
+	if (target_qubit_index == 0) {
+		// swap neighboring two basis in ALL_AREA
+		for (state_index = 0; state_index < (dim / 2); ++state_index) {
+			ITYPE basis_index = (state_index << 1);
+			CTYPE temp = state[basis_index];
+			state[basis_index] = state[basis_index + 1];
+			state[basis_index + 1] = temp;
+		}
+	}
+		else {
+			// a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+			for (state_index = 0; state_index < (dim / 2); ++state_index) {
+				ITYPE basis_index_0 = (state_index&low_mask)
+					+ ((state_index&(~low_mask)) << 1);
+				ITYPE basis_index_1 = basis_index_0 + target_mask;
+				CTYPE temp = state[basis_index_0];
+				state[basis_index_0] = state[basis_index_1];
+				state[basis_index_1] = temp;
+			}
 		}
 	}
 	else if (target_qubit_index == 0) {
@@ -132,6 +146,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index, 
 #ifdef _OPENMP
 
 void CNOT_gate_parallel_unroll(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim) {
+    //printf("#enter CNOT_g_p_u, %lld, %d, %d\n", dim, control_qubit_index, target_qubit_index);
 	const ITYPE loop_dim = dim / 4;
 
 	const ITYPE target_mask = 1ULL << target_qubit_index;
@@ -146,7 +161,30 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index, UINT target_qubit_index
 	const ITYPE high_mask = ~(max_qubit_mask - 1);
 
 	ITYPE state_index = 0;
-	if (target_qubit_index == 0) {
+	if (control_qubit_index == IS_OUTER_QB) {
+		if (target_qubit_index == 0) {
+		// swap neighboring two basi in ALL_AREAs
+#pragma omp parallel for
+		for (state_index = 0; state_index < (dim / 2); ++state_index) {
+			ITYPE basis_index = (state_index << 1);
+			CTYPE temp = state[basis_index];
+			state[basis_index] = state[basis_index + 1];
+			state[basis_index + 1] = temp;
+		}
+		}
+		else {
+			// a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+#pragma omp parallel for
+			for (state_index = 0; state_index < (dim / 2); ++state_index) {
+		   		ITYPE basis_index_0 = (state_index&low_mask)
+		   			+ ((state_index&(~low_mask)) << 1);
+		   		ITYPE basis_index_1 = basis_index_0 + target_mask;
+		   		CTYPE temp = state[basis_index_0];
+		   		state[basis_index_0] = state[basis_index_1];
+				state[basis_index_1] = temp;
+			}
+		}
+	} else if (target_qubit_index == 0) {
 		// swap neighboring two basis
 #pragma omp parallel for
 		for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -349,11 +387,11 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
         }
     } else {
         if (target_qubit_index < inner_qc) {
-            int target_rank_bit = 1 << (target_qubit_index - inner_qc);
-            //printf("#enter CNOT_gate_mpi, c-outer, t-inner, %d\n", target_qubit_index);
+            int control_rank_bit = 1 << (control_qubit_index - inner_qc);
             MPIutil m = get_mpiutil();
             int rank = m->get_rank();
-            if (rank & target_rank_bit) {
+            //printf("#enter CNOT_gate_mpi, c-outer, t-inner, %d, %d, %d\n", target_qubit_index, rank, control_rank_bit);
+            if (rank & control_rank_bit) {
                 CNOT_gate(IS_OUTER_QB, target_qubit_index, state, dim);
             } // if else, nothing to do.
         } else {

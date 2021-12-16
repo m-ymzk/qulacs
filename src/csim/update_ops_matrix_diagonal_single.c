@@ -10,6 +10,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -179,6 +183,52 @@ void single_qubit_diagonal_matrix_gate_parallel_simd(UINT target_qubit_index, co
 #endif
 #endif
 
+#ifdef _USE_MPI
+void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, UINT inner_qc) {
+	if (target_qubit_index < inner_qc){
+        single_qubit_diagonal_matrix_gate(target_qubit_index, diagonal_matrix, state, dim);
+    }
+	else {
+		const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+
+#ifdef _OPENMP
+		UINT threshold = 12;
+		if (dim < (((ITYPE)1) << threshold)) {
+			single_qubit_diagonal_matrix_gate_single_unroll_mpi(diagonal_matrix, state, dim, (rank & pair_rank_bit)!=0);
+		}
+		else {
+			single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(diagonal_matrix, state, dim, (rank & pair_rank_bit)!=0);
+		}
+#else
+		single_qubit_diagonal_matrix_gate_single_unroll_mpi(diagonal_matrix, state, dim, rank & pair_rank_bit);
+#endif
+	}
+}
+
+// flag: My qubit(target in outer_qubit) value.
+void single_qubit_diagonal_matrix_gate_single_unroll_mpi(const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int isone) {
+	// loop variables
+	ITYPE state_index;
+	for (state_index = 0; state_index < dim; state_index += 2) {
+		state[state_index] *= diagonal_matrix[isone];
+		state[state_index + 1] *= diagonal_matrix[isone];
+	}
+}
+
+#ifdef _OPENMP
+void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int isone) {
+	// loop variables
+	ITYPE state_index;
+#pragma omp parallel for
+	for (state_index = 0; state_index < dim; state_index += 2) {
+		state[state_index] *= diagonal_matrix[isone];
+		state[state_index + 1] *= diagonal_matrix[isone];
+	}
+}
+#endif
+#endif //#ifdef _USE_MPI
 
 /*
 
