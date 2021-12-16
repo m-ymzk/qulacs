@@ -439,7 +439,7 @@ public:
             seed = m->s_i_bcast(seed);
         }
 #endif //#ifdef _USE_MPI
-        initialize_Haar_random_state_with_seed(this->data_c(), _dim, seed);
+        initialize_Haar_random_state_with_seed(this->data_c(), _dim, this->_outer_qc, seed);
     }
     /**
      * \~japanese-en 量子状態をシードを用いてHaar randomにサンプリングされた量子状態に初期化する
@@ -451,7 +451,7 @@ public:
         int rank = m->get_rank();
         if (this->_outer_qc > 0) seed_rank += rank;
 #endif //#ifdef _USE_MPI
-        initialize_Haar_random_state_with_seed(this->data_c(), _dim, seed_rank);
+        initialize_Haar_random_state_with_seed(this->data_c(), _dim, this->_outer_qc, seed_rank);
     }
     /**
      * \~japanese-en <code>target_qubit_index</code>の添え字の量子ビットを測定した時、0が観測される確率を計算する。
