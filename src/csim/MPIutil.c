@@ -77,15 +77,34 @@ static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank
     //        break;
 }
 
-static double s_D_allreduce(double a){
-    //printf("#%d: s_D_allreduce: %f\n", mpirank, a);
-    double ret;
-    MPI_Allreduce(&a, &ret, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
-    //if (mpirank == 0) printf("#%d: s_D_allreduce(result): %f\n", mpirank, ret);
-    return ret;
+static void m_I_allreduce(void* buf, UINT count) {
+    MPI_Allreduce(MPI_IN_PLACE, buf, count, MPI_LONG_LONG_INT, MPI_SUM, mpicomm);
 }
 
-static int s_i_bcast(int a){
+static void s_D_allgather(double a, void* recvbuf) {
+    MPI_Allgather(&a, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
+}
+
+static void s_D_allreduce(void* buf) {
+    MPI_Allreduce(MPI_IN_PLACE, buf, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
+}
+
+/*
+static double s_D_send_next_rank(double a) {
+    int tag0 = get_tag();
+    int pair_rank = (mpirank + 1) % mpisize;
+    int mpi_tag1 = tag0 + ((mpirank & pair_rank)<<1) + (mpirank > pair_rank);
+    int mpi_tag2 = mpi_tag1 ^ 1;
+    double ret;
+    printf("#%d: s_D_send_next_rank: %f, %d, %d, %d\n", mpirank, a, pair_rank, mpi_tag1, mpi_tag2);
+    MPI_Sendrecv(&a, 1, MPI_DOUBLE, pair_rank, mpi_tag1,
+                 &ret, 1, MPI_DOUBLE, pair_rank, mpi_tag2,
+                 mpicomm, &mpistat);
+    return ret;
+}
+*/
+
+static int s_i_bcast(int a) {
     int ret = a;
     //if (mpirank == 0) printf("#%d: s_ui_bcast(result): %d\n", mpirank, a);
     MPI_Bcast(&ret, 1, MPI_INT, 0, mpicomm);
@@ -119,7 +138,10 @@ MPIutil get_mpiutil() {
     mpiutil->usempi = usempi;
     mpiutil->barrier = barrier;
     mpiutil->m_DC_sendrecv = m_DC_sendrecv; // multi, Double Complex, SendRecv
+    mpiutil->m_I_allreduce = m_I_allreduce; // multi, Double, Allreduce
+    mpiutil->s_D_allgather = s_D_allgather; // single, Double, Allgather
     mpiutil->s_D_allreduce = s_D_allreduce; // single, Double, Allreduce
+    //mpiutil->s_D_send_next_rank = s_D_send_next_rank; // single, Double, Send_Next_Rank
     mpiutil->s_i_bcast = s_i_bcast; // single, Int, Bcast
     //mpiutil->recv_osstr = recv_osstr;
     //mpiutil->send_osstr = send_osstr;
