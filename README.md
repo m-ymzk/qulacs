@@ -19,7 +19,7 @@
 $ python setup.py install
 ```
 
-### source build
+### source build (fcc)
 ```bash
 ## make venv
 $ python3 -m venv venv
@@ -92,6 +92,8 @@ $ mpirun -n 4 mpiqtest 20
 - 対応済みリスト（動作するもの全てではありません）
   - QuantumState
       - Constructor (with MPI-Communicator)
+      - get_device_name : "cpu" or "cpu-multi"
+      - sampling
       - set_computational_basis
       - set_Haar_random_state
       - to_string (each rank output)
@@ -99,30 +101,20 @@ $ mpirun -n 4 mpiqtest 20
       - CNOT
       - H
       - Identity
-      - S
-      - Sdag
-      - T
-      - Tdag
+      - S / Sdag
+      - T / Tdag
       - X
-      - RX
-      - RY
-      - RZ
+      - RX / RY  RZ
       - DenseMatrix(w/o control, single only)
 
 - 未対応、未確認関数リスト（全てではありません）
   - gate
-      - Y
-      - Z
-      - SqrtX
-      - SqrtXdag
-      - SqrtY
-      - SqrtYdag
-      - P0
-      - P1
+      - Y / Z
+      - SqrtX / SqrtXdag
+      - SqrtY /SqrtYdag
+      - P0 / P1
       (gate_named_one.hpp)
-      - U1
-      - U2
-      - U3
+      - U1 / U2 / U3
       (QuantumGateMatrix)
       - CZ
       - SWAP
@@ -156,8 +148,8 @@ $ mpirun -n 4 mpiqtest 20
   - QuantumState
       - normalize
       - copy
-      - load (mpi版では不要では？)
-      - get_vector (mpi版では不要では？)
+      - load
+      - get_vector
       - sampling
   - DensityMatrix
   - GeneralQuantumOperator
