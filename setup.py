@@ -65,12 +65,6 @@ class CMakeBuild(build_ext):
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
-        elif True:
-            cmake_args += ['-DCMAKE_C_COMPILER=mpifcc']
-            cmake_args += ['-DCMAKE_CXX_COMPILER=mpiFCC']
-
-            cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j20']
         else:
             env_gcc = os.getenv('C_COMPILER')
             if env_gcc:
