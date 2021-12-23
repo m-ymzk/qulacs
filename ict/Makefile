@@ -1,19 +1,23 @@
 #
-#
-#
 
-CC := mpifcc
-CXX := mpiFCC
+ifdef usefcc
+    CC := mpifcc
+    CXX := mpiFCC
+else
+    CC := mpicc
+    CXX := mpiCC
+endif
 
 BUILDDIR := build
 BUILDDIR := $(abspath $(BUILDDIR))
 
-CFLAGS   := -Nclang -v -I../include -fopenmp -Knolargepage -lpthread
-CXXFLAGS := -Nclang -Wno-inconsistent-missing-override -I../include -fopenmp -Knolargepage -lpthread
+ifdef usefcc
+CFLAGS   += -Nclang -Knolargepage
+CXXFLAGS += -Nclang -Knolargepage
+endif
 
-CFLAGS   += -std=c14
-CXXFLAGS += -std=c++14
-
+CFLAGS   += -v -I../include -fopenmp -lpthread -std=c14
+CXXFLAGS += -Wno-inconsistent-missing-override -I../include -fopenmp -lpthread -std=c++14
 LDFLAGS := -L../lib -lvqcsim_static -lcppsim_static -lcsim_static
 
 ifdef debug
@@ -21,8 +25,13 @@ ifdef debug
     CXXFLAGS += -O0 -g
     DEBUG_FLAG = -DDEBUG
 else
+ifdef usefcc
     CFLAGS   += -Kfast -DNDEBUG
     CXXFLAGS += -Kfast -DNDEBUG
+else
+    CFLAGS   += -O3 -DNDEBUG
+    CXXFLAGS += -O3 -DNDEBUG
+endif
     DEBUG_FLAG =
 endif
 CFLAGS   += -D_USE_MPI

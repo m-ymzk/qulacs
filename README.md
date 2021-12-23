@@ -19,6 +19,26 @@
 $ python setup.py install
 ```
 
+### source build (gcc)
+- 前提条件 (確認済みバージョン)
+    - gcc 11.2.0 (source-build)
+    - openmpi 4.1.2 (source-build)
+        - configure-option: --with-openib
+```
+<lib. build>
+$ cd qulacs
+$ ./script/build_gcc.sh
+
+<test>
+$ cd build
+$ make test
+
+<samples>
+$ cd ict
+$ usefcc=1 make
+$ mpirun -n 4 mpiqtest -1 20 0
+```
+
 ### source build (fcc)
 ```bash
 ## make venv
@@ -41,8 +61,8 @@ $ ./script/build_fcc.sh
 
 ## sample by ict-labs
 $ cd ict
-$ make
-$ mpirun -n 4 mpiqtest 20
+$ usefcc=1 make
+$ mpirun -n 4 mpiqtest -1 20 0
 ```
 <hr>
 
