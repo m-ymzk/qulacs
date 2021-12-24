@@ -67,18 +67,18 @@ public:
     }
 
 #ifdef _USE_MPI
-    QuantumStateBase(UINT qubit_count_, MPI_Comm comm, bool is_state_vector):
+    QuantumStateBase(UINT qubit_count_, bool use_multi_cpu, bool is_state_vector):
         qubit_count(_qubit_count), inner_qc(_inner_qc), outer_qc(_outer_qc), dim(_dim),
         classical_register(_classical_register), device_number(_device_number)
     {
         MPIutil m = get_mpiutil();
-        m->set_comm(comm);
+        m->set_comm(MPI_COMM_WORLD);
         this->_mpirank = m->get_rank();
         this->_mpisize = m->get_size();
         assert(!(_mpisize & (_mpisize - 1))); // mpi-size must be power of 2
         
         UINT log_nodes = std::log2(this->_mpisize);
-        if (qubit_count_ > log_nodes) { // minimum inner_qc=1
+        if (use_multi_cpu && (qubit_count_ > log_nodes)) { // minimum inner_qc=1
             this->_inner_qc = qubit_count_ - log_nodes;
             this->_outer_qc = log_nodes;
         }
@@ -388,11 +388,11 @@ public:
      * 
      * @param qubit_count_ 量子ビット数
      */
-    QuantumStateCpu(UINT qubit_count_) : QuantumStateBase(qubit_count_, true){
+    QuantumStateCpu(UINT qubit_count_) : QuantumStateBase(qubit_count_, false, true){
         this->_state_vector = reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
-        initialize_quantum_state(this->data_c(), _dim);
+        initialize_quantum_state_mpi(this->data_c(), _dim, this->outer_qc);
     }
-    QuantumStateCpu(UINT qubit_count_, MPI_Comm comm) : QuantumStateBase(qubit_count_, comm, true){
+    QuantumStateCpu(UINT qubit_count_, bool use_multi_cpu) : QuantumStateBase(qubit_count_, use_multi_cpu, true){
         this->_state_vector = reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
         initialize_quantum_state_mpi(this->data_c(), _dim, this->outer_qc);
     }
@@ -576,7 +576,7 @@ public:
      */
     virtual const std::string get_device_name() const override {
         if (this->outer_qc == 0) return "cpu";
-        else return "cpu-multi";
+        else return "multi-cpu";
     }
 
     /**

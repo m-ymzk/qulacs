@@ -107,6 +107,7 @@ PYBIND11_MODULE(qulacs, m) {
     py::class_<QuantumStateBase>(m, "QuantumStateBase");
     py::class_<QuantumState, QuantumStateBase>(m, "QuantumState")
         .def(py::init<unsigned int>(), "Constructor", py::arg("qubit_count"))
+        .def(py::init<unsigned int, bool>(), "Constructor", py::arg("qubit_count"), py::arg("use_multi_cpu"))
         .def("set_zero_state", &QuantumState::set_zero_state, "Set state to |0>")
         .def("set_computational_basis", &QuantumState::set_computational_basis, "Set state to computational basis", py::arg("index"))
         .def("set_Haar_random_state", (void (QuantumState::*)(void))&QuantumState::set_Haar_random_state, "Set Haar random state")
