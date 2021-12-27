@@ -436,7 +436,7 @@ public:
             seed = m->s_i_bcast(seed);
         }
 #endif //#ifdef _USE_MPI
-        initialize_Haar_random_state_mpi_with_seed(this->data_c(), _dim, this->outer_qc, seed);
+        set_Haar_random_state(seed);
     }
     /**
      * \~japanese-en 量子状態をシードを用いてHaar randomにサンプリングされた量子状態に初期化する

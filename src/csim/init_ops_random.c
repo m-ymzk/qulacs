@@ -19,26 +19,10 @@ double random_normal(unsigned long* state);
 void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
 void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
 
-void initialize_Haar_random_state(CTYPE *state, ITYPE dim) {
-    initialize_Haar_random_state_mpi(state, dim, 0);
-}
-
 void initialize_Haar_random_state_with_seed(CTYPE *state, ITYPE dim, UINT seed) {
     initialize_Haar_random_state_mpi_with_seed(state, dim, 0, seed);
 }
 
-void initialize_Haar_random_state_mpi(CTYPE *state, ITYPE dim, UINT outer_qc) {
-    int seed = (int)time(NULL);
-    //printf("# enter init-Haar-rand-stat, %lld\n", dim);
-#ifdef _USE_MPI
-    MPIutil m = get_mpiutil();
-    int size = m->get_size();
-    if (size > 1) {
-        seed = m->s_i_bcast(seed);
-    }
-#endif //#ifdef _USE_MPI
-	initialize_Haar_random_state_mpi_with_seed(state, dim, outer_qc, seed);
-}
 void initialize_Haar_random_state_mpi_with_seed(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed) {
     //printf("# enter init-Haar-rand-stat(seed), %lld, %d\n", dim, seed);
 #ifdef _OPENMP
