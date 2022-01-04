@@ -49,7 +49,6 @@ static void barrier() {
 
 static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
-    //if (pair_rank
     int mpi_tag1 = tag0 + ((mpirank & pair_rank)<<1) + (mpirank > pair_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
     //int mpi_tag1 = tag0 + (mpirank & 0xFFFE);
@@ -58,24 +57,23 @@ static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank
     MPI_Sendrecv(sendbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
                  recvbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag2,
                  mpicomm, &mpistat);
-    /*
+    }
+
+/*
+static void m_DC_isendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank) {
+    MPI_Request send_request;
+    int tag0 = get_tag();
+    int mpi_tag1 = tag0 + ((mpirank & pair_rank)<<1) + (mpirank > pair_rank);
+    int mpi_tag2 = mpi_tag1 ^ 1;
+
     MPI_Isend(sendbuf, sendcount, MPI_DOUBLE,
-              pair_rank, mpi_tag, comm, & (send_request));
-    MPI_Irecv(recvbuf, recvcount, MPI_DOUBLE,
-              pair_rank, mpi_tag ^ 0x1, comm, & (recv_request));
-    */
-        //case TypeISend:
-        //    MPI_Isend(sendbuf, sendcount, MPI_DOUBLE,
-        //              pair_rank, mpi_tag, comm, & (send_request));
-        //    break;
-        //case TypeIRecv:
-        //    MPI_Irecv(recvbuf, recvcount, MPI_DOUBLE,
-        //              pair_rank, mpi_tag ^ 0x1, comm, & (recv_request));
-    //        break;
-    //    default:
-    //        //assert(0); // "Undefined communication type is given"
-    //        break;
+              pair_rank, mpi_tag1, comm, & (send_request));
+    MPI_recv(recvbuf, recvcount, MPI_DOUBLE,
+              pair_rank, mpi_tag2, comm, &mpistat);
+
+    return send_request;
 }
+*/
 
 static void m_I_allreduce(void* buf, UINT count) {
     MPI_Allreduce(MPI_IN_PLACE, buf, count, MPI_LONG_LONG_INT, MPI_SUM, mpicomm);

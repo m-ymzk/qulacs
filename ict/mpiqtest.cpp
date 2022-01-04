@@ -32,14 +32,16 @@ void print_state_in_rank_order(QuantumState* state) {
 int main(int argc, char *argv[]) {
     double dt;
     int _rank, _size;
+
+    //int provided;
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
+    MPI_Init(&argc, &argv);
+
     if (argc != 4) {
         printf("USAGE: %s [debug-flag] [n-qubits] [target-qubit]\n", argv[0]);
         printf("  debug-flag: n-th rank is waiting before barrier.(-1: w/o waiting)\n");
         exit(1);
     }
-    MPI_Init(&argc, &argv);
-    //int provided;
-    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &_size);
     //std::cout << "Rank " << _rank << ", PID " << getpid() << ", provided=" << provided << std::endl << std::flush;
@@ -51,13 +53,15 @@ int main(int argc, char *argv[]) {
     int nqubits = atoi(argv[2]);
     int target = atoi(argv[3]);
 
-    QuantumState state(nqubits, MPI_COMM_WORLD);
-    //QuantumState state1(nqubits, (MPI_Comm)((intptr_t)MPI_COMM_WORLD+1)); // MPI_Comm warning check.
+    QuantumState state(nqubits, true);
+    //QuantumState state2(nqubits, true);
+    //QuantumState state3(nqubits, false);
+    //print_state_in_rank_order(&state);
     //std::cout << state.to_string() << std::endl;
 
     //state.set_Haar_random_state();
-    state.set_Haar_random_state(794);
-    //state.set_computational_basis(0b00111);
+    //state.set_Haar_random_state(794);
+    //state.set_computational_basis(0b0111);
     //state.set_computational_basis(0b0000);
     //print_state_in_rank_order(&state);
 
@@ -70,8 +74,12 @@ int main(int argc, char *argv[]) {
     QuantumCircuit circuit(nqubits);
 
     circuit.add_X_gate(target);
+    /*
     for (int i=0; i<nqubits; ++i) {
         circuit.add_H_gate(i);
+    }
+    for (int i=0; i<nqubits; ++i) {
+        circuit.add_RZ_gate(i, 3.1415926536/(1<<(i+2)));
     }
     circuit.add_RX_gate(0, 0.5);
     circuit.add_RX_gate(1, 0.25);
@@ -144,6 +152,7 @@ int main(int argc, char *argv[]) {
     //        gate::Identity(0));
     //auto merged_gate = gate::merge(gate::X(0),gate::Identity(0));
     //circuit.add_gate(merged_gate);
+    */
 
     circuit.update_quantum_state(&state);
     dt += get_realtime();
@@ -153,12 +162,14 @@ int main(int argc, char *argv[]) {
     //   1st param. is number of sampling.
     //   2nd param. is random-seed.
     // You must call state.sampling on every mpi-ranks.
+    /*
     std::vector<ITYPE> sample = state.sampling(50, 2021);
     if (_rank==0) {
         std::cout << "#result_state.sampling: ";
         for (const auto& e : sample) std::cout << e << " ";
         std::cout << std::endl << std::flush;
     }
+    */
 
     //print_state_in_rank_order(&state);
     /*
@@ -166,6 +177,7 @@ int main(int argc, char *argv[]) {
     state_in.load(&state);
 
     if (_rank == 0) std::cout << state_in.to_string() << std::endl;
+    std::cout << state.to_string() << std::endl;
     */
 
     MPI_Barrier(MPI_COMM_WORLD);
