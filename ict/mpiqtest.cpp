@@ -30,7 +30,7 @@ void print_state_in_rank_order(QuantumState* state) {
 }
 
 int main(int argc, char *argv[]) {
-    double dt;
+    double t[10];
     int _rank, _size;
 
     //int provided;
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     //state2.set_Haar_random_state();
     //state2.set_Haar_random_state(1);
 
-    dt = -1*get_realtime();
+    t[0] = get_realtime();
 
     QuantumCircuit circuit(nqubits);
 
@@ -150,13 +150,21 @@ int main(int argc, char *argv[]) {
     //auto merged_gate = gate::merge(
     //        gate::Identity(0),
     //        gate::Identity(0));
-    //auto merged_gate = gate::merge(gate::X(0),gate::Identity(0));
     //circuit.add_gate(merged_gate);
+    auto merged_gate = gate::merge(gate::X(0),gate::Identity(0));
+    circuit.add_gate(merged_gate);
     */
 
-    circuit.update_quantum_state(&state);
-    dt += get_realtime();
-    std::cout << "#rank, time: " << _rank << ", " << dt << std::endl << std::flush;
+    for (int i=0; i<3; ++i) {
+      circuit.update_quantum_state(&state);
+      t[i+1] = get_realtime();
+    }
+
+    std::cout << "#rank, time: " << _rank << ", ";
+    for (int i=0; i<3; ++i) {
+        std::cout << t[i+1] - t[i] << " ";
+    }
+    std::cout << std::endl << std::flush;
 
     // sampling
     //   1st param. is number of sampling.
@@ -177,8 +185,8 @@ int main(int argc, char *argv[]) {
     state_in.load(&state);
 
     if (_rank == 0) std::cout << state_in.to_string() << std::endl;
-    std::cout << state.to_string() << std::endl;
     */
+    std::cout << state.to_string() << std::endl;
 
     MPI_Barrier(MPI_COMM_WORLD);
     sleep(1);
