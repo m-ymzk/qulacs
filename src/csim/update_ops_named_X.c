@@ -195,23 +195,22 @@ void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
     } else {
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
-        CTYPE* t = NULL;
+		ITYPE dim_work = dim;
+		ITYPE num_work = 0;
+        CTYPE* t = m->get_workarea(&dim_work, &num_work);
+		assert(num_work>0);
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
-        const int nqubit_WORK = 20;
-        ITYPE dim_work = get_min_ll(1 << nqubit_WORK, dim);
-        ITYPE num_work = get_max_ll(1, dim >> nqubit_WORK);
-        //printf("#debug dim,dim_work,num_work: %lld, %lld, %lld\n", dim, dim_work, num_work);
-        _MALLOC_AND_CHECK(t, CTYPE, dim_work);
-        CTYPE* ti = t;
+        //ITYPE dim_work = get_min_ll(1 << nqubit_WORK, dim);
+        //ITYPE num_work = get_max_ll(1, dim >> nqubit_WORK);
+        //printf("#debug dim,dim_work,num_work,t: %lld, %lld, %lld, %p\n", dim, dim_work, num_work, t);
+        //_MALLOC_AND_CHECK(t, CTYPE, dim_work);
         CTYPE* si = state;
-        for (UINT i=0; i < (UINT)num_work; ++i) {
-            //printf("#debug state,t,si,ti: %p, %p, %p, %p\n", state, t, si, ti);
-            m->m_DC_sendrecv(si, ti, dim_work, pair_rank);
-            memcpy(si, ti, dim_work * sizeof(CTYPE));
+        for (ITYPE i=0; i < num_work; ++i) {
+            m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+            memcpy(si, t, dim_work * sizeof(CTYPE));
             si += dim_work;
         }
-        free(t);
     }
 }
 #endif

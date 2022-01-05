@@ -1,32 +1,21 @@
+//
 #include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "utility.h"
 #include "MPIutil.h"
+
+#define _NQUBIT_WORK 22 // 4 Mi x 16 Byte(CTYPE)
 
 static MPI_Comm mpicomm = 0;
 static int mpirank = 0;
 static int mpisize = 0;
 static int mpitag = 0;
-static int initialized = 0; // initialized = 1;
-static MPIutil mpiutil;
+static MPIutil mpiutil = NULL;
 static MPI_Status mpistat;
 static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
-
-static void set_comm(MPI_Comm c) {
-    if (mpicomm == 0) {
-        mpicomm = c;
-        initialized = 1;
-        MPI_Comm_rank(mpicomm, &mpirank);
-        MPI_Comm_size(mpicomm, &mpisize);
-    } else if (mpicomm != c) { 
-        fprintf(stderr, "## warn: MPI_Comm is conflicted!! %x %x\n", (uint)mpicomm, (uint)c);
-    }
-}
-
-static int usempi() {
-    return initialized; // if mpi didn't initialized, return false(0)
-}
+static CTYPE* workarea = NULL;
 
 static int get_rank() {
     return mpirank;
@@ -37,10 +26,25 @@ static int get_size() {
 }
 
 static int get_tag() {
-    pthread_mutex_lock(&mutex);
-    mpitag += 1<<20; // max 1M-ranks
-    pthread_mutex_unlock(&mutex);
+    //pthread_mutex_lock(&mutex);
+    mpitag ^= 1<<20; // max 1M-ranks
+    //pthread_mutex_unlock(&mutex);
     return mpitag;
+}
+
+static CTYPE* get_workarea(ITYPE *dim_work, ITYPE *num_work) {
+    ITYPE dim = *dim_work;
+    *dim_work = get_min_ll(1 << _NQUBIT_WORK, dim);
+    *num_work = get_max_ll(1, dim >> _NQUBIT_WORK);
+    if (workarea == NULL) {
+        workarea = (CTYPE *)malloc(sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+        if (workarea == NULL) {
+            fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__,
+                    __LINE__);
+        exit(1);
+        }
+    }
+    return workarea;
 }
 
 static void barrier() {
@@ -117,33 +121,34 @@ static void recv_osstr(char *recvbuf, int len) {
 }
 */
 
+#define REGISTER_METHOD_POINTER( M ) mpiutil->M = M;
+
 MPIutil get_mpiutil() {
-    static int entered;
-    int flag = (entered == 1);
-    if (flag) {
+    if (mpiutil != NULL) {
       return mpiutil;
     }
 
-    pthread_mutex_lock(&mutex);
-    entered = 1;
-    pthread_mutex_unlock(&mutex);
+    mpicomm = MPI_COMM_WORLD;
+    printf("# MPI_COMM_WORLD %p\n", mpicomm);
+    MPI_Comm_rank(mpicomm, &mpirank);
+    MPI_Comm_size(mpicomm, &mpisize);
+    mpitag = 0;
 
     mpiutil = malloc(sizeof(*mpiutil));
-    mpiutil->set_comm = set_comm;
-    mpiutil->get_rank = get_rank;
-    mpiutil->get_size = get_size;
-    mpiutil->get_tag = get_tag;
-    mpiutil->usempi = usempi;
-    mpiutil->barrier = barrier;
-    mpiutil->m_DC_sendrecv = m_DC_sendrecv; // multi, Double Complex, SendRecv
-    mpiutil->m_I_allreduce = m_I_allreduce; // multi, Double, Allreduce
-    mpiutil->s_D_allgather = s_D_allgather; // single, Double, Allgather
-    mpiutil->s_D_allreduce = s_D_allreduce; // single, Double, Allreduce
+    REGISTER_METHOD_POINTER(get_rank)
+    REGISTER_METHOD_POINTER(get_size)
+    REGISTER_METHOD_POINTER(get_tag)
+    REGISTER_METHOD_POINTER(get_workarea)
+    REGISTER_METHOD_POINTER(barrier)
+    REGISTER_METHOD_POINTER(m_DC_sendrecv)
+    REGISTER_METHOD_POINTER(m_I_allreduce)
+    REGISTER_METHOD_POINTER(s_D_allgather)
+    REGISTER_METHOD_POINTER(s_D_allreduce)
+    REGISTER_METHOD_POINTER(s_i_bcast)
     //mpiutil->s_D_send_next_rank = s_D_send_next_rank; // single, Double, Send_Next_Rank
-    mpiutil->s_i_bcast = s_i_bcast; // single, Int, Bcast
     //mpiutil->recv_osstr = recv_osstr;
     //mpiutil->send_osstr = send_osstr;
-    mpitag = 0;
     return mpiutil;
 }
 
+#undef REGISTER_METHOD_POINTER

@@ -72,7 +72,7 @@ public:
         classical_register(_classical_register), device_number(_device_number)
     {
         MPIutil m = get_mpiutil();
-        m->set_comm(MPI_COMM_WORLD);
+        //m->set_comm(MPI_COMM_WORLD);
         this->_mpirank = m->get_rank();
         this->_mpisize = m->get_size();
         assert(!(_mpisize & (_mpisize - 1))); // mpi-size must be power of 2

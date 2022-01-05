@@ -1,3 +1,4 @@
+//
 #pragma once
 
 #include <pthread.h>
@@ -17,12 +18,10 @@ extern "C" {
 //} CommRequest_t;
 
 typedef struct {
-    /* int a; */
-    void (*set_comm)(MPI_Comm c);
-    int (*usempi)();
     int (*get_rank)();
     int (*get_size)();
     int (*get_tag)();
+    CTYPE* (*get_workarea)(ITYPE *dim_work, ITYPE *num_work);
     void (*barrier)();
     void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int pair_rank);
     void (*m_I_allreduce)(void *buf, UINT count);
