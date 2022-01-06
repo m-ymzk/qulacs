@@ -419,8 +419,8 @@ public:
         }
         set_zero_state();
         _state_vector[0] = 0.;
-        //std::cout << "#" << this ->_mpirank << ": set computational basis: comp_basis= " << comp_basis << ", outer_qc= " << this->outer_qc << std::endl;
-        if (comp_basis >> this->inner_qc == (ITYPE)this->_mpirank) {
+        //std::cout << "# set_computational_basis; " << this ->_mpirank << ", comp_basis= " << comp_basis << ", outer_qc= " << this->outer_qc << std::endl;
+        if (this->outer_qc == 0 || comp_basis >> this->inner_qc == (ITYPE)this->_mpirank) {
             _state_vector[comp_basis & (_dim - 1)] = 1.;
         }
     }
