@@ -318,7 +318,6 @@ public:
         ComplexVector eigen_state(_dim_out);
         auto data = this->data_cpp();
 
-        UINT j=0;
         //for (UINT i = _dim - _dim_out; i < _dim; ++i) eigen_state[j++] = data[i];
         for (UINT i = 0; i < _dim_out; ++i) eigen_state[i] = data[i];
         if (_mpirank == 0){

@@ -156,7 +156,9 @@ from qulacs.gate import Y,CNOT,merge
 state = QuantumState(3)
 state.set_Haar_random_state()
 
-circuit = QuantumCircuit(3)
+#circuit = QuantumCircuit(3)
+circuit = QuantumCircuit(3, use_multi_cpu=True)
+
 circuit.add_X_gate(0)
 merged_gate = merge(CNOT(0,1),Y(1))
 circuit.add_gate(merged_gate)
@@ -179,12 +181,13 @@ circuit.update_quantum_state(state)
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_merge.hpp>
 
-int main(){
+int main(int argc, char *argv[]) {
     int rank, size;
+    MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    QuantumState state(3); // same as original-qulacs
+    //QuantumState state(3); // same as original-qulacs
     QuantumState state(3, 1); // 1(ture): use_multi_cpu
     //QuantumState state(3, 0); // 0(false): don't use_multi_cpu
     state.set_Haar_random_state();
