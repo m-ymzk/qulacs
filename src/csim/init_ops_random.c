@@ -18,7 +18,9 @@ double random_uniform(unsigned long* state);
 double random_normal(unsigned long* state);
 void initialize_Haar_random_state_with_seed_single(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
 void initialize_Haar_random_state_with_seed_parallel(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
-
+void initialize_Haar_random_state(CTYPE *state, ITYPE dim) {
+	initialize_Haar_random_state_with_seed(state, dim, (unsigned)time(NULL));
+}
 void initialize_Haar_random_state_with_seed(CTYPE *state, ITYPE dim, UINT seed) {
     initialize_Haar_random_state_mpi_with_seed(state, dim, 0, seed);
 }
