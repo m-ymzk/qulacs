@@ -29,9 +29,9 @@ elseif(${CMAKE_C_COMPILER} MATCHES "mpifcc*")
 	set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static -lmpi")
 else()
 	message(STATUS "SIMD SUPPORT: No")
-	set(DEFAULT_OPT_FLAGS "-mtune=native -march=native -lmpi")
+	set(DEFAULT_OPT_FLAGS "-mtune=native -march=native")
 	set(DEFAULT_USE_SIMD No)
-    #set(CMAKE_EXE_LINKER_FLAGS "-lmpi")
+    set(CMAKE_EXE_LINKER_FLAGS "-lmpi")
 endif()
 
 if(NOT DEFINED USE_SIMD)
@@ -102,6 +102,7 @@ if(USE_TEST)
 		googletest_fetch
 		GIT_REPOSITORY https://github.com/google/googletest
 		GIT_TAG release-1.8.1
+        PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/gtest-death-test.patch
 	)
 	FetchContent_GetProperties(googletest_fetch)
 	if(NOT googletest_fetch_POPULATED)
@@ -158,8 +159,8 @@ if(NOT USE_GPU)
 	 -Wnested-externs -fdiagnostics-color=auto")
 	set(WARNING_CPP "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
 	 -Wpointer-arith -Winit-self -Wfloat-equal \
-	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
-	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
+	 -Werror=missing-declarations -Werror=return-type \
+	 -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
 	 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
 	 -fdiagnostics-color=auto")
 endif()
