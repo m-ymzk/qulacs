@@ -673,7 +673,6 @@ public:
 #ifdef _USE_MPI
         MPIutil m = get_mpiutil();
         if (_outer_qc > 0) {
-            MPIutil m = get_mpiutil();
             double *sumrank_prob;
             sumrank_prob = new double[this->_mpisize];
 
