@@ -41,6 +41,9 @@ $ ./script/build_gcc.sh
 <test>
 $ cd build
 $ make test
+$ mpirun -n 2 ../bin/csim_test
+$ mpirun -n 2 ../bin/cppsim_test
+$ mpirun -n 2 ../bin/vqcsim_test
 
 <sample>
 $ cd ict

@@ -3,7 +3,7 @@
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
 
-TEST(StateTest, GenerateAndRelease) {    
+TEST(StateTest, GenerateAndRelease) {
     UINT n = 10;
     double eps = 1e-14;
     QuantumState state(n);
@@ -29,6 +29,34 @@ TEST(StateTest, GenerateAndRelease) {
     }
 }
 
+TEST(StateTest, GenerateAndRelease_multicpu) {
+    UINT n = 10;
+    double eps = 1e-14;
+    QuantumState state(n, 1);
+    ASSERT_EQ(state.qubit_count, n);
+    ASSERT_EQ(state.dim * (1ULL << state.outer_qc), 1ULL << n);
+    state.set_zero_state();
+    for (UINT i = 0; i < state.dim; ++i) {
+        if (i == 0 and state.device_number == 0) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
+        else ASSERT_NEAR(abs(state.data_cpp()[i]), 0, eps);
+    }
+    Random random; // provided by qulacs/src/cppsim/utility.hpp
+    random.set_seed(2022);
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        ITYPE basis = random.int64()%state.dim;
+        //std::cout << "#GenAndRelease; " << state.device_number << ", " << basis << ", " << state.outer_qc << std::endl;
+        state.set_computational_basis(basis);
+        for (UINT i = 0; i < state.dim; ++i) {
+            if (i == basis and i >> state.inner_qc == state.device_number) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
+            else ASSERT_NEAR(abs(state.data_cpp()[i]), 0, eps);
+        }
+    }
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        state.set_Haar_random_state();
+        ASSERT_NEAR(state.get_squared_norm(),1.,eps);
+    }
+}
+
 TEST(StateTest, Sampling) {
     UINT n = 10;
     QuantumState state(n);
@@ -39,6 +67,26 @@ TEST(StateTest, Sampling) {
     auto res2 = state.sampling(1024);
 }
 
+TEST(StateTest, Sampling_multicpu) {
+    const UINT n = 10;
+	const UINT num_sampling = 1024;
+    QuantumState state_ref(n, 0);
+    QuantumState state_mul(n, 1);
+    state_ref.set_computational_basis(100);
+    state_mul.set_computational_basis(100);
+    auto res1_ref = state_ref.sampling(num_sampling, 2021);
+    auto res1_mul = state_mul.sampling(num_sampling, 2021);
+	for (ITYPE i = 0; i < num_sampling; ++i) {
+		ASSERT_EQ(res1_ref[i], res1_mul[i]);
+    }
+    state_ref.set_computational_basis(1000);
+    state_mul.set_computational_basis(1000);
+    auto res2_ref = state_ref.sampling(num_sampling, 2022);
+    auto res2_mul = state_mul.sampling(num_sampling, 2022);
+	for (ITYPE i = 0; i < num_sampling; ++i) {
+		ASSERT_EQ(res2_ref[i], res2_mul[i]);
+    }
+}
 
 TEST(StateTest, SetState) {
 	const double eps = 1e-10;
