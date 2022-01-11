@@ -3,23 +3,25 @@
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
 
-TEST(StateTest, GenerateAndRelease) {
+TEST(StateTest_multicpu, GenerateAndRelease) {
     UINT n = 10;
     double eps = 1e-14;
-    QuantumState state(n);
+    QuantumState state(n, 1);
     ASSERT_EQ(state.qubit_count, n);
-    ASSERT_EQ(state.dim, 1ULL << n);
+    ASSERT_EQ(state.dim * (1ULL << state.outer_qc), 1ULL << n);
     state.set_zero_state();
     for (UINT i = 0; i < state.dim; ++i) {
-        if (i == 0) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
+        if (i == 0 and state.device_number == 0) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
         else ASSERT_NEAR(abs(state.data_cpp()[i]), 0, eps);
     }
-    Random random;
+    Random random; // provided by qulacs/src/cppsim/utility.hpp
+    random.set_seed(2022);
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         ITYPE basis = random.int64()%state.dim;
+        //std::cout << "#GenAndRelease; " << state.device_number << ", " << basis << ", " << state.outer_qc << std::endl;
         state.set_computational_basis(basis);
         for (UINT i = 0; i < state.dim; ++i) {
-            if (i == basis) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
+            if (i == basis and i >> state.inner_qc == state.device_number) ASSERT_NEAR(abs(state.data_cpp()[i] - 1.), 0, eps);
             else ASSERT_NEAR(abs(state.data_cpp()[i]), 0, eps);
         }
     }
@@ -29,21 +31,33 @@ TEST(StateTest, GenerateAndRelease) {
     }
 }
 
-TEST(StateTest, Sampling) {
-    UINT n = 10;
-    QuantumState state(n);
-    state.set_Haar_random_state();
-    state.set_computational_basis(100);
-    auto res1 = state.sampling(1024);
-    state.set_computational_basis(100);
-    auto res2 = state.sampling(1024);
+TEST(StateTest_multicpu, Sampling) {
+    const UINT n = 10;
+	const UINT num_sampling = 1024;
+    QuantumState state_ref(n, 0);
+    QuantumState state_mul(n, 1);
+    state_ref.set_computational_basis(100);
+    state_mul.set_computational_basis(100);
+    auto res1_ref = state_ref.sampling(num_sampling, 2021);
+    auto res1_mul = state_mul.sampling(num_sampling, 2021);
+	for (ITYPE i = 0; i < num_sampling; ++i) {
+		ASSERT_EQ(res1_ref[i], res1_mul[i]);
+    }
+    state_ref.set_computational_basis(1000);
+    state_mul.set_computational_basis(1000);
+    auto res2_ref = state_ref.sampling(num_sampling, 2022);
+    auto res2_mul = state_mul.sampling(num_sampling, 2022);
+	for (ITYPE i = 0; i < num_sampling; ++i) {
+		ASSERT_EQ(res2_ref[i], res2_mul[i]);
+    }
 }
 
-TEST(StateTest, SetState) {
+/*
+TEST(StateTest_multicpu, SetState) {
 	const double eps = 1e-10;
 	const UINT n = 10;
-	QuantumState state(n);
-	const ITYPE dim = 1ULL << n;
+	QuantumState state(n, 1);
+	const ITYPE dim = 1ULL << state.inner_qc;
 	std::vector<std::complex<double>> state_vector(dim);
 	for (ITYPE i = 0; i < dim; ++i) {
 		double d = (double)i;
@@ -56,12 +70,12 @@ TEST(StateTest, SetState) {
 	}
 }
 
-TEST(StateTest, GetMarginalProbability) {
+TEST(StateTest_multicpu, GetMarginalProbability) {
 	const double eps = 1e-10;
 	const UINT n = 2;
 	const ITYPE dim = 1 << n;
-	QuantumState state(n);
-	state.set_Haar_random_state();
+	QuantumState state(n, 1);
+	state.set_Haar_random_state(2022);
 	std::vector<double> probs;
 	for (ITYPE i = 0; i < dim; ++i) {
 		probs.push_back(pow(abs(state.data_cpp()[i]),2));
@@ -76,9 +90,9 @@ TEST(StateTest, GetMarginalProbability) {
 	ASSERT_NEAR(state.get_marginal_probability({ 2,1 }), probs[2] + probs[3], eps);
 	ASSERT_NEAR(state.get_marginal_probability({ 2,2 }), 1., eps);
 }
+*/
 
-
-TEST(StateTest, AddState) {
+TEST(StateTest_multicpu, AddState) {
 	const double eps = 1e-10;
 	const UINT n = 10;
 	QuantumState state1(n);
@@ -104,7 +118,7 @@ TEST(StateTest, AddState) {
 	}
 }
 
-TEST(StateTest, MultiplyCoef) {
+TEST(StateTest_multicpu, MultiplyCoef) {
 	const double eps = 1e-10;
 	const UINT n = 10;
 	const std::complex<double> coef(0.5, 0.2);
@@ -125,7 +139,7 @@ TEST(StateTest, MultiplyCoef) {
 	}
 }
 
-TEST(StateTest, TensorProduct) {
+TEST(StateTest_multicpu, TensorProduct) {
 	const double eps = 1e-10;
 	const UINT n = 5;
 
@@ -143,7 +157,7 @@ TEST(StateTest, TensorProduct) {
 	delete state3;
 }
 
-TEST(StateTest, DropQubit) {
+TEST(StateTest_multicpu, DropQubit) {
 	const double eps = 1e-10;
 	const UINT n = 4;
 
@@ -162,7 +176,7 @@ TEST(StateTest, DropQubit) {
 
 
 
-TEST(StateTest, PermutateQubit) {
+TEST(StateTest_multicpu, PermutateQubit) {
 	const double eps = 1e-10;
 	const UINT n = 3;
 

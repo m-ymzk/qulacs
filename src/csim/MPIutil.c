@@ -129,7 +129,7 @@ MPIutil get_mpiutil() {
     }
 
     mpicomm = MPI_COMM_WORLD;
-    printf("# MPI_COMM_WORLD %p\n", mpicomm);
+    //printf("# MPI_COMM_WORLD %p\n", mpicomm);
     MPI_Comm_rank(mpicomm, &mpirank);
     MPI_Comm_size(mpicomm, &mpisize);
     mpitag = 0;
