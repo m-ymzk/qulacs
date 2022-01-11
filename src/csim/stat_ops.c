@@ -6,6 +6,9 @@
 #include "utility.h"
 #include "constant.h"
 
+#ifdef _USE_MPI
+#include "csim/MPIutil.h"
+#endif
 
 // calculate norm
 double state_norm_squared(const CTYPE *state, ITYPE dim) {
@@ -19,6 +22,24 @@ double state_norm_squared(const CTYPE *state, ITYPE dim) {
     }
     return norm;
 }
+
+#ifdef _USE_MPI
+double state_norm_squared_mpi(const CTYPE *state, ITYPE dim) {
+    ITYPE index;
+    double norm = 0;
+#ifdef _OPENMP
+#pragma omp parallel for reduction(+:norm)
+#endif
+    for (index = 0; index < dim; ++index){
+        norm += pow(cabs(state[index]), 2);
+    }
+
+    MPIutil m = get_mpiutil();
+    m->s_D_allreduce(&norm);
+
+    return norm;
+}
+#endif //#ifdef _USE_MPI
 
 // calculate inner product of two state vector
 CTYPE state_inner_product(const CTYPE *state_bra, const CTYPE *state_ket, ITYPE dim) {
