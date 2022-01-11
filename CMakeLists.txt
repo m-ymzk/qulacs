@@ -151,6 +151,20 @@ endif()
 
 ##### set warnings #####
 if(NOT USE_GPU)
+	if(${CMAKE_CXX_COMPILER} MATCHES "mpiFCC*")
+	set(WARNING_C "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	 -Wpointer-arith -Winit-self -Wfloat-equal \
+	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
+	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
+     -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
+	 -Wnested-externs -fdiagnostics-color=auto")
+	set(WARNING_CPP "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	 -Wpointer-arith -Winit-self -Wfloat-equal \
+	 -Werror=missing-declarations -Werror=return-type \
+	 -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
+	 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
+	 -fdiagnostics-color=auto")
+	else()
     set(WARNING_C "-Wall -Wextra -Werror=undef -Wlogical-op -Wmissing-include-dirs \
 	 -Wpointer-arith -Winit-self -Wfloat-equal -Wsuggest-attribute=noreturn \
 	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
@@ -163,6 +177,7 @@ if(NOT USE_GPU)
 	 -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
 	 -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Werror=overflow -Wdate-time \
 	 -fdiagnostics-color=auto")
+	endif()
 endif()
 
 
