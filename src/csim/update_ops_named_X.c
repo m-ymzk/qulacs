@@ -195,10 +195,10 @@ void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
     } else {
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
-		ITYPE dim_work = dim;
-		ITYPE num_work = 0;
+        ITYPE dim_work = dim;
+        ITYPE num_work = 0;
         CTYPE* t = m->get_workarea(&dim_work, &num_work);
-		assert(num_work>0);
+        assert(num_work > 0);
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
         //ITYPE dim_work = get_min_ll(1 << nqubit_WORK, dim);

@@ -303,8 +303,8 @@ void H_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void H_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
-void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag);
-void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag);
+void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE s_offset, ITYPE dim, int flag);
+void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE s_offset, ITYPE dim, int flag);
 #endif
 /** Hadamard gate multiplied sqrt(2) **/
 //DllExport void H_gate_unnormalized(UINT target_qubit_index, CTYPE *state, ITYPE dim);
