@@ -6,7 +6,8 @@
 #include "utility.h"
 #include "MPIutil.h"
 
-#define _NQUBIT_WORK 22 // 4 Mi x 16 Byte(CTYPE)
+#define _NQUBIT_WORK 5 // small buffer(5 qubit/proc.) for test
+//#define _NQUBIT_WORK 22 // 4 Mi x 16 Byte(CTYPE)
 
 static MPI_Comm mpicomm = 0;
 static int mpirank = 0;
@@ -14,7 +15,7 @@ static int mpisize = 0;
 static int mpitag = 0;
 static MPIutil mpiutil = NULL;
 static MPI_Status mpistat;
-static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 static CTYPE* workarea = NULL;
 
 static int get_rank() {
