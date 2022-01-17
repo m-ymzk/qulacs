@@ -70,7 +70,6 @@ public:
         classical_register(_classical_register), device_number(_device_number)
     {
         MPIutil m = get_mpiutil();
-        m->set_comm(MPI_COMM_WORLD);
         UINT mpirank = m->get_rank();
         UINT mpisize = m->get_size();
         assert(!(mpisize & (mpisize - 1))); // mpi-size must be power of 2
@@ -532,15 +531,56 @@ public:
      * @return 自身のディープコピー
      */
     virtual QuantumStateBase* copy() const override {
-        QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count);
-        memcpy(new_state->data_cpp(), _state_vector, (size_t)(sizeof(CPPCTYPE)*_dim));
-        for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
-        return new_state;
+        if (this->_outer_qc > 0) return this->copy_multicpu();
+        else return copy_cpu();
+    }
+
+    /**
+     * \~japanese-en 自身の状態のディープコピー（分散無し）を生成する
+     *
+     * @return 自身のディープコピー
+     */
+    QuantumStateBase* copy_cpu() const {
+        QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 0);
+        if (this->_outer_qc > 0) { // copy multicpu -> (single)cpu
+            //MPIutil m = get_mpiutil();
+            std::cerr << "Error: QuantumStateCpu::copy_cpu(): not implemented!!" << __FILE__ << ":" << __LINE__ << std::endl;
+            //m->m_DC_allgather();
+            for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
+            return new_state;
+        } else { // copy (single)cpu -> cpu
+            memcpy(new_state->data_cpp(), _state_vector, (size_t)(sizeof(CPPCTYPE)*_dim));
+            for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
+            return new_state;
+        }
+    }
+
+    /**
+     * \~japanese-en 自身の状態のディープコピー（分散有り）を生成する
+     *
+     * @return 自身のディープコピー
+     */
+    virtual QuantumStateBase* copy_multicpu() const {
+        QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 1);
+        if (this->_outer_qc > 0) { // copy multicpu -> multicpu
+            memcpy(new_state->data_cpp(), _state_vector, (size_t)(sizeof(CPPCTYPE)*_dim));
+            for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
+            return new_state;
+        } else { // copy (single)cpu -> multicpu
+            MPIutil m = get_mpiutil();
+            ITYPE local_dim = 1 << this->inner_qc;
+			ITYPE offs = local_dim * m->get_rank();
+            memcpy(new_state->data_cpp(), _state_vector + offs, (size_t)(sizeof(CPPCTYPE)*local_dim));
+            for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
+            return new_state;
+        }
     }
     /**
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
     virtual void load(const QuantumStateBase* _state) {
+        //std::cout << "#debug: QuantumStateCpu::load(const QuantumStateBase*): load qubit:" << this->qubit_count << ", "
+		//   	<< _state->qubit_count << ", " << _state->outer_qc << ", " << _state->inner_qc << ", " << std::endl;
         if (_state->qubit_count != this->qubit_count) {
             std::cerr << "Error: QuantumStateCpu::load(const QuantumStateBase*): invalid qubit count" << std::endl;
             return;
@@ -556,6 +596,7 @@ public:
 			memcpy(this->data_cpp(), _state->data_cpp(), (size_t)(sizeof(CPPCTYPE)*_dim));
 		}
     }
+
     /**
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
@@ -564,8 +605,38 @@ public:
             std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): invalid length of state" << std::endl;
             return;
         }
-        memcpy(this->data_cpp(), _state.data(), (size_t)(sizeof(CPPCTYPE)*_dim));
+        if (this->outer_qc > 0) { // load vector to multi-cpu state vector
+            std::cout << "# load(std::vector<CPPTYPE>&): " << std::endl;
+            MPIutil m = get_mpiutil();
+            ITYPE local_dim = 1 << this->inner_qc;
+			ITYPE offs = local_dim * m->get_rank();
+            //std::vector<CPPCTYPE> offs_state = &_state.data()[offs];
+            memcpy(this->data_cpp(), &_state.data()[offs], (size_t)(sizeof(CPPCTYPE)*local_dim));
+        } else { // load vector to (single)cpu state vector
+            memcpy(this->data_cpp(), _state.data(), (size_t)(sizeof(CPPCTYPE)*_dim));
+        }
     }
+	/*
+    void load_multicpu(const std::vector<CPPCTYPE>& _state) {
+        if (this->outer_qc > 0) { // load vector to multi-cpu state vector
+            //std::cout << "#debug: QuantumStateCpu::load(vector<Complex>&): length of vector:" << _state.size() << ", "
+			//   	<< this->outer_qc << ", " << this->inner_qc << ", " << std::endl;
+            if (_state.size() != _dim * (1 << this->outer_qc)) {
+                std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): invalid length of to multicpu-state:" << _state.size() << ", " << _dim << " * " << (1<<this->outer_qc) << std::endl;
+                return;
+            }
+            MPIutil m = get_mpiutil();
+            UINT head = (1 << this->inner_qc ) * m->get_rank();
+            memcpy(this->data_cpp(), _state.data() + head, (size_t)(sizeof(CPPCTYPE)*_dim));
+        } else { // load full-vector in same way as original (cpu-type state vector)
+            if (_state.size() != _dim) {
+                std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): invalid length of state" << std::endl;
+                return;
+            }
+            memcpy(this->data_cpp(), _state.data(), (size_t)(sizeof(CPPCTYPE)*_dim));
+        }
+    }
+    */
 
     /**
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
@@ -685,7 +756,7 @@ public:
             m->s_D_allgather(sum, sumrank_prob);
 
             double firstv = 0.;
-            for (int i = 0; i < mpirank; ++i) {
+            for (UINT i = 0; i < mpirank; ++i) {
                 firstv += sumrank_prob[i];
             }
             for (ITYPE i = 0; i < this->dim + 1; ++i) {
@@ -706,7 +777,7 @@ public:
         if (_outer_qc > 0) {
             UINT geta = mpirank * this->dim;
             for (UINT i = 0; i < sampling_count; ++i) {
-                if (result[i] == -1 or result[i] == this->dim) result[i] = 0;
+                if (result[i] == -1ULL or result[i] == this->dim) result[i] = 0ULL;
                 else result[i] += geta;
             }
             m->m_I_allreduce(result.data(), sampling_count);

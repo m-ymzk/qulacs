@@ -5,7 +5,6 @@ from qulacs import QuantumCircuit, QuantumState
 from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix
 from qulacs.circuit import QuantumCircuitOptimizer as QCO
 from time import time
-from mpi4py import MPI
 
 def get_option():
     argparser = ArgumentParser()
@@ -41,19 +40,19 @@ def build_circuit(nqubits, depth, pairs):
     return circuit
 
 if __name__ == '__main__':
-    comm = MPI.COMM_WORLD
-    print("MPI rank/size:",comm.rank, comm.size)
-
     args = get_option()
     tstart = time()
     nqubits=args.nqubits
     pairs = [(i, (i + 1) % nqubits) for i in range(nqubits)]
     circuit = build_circuit(nqubits, 9, pairs)
 
+    np.random.seed(seed=32)
+
     #if args.opt:
     if True:
         t1=time()
-        st = QuantumState(nqubits)
+        #st = QuantumState(nqubits)
+        st = QuantumState(nqubits, use_multi_cpu=True)
         circuit = build_circuit(nqubits, 9, pairs)
         if args.opt>=0:
             qco = QCO()
@@ -69,10 +68,13 @@ if __name__ == '__main__':
         t2=time()
         circuit.update_quantum_state(st)
         t3=time()
-        if comm.rank==0:
+        #if comm.rank==0:
+        if True:
             print("# time update :", t2-t1, t3-t2)
             print("# circuit ", circuit.to_string())
-            print("# state ", st.to_string())
+            print("# state ")
+            print(st.to_string())
+            print("# device ", st.get_device_name())
 
     else:
         t1=time()

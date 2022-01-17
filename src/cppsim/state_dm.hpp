@@ -182,11 +182,11 @@ public:
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
     virtual void load(const std::vector<CPPCTYPE>& _state) {
-        if (_state.size() != _dim && _state.size() != _dim*_dim) {
+        if ((ITYPE)_state.size() != _dim && _state.size() != _dim*_dim) {
             std::cerr << "Error: DensityMatrixCpu::load(vector<Complex>&): invalid length of state" << std::endl;
             return;
         }
-		if (_state.size() == _dim) {
+		if ((ITYPE)_state.size() == _dim) {
 			dm_initialize_with_pure_state(this->data_c(), (const CTYPE*)_state.data(), dim);
 		}
 		else {
@@ -195,11 +195,11 @@ public:
     }
 
 	virtual void load(const Eigen::VectorXcd& _state) {
-		if (_state.size() != _dim && _state.size() != _dim * _dim) {
+		if ((ITYPE)_state.size() != _dim && (ITYPE)_state.size() != _dim * _dim) {
 			std::cerr << "Error: DensityMatrixCpu::load(vector<Complex>&): invalid length of state" << std::endl;
 			return;
 		}
-		if (_state.size() == _dim) {
+		if ((ITYPE)_state.size() == _dim) {
 			dm_initialize_with_pure_state(this->data_c(), (const CTYPE*)_state.data(), dim);
 		}
 		else {
@@ -208,7 +208,7 @@ public:
 	}
 
 	virtual void load(const ComplexMatrix& _state) {
-		if (_state.cols() != _dim && _state.rows() != _dim * _dim) {
+		if ((ITYPE)_state.cols() != _dim && (ITYPE)_state.rows() != _dim * _dim) {
 			std::cerr << "Error: DensityMatrixCpu::load(ComplexMatrix&): invalid length of state" << std::endl;
 			return;
 		}

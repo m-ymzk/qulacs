@@ -356,30 +356,36 @@ void single_qubit_dense_matrix_gate_parallel_simd(UINT target_qubit_index, const
 #endif
 
 #ifdef _USE_MPI
-void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT inner_qc) {
+void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc) {
     if (target_qubit_index < inner_qc){
 		single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
     }
 	else {
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
-        CTYPE* t = NULL;
+        ITYPE dim_work = dim;
+        ITYPE num_work = 0;
+        CTYPE* t = m->get_workarea(&dim_work, &num_work);
+        assert(num_work > 0);
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
-        _MALLOC_AND_CHECK(t, CTYPE, dim);
-        m->m_DC_sendrecv(state, t, dim, pair_rank);
+		CTYPE* si = state;
+		for (ITYPE i=0; i < num_work; ++i) {
+            m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 #ifdef _OPENMP
-		UINT threshold = 13;
-		if (dim < (((ITYPE)1) << threshold)) {
-			single_qubit_dense_matrix_gate_single_mpi(t, matrix, state, dim, rank & pair_rank_bit);
-		}
-		else {
-			single_qubit_dense_matrix_gate_parallel_mpi(t, matrix, state, dim, rank & pair_rank_bit);
-		}
+			UINT threshold = 13;
+			if (dim < (((ITYPE)1) << threshold)) {
+				single_qubit_dense_matrix_gate_single_mpi(t, matrix, si, dim_work, rank & pair_rank_bit);
+			}
+			else {
+				single_qubit_dense_matrix_gate_parallel_mpi(t, matrix, si, dim_work, rank & pair_rank_bit);
+#pragma omp barrier
+			}
 #else
-		single_qubit_dense_matrix_gate_single_mpi(t, matrix, state, dim, rank & pair_rank_bit);
+			single_qubit_dense_matrix_gate_single_mpi(t, matrix, si, dim_work, rank & pair_rank_bit);
+			si += dim_work;
 #endif
-		free(t);
+		}
 	}
 }
 

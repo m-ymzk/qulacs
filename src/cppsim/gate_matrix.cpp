@@ -141,7 +141,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 						target_index[0],
 						matrix_ptr, state->data_c(), dim);
 				else // for distributed-state vector
-					std::cerr << "not implemented" << std::endl;
+					std::cerr << "not implemented:" << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 			}
 			// multiple control qubits
@@ -175,7 +175,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 						target_index[0],
 						matrix_ptr, state->data_c(), dim);
 				else // for distributed-state vector
-					std::cerr << "not implemented" << std::endl;
+					std::cerr << "not implemented:" << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 			}
 		}
@@ -201,7 +201,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 						target_index.data(), (UINT)(target_index.size()),
 						matrix_ptr, state->data_c(), dim);
 				else // for distributed-state vector
-					std::cerr << "not implemented" << std::endl;
+					std::cerr << "not implemented:" << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 			}
 			// single control qubit
@@ -226,7 +226,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 						target_index.data(), (UINT)(target_index.size()),
 						matrix_ptr, state->data_c(), dim);
 				else // for distributed-state vector
-					std::cerr << "not implemented" << std::endl;
+					std::cerr << "not implemented:" << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 			}
 			// multiple control qubit
@@ -251,7 +251,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 						target_index.data(), (UINT)(target_index.size()),
 						matrix_ptr, state->data_c(), dim);
 				else // for distributed-state vector
-					std::cerr << "not implemented" << std::endl;
+					std::cerr << "not implemented:" << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 			}
 		}
