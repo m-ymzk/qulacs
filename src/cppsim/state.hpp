@@ -543,8 +543,8 @@ public:
     QuantumStateBase* copy_cpu() const {
         QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 0);
         if (this->_outer_qc > 0) { // copy multicpu -> (single)cpu
-            MPIutil m = get_mpiutil();
-            std::cerr << "Error: QuantumStateCpu::copy_cpu(): not implemented!!" << std::endl;
+            //MPIutil m = get_mpiutil();
+            std::cerr << "Error: QuantumStateCpu::copy_cpu(): not implemented!!" << __FILE__ << ":" << __LINE__ << std::endl;
             //m->m_DC_allgather();
             for(UINT i=0;i<_classical_register.size();++i) new_state->set_classical_value(i,_classical_register[i]);
             return new_state;
@@ -756,7 +756,7 @@ public:
             m->s_D_allgather(sum, sumrank_prob);
 
             double firstv = 0.;
-            for (int i = 0; i < mpirank; ++i) {
+            for (UINT i = 0; i < mpirank; ++i) {
                 firstv += sumrank_prob[i];
             }
             for (ITYPE i = 0; i < this->dim + 1; ++i) {
@@ -777,7 +777,7 @@ public:
         if (_outer_qc > 0) {
             UINT geta = mpirank * this->dim;
             for (UINT i = 0; i < sampling_count; ++i) {
-                if (result[i] == -1 or result[i] == this->dim) result[i] = 0;
+                if (result[i] == -1ULL or result[i] == this->dim) result[i] = 0ULL;
                 else result[i] += geta;
             }
             m->m_I_allreduce(result.data(), sampling_count);

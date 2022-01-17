@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
@@ -262,6 +263,7 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1, CTYPE *
         SWAP_gate(target_qubit_index_0, target_qubit_index_1, state, dim);
     }
     else {
+		printf("#TODO implementation, %d, %d SWAP\n", larger_qubit, smaller_qubit);
         //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
         //MPIutil m = get_mpiutil();
         //int rank = m->get_rank();

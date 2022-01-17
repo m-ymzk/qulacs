@@ -356,7 +356,7 @@ void single_qubit_dense_matrix_gate_parallel_simd(UINT target_qubit_index, const
 #endif
 
 #ifdef _USE_MPI
-void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT inner_qc) {
+void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc) {
     if (target_qubit_index < inner_qc){
 		single_qubit_dense_matrix_gate(target_qubit_index, matrix, state, dim);
     }

@@ -236,28 +236,25 @@ void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         const int pair_rank = rank ^ pair_rank_bit;
 
         CTYPE* si = state;
-        ITYPE s_offset = 0;
         for (UINT i = 0; i < (UINT)num_work; ++i) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 #ifdef _OPENMP
             UINT threshold = 13;
             if (dim < (((ITYPE)1) << threshold)) {
-                H_gate_single_unroll_mpi(t, si, s_offset, dim_work, rank & pair_rank_bit);
+                H_gate_single_unroll_mpi(t, si, dim_work, rank & pair_rank_bit);
             }
             else {
-                H_gate_parallel_unroll_mpi(t, si, s_offset, dim_work, rank & pair_rank_bit);
+                H_gate_parallel_unroll_mpi(t, si, dim_work, rank & pair_rank_bit);
             }
 #else
-            H_gate_single_unroll_mpi(t, si, s_offset, dim_work, rank & pair_rank_bit);
+            H_gate_single_unroll_mpi(t, si, dim_work, rank & pair_rank_bit);
 #endif
             si += dim_work;
-			//printf("# named_H: update_s_offset %lld\n",s_offset);
-            s_offset += dim_work;
         }
     }
 }
 
-void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE s_offset, ITYPE dim, int flag) {
+void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 	const double sqrt2inv = 1. / sqrt(2.);
 	for (ITYPE state_index = 0; state_index < dim; state_index += 2) {
         // flag: My qubit(target in outer_qubit) value.
@@ -275,7 +272,7 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE s_offset, ITYPE dim, in
 }
 
 #ifdef _OPENMP
-void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE s_offset, ITYPE dim, int flag) {
+void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *state, ITYPE dim, int flag) {
 	const double sqrt2inv = 1. / sqrt(2.);
 	ITYPE state_index = 0;
 #pragma omp parallel for

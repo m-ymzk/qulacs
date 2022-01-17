@@ -6,8 +6,8 @@
 #include "utility.h"
 #include "MPIutil.h"
 
-#define _NQUBIT_WORK 5 // small buffer(5 qubit/proc.) for test
-//#define _NQUBIT_WORK 22 // 4 Mi x 16 Byte(CTYPE)
+//#define _NQUBIT_WORK 5 // small buffer(5 qubit/proc.) for test
+#define _NQUBIT_WORK 22 // 4 Mi x 16 Byte(CTYPE)
 
 static MPI_Comm mpicomm = 0;
 static int mpirank = 0;

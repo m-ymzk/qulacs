@@ -303,8 +303,8 @@ void H_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void H_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void H_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
-void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE s_offset, ITYPE dim, int flag);
-void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE s_offset, ITYPE dim, int flag);
+void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag);
+void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag);
 #endif
 /** Hadamard gate multiplied sqrt(2) **/
 //DllExport void H_gate_unnormalized(UINT target_qubit_index, CTYPE *state, ITYPE dim);
@@ -641,8 +641,8 @@ void single_qubit_dense_matrix_gate_single_simd(UINT target_qubit_index, const C
 void single_qubit_dense_matrix_gate_parallel_simd(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
-void single_qubit_dense_matrix_gate_single_mpi(CTYPE *t, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int flag);
-void single_qubit_dense_matrix_gate_parallel_mpi(CTYPE *t, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int flag);
+void single_qubit_dense_matrix_gate_single_mpi(CTYPE *t, const CTYPE diagonal_matrix[4], CTYPE *state, ITYPE dim, int flag);
+void single_qubit_dense_matrix_gate_parallel_mpi(CTYPE *t, const CTYPE diagonal_matrix[4], CTYPE *state, ITYPE dim, int flag);
 #endif
 
 /**
