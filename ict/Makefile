@@ -1,5 +1,7 @@
 #
 
+TARGET := qtest qbench mpiqtest mpiqbench mpicnot
+
 ifdef usefcc
     CC := mpifcc
     CXX := mpiFCC
@@ -43,8 +45,6 @@ $(warning CXXFLAGS = $(CXXFLAGS))
 
 #OLD_SHELL := $(SHELL)
 #SHELL = $(warning [Making: $@]   [Dependencies: $^]   [Changed: $?])$(OLD_SHELL)
-
-TARGET := qtest qbench mpiqtest mpiqbench
 
 .PHONY : all clean test $(POCL_DIR)
 .DEFAULT : all
