@@ -336,7 +336,7 @@ void CNOT_gate_parallel_simd(UINT control_qubit_index, UINT target_qubit_index, 
 #ifdef _USE_MPI
 DllExport void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
 void CNOT_gate_single_unroll_cin_tout(UINT control_qubit_index, UINT pair_rank, CTYPE *state, ITYPE dim);
-//void CNOT_gate_parallel_unroll_mpi(UINT control_qubit_index, CTYPE *state, ITYPE dim);
+//void CNOT_gate_parallel_unroll_cin_tout(UINT control_qubit_index, UINT pair_rank, CTYPE *state, ITYPE dim);
 #endif
 
 /**
