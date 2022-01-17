@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
     }
     //std::cout << "Rank " << rank << ", PID " << getpid() << ", provided=" << provided << std::endl << std::flush;
     std::cout << "Rank " << rank << ", PID " << getpid() << std::endl << std::flush;
-    int i = atoi(argv[1]);
-    while (i == rank) sleep(1); // for mpi debug
+    int r = atoi(argv[1]);
+    while (r == rank) sleep(1); // for mpi debug
     MPI_Barrier(MPI_COMM_WORLD);
 
     int nqubits = atoi(argv[2]);

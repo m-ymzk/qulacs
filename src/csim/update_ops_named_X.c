@@ -204,7 +204,6 @@ void X_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         //ITYPE dim_work = get_min_ll(1 << nqubit_WORK, dim);
         //ITYPE num_work = get_max_ll(1, dim >> nqubit_WORK);
         //printf("#debug dim,dim_work,num_work,t: %lld, %lld, %lld, %p\n", dim, dim_work, num_work, t);
-        //_MALLOC_AND_CHECK(t, CTYPE, dim_work);
         CTYPE* si = state;
         for (ITYPE i=0; i < num_work; ++i) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);

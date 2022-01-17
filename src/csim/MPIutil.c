@@ -33,6 +33,11 @@ static int get_tag() {
     return mpitag;
 }
 
+static void release_workarea() {
+    if (workarea != NULL) free(workarea);
+    workarea = NULL;
+}
+
 static CTYPE* get_workarea(ITYPE *dim_work, ITYPE *num_work) {
     ITYPE dim = *dim_work;
     *dim_work = get_min_ll(1 << _NQUBIT_WORK, dim);
@@ -140,6 +145,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(get_size)
     REGISTER_METHOD_POINTER(get_tag)
     REGISTER_METHOD_POINTER(get_workarea)
+    REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
     REGISTER_METHOD_POINTER(m_I_allreduce)

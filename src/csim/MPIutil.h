@@ -22,6 +22,7 @@ typedef struct {
     int (*get_size)();
     int (*get_tag)();
     CTYPE* (*get_workarea)(ITYPE *dim_work, ITYPE *num_work);
+    void (*release_workarea)();
     void (*barrier)();
     void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int pair_rank);
     void (*m_I_allreduce)(void *buf, UINT count);
