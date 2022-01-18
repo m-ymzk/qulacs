@@ -81,7 +81,7 @@ $ mpirun -n 4 python test.py -n 20
   | _USE_MPI | Ture     | MPI対応で追加 |
 
 - mpi実行時のランク数（WORLD_SIZE）は2のべき数とすること
-- X-gate, CNOT-gate処理において、ノード内stateと同量のメモリを一時的に確保する仮方式となっているため、ノード当たりの最大qubit数は1bit少ない、29 qubit(ComplexTYPE 512M = 8GiB)が最大
+- 未対応の機能・ゲートを使用した場合、segvや、結果異常となる場合がある
 - オリジナルqulacsとの機能に差があるAPI
   - QuantumStateインスタンスの作成
     - QuantumState state(qubits)
