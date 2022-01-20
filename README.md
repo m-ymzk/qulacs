@@ -32,7 +32,7 @@
       - Identity / H
       - S / Sdag
       - T / Tdag
-      - RX / RY  RZ
+      - RX / RY / RZ
       - DenseMatrix(single target)
 
 - 3月末版対応予定の関数・機能
@@ -44,9 +44,9 @@
       - U1 / U2 / U3
       - CZ
       - SWAP
+      - Measurement
       - Pauli
       - PauliRotation
-      - DenseMatrix
       - DiagonalMatrix
       - DenseMatrix(single control, single target)
       - to_matrix_gate
@@ -67,7 +67,6 @@
       - FREDKIN
       - DenseMatrix(double target)
       - DenseMatrix(multi control, single target)
-      - Measurement
       - merge
       - CPTP
       - Instrument
