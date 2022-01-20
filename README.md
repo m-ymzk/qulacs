@@ -7,85 +7,107 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、起動しているMPIノードで分散配置させる。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置しない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=1$ ）
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=1$ ）
 - 対応関数及び範囲は、制限事項を参照
-
-<hr>
-
-## build/install
-### use python3-venv (qenv)
-```shell
-$ python3 -m venv qenv
-$ . ./qenv/bin/activate
-$ pip install -U pip wheel (*1)
-$ pip install mpi4py (*1, *2)
-$ cd [mpi-qulacs]
-$ python setup.py install (*1)
-
-*1 要internet接続
-*2 fccを使う場合(参考)
-   $ MPICC=mpifcc pip install mpi4py
-```
-
-## c++/c library build
-#### GCC
-- 前提条件 (確認済みバージョン)
-    - gcc 11.2.0
-    - openmpi 4.1.2 (gcc 11.2)
-        - configure-option: --with-openib
-```shell
-<lib. build>
-$ cd [mpi-qulacs]
-$ ./script/build_gcc.sh
-
-<test>
-$ cd build
-$ make test
-$ mpirun -n 2 ../bin/csim_test
-$ mpirun -n 2 ../bin/cppsim_test
-$ mpirun -n 2 ../bin/vqcsim_test
-
-<sample>
-$ cd ict
-$ make
-$ mpirun -n 4 mpiqtest -1 20 0
-(USAGE: mpiqtest debug-flag n-qubits target-qubit)
-(USAGE: mpiqbench [start n-qubits] [end n-qubit])
-```
-
-#### fcc/FCC
-```shell
-$ cd [mpi-qulacs]
-$ ./script/build_fcc.sh
-
-<c++ program sample>
-$ cd [mpi-qulacs]/ict
-$ usefcc=1 make
-$ mpirun -n 4 mpiqtest -1 20 0
-
-<python script sample>
-$ cd [mpi-qulacs]/ict/python
-$ mpirun -n 4 python test.py -n 20
-```
 
 <hr>
 
 ## 制限事項
 
-- ビルド オプション（fx700で選択される
-  | ビルドオプション | MPI-qulacs対応値 | 説明 |
-  | -------- | -------- | -------- |
-  | _MSC_VAR | False    | windows環境には未対応 |
-  | _USE_SIMD | False   | avx2を想定しているため使用しない |
-  | _OPENMP  | Ture     | OpenMP有効 |
-  | _USE_MPI | Ture     | MPI対応で追加 |
-
 - mpi実行時のランク数（WORLD_SIZE）は2のべき数とすること
 - 未対応の機能・ゲートを使用した場合、segvや、結果異常となる場合がある
+- device=gpuは、対応しない
+
+- 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
+  - QuantumState
+      - Constructor
+      - get_device_name
+      - sampling
+      - set_computational_basis
+      - set_Haar_random_state
+      - to_string
+  - gate
+      - X
+      - CNOT
+      - Identity / H
+      - S / Sdag
+      - T / Tdag
+      - RX / RY  RZ
+      - DenseMatrix(single target)
+
+- 3月末版対応予定の関数・機能
+  - gate
+      - Y / Z
+      - SqrtX / SqrtXdag
+      - SqrtY /SqrtYdag
+      - P0 / P1
+      - U1 / U2 / U3
+      - CZ
+      - SWAP
+      - Pauli
+      - PauliRotation
+      - DenseMatrix
+      - DiagonalMatrix
+      - DenseMatrix(single control, single target)
+      - to_matrix_gate
+  - Observable
+  - QuantumCircuit
+  - QuantumState
+      - normalize
+      - copy
+      - load
+      - get_vector
+  - ParametricQuantumCircuit
+  - PauliOperator
+
+## 注意事項
+- 4月以降の版で順次対応予定の関数・機能
+  - gate
+      - TOFFOLI
+      - FREDKIN
+      - DenseMatrix(double target)
+      - DenseMatrix(multi control, single target)
+      - Measurement
+      - merge
+      - CPTP
+      - Instrument
+      - Adaptive
+  - QuantumCircuitOptimizer
+  - QuantumCircuitSimulator
+  - state
+      - inner_product
+      - tensor_product
+      - permutate_qubit
+      - drop_qubit
+      - partial_trace
+
+- 対応予定が未定な関数・機能
+  - gate
+      - DenseMatrix(multi target)
+      - DenseMatrix(single control, multi target)
+      - DenseMatrix(multi control, multi target)
+      - SparseMatrix
+      - RandomUnitary
+      - ReversibleBoolean
+      - StateReflection
+      - BitFlipNoise
+      - DephasingNoise
+      - IndependentXZNoise
+      - DepolarizingNoise
+      - TwoQubitDepolarizingNoise
+      - AmplitudeDampingNoise
+      - add
+      - Probabilistic
+      - ProbabilisticInstrument
+      - CP
+  - DensityMatrix (simulation)
+  - GeneralQuantumOperator
+  - QuantumGateBase
+  - QuantumGateMatrix
+  - QuantumGate_SingleParameter
+
 - オリジナルqulacsとの機能に差があるAPI
   - QuantumStateインスタンスの作成
-    - QuantumState state(qubits)
-　    ノード内にstate vectorを作成する。（従来動作）
     - QuantumState state(qubits, use_multi_cpu)
       - use_multi_cpu = false
           ノード内にstate vectorを作成する。（従来動作）
@@ -100,8 +122,8 @@ $ mpirun -n 4 python test.py -n 20
         | 返り値 | 説明 |
         | -------- | -------- |
         | "cpu"   | ノード内に作成されたstate vector |
-        | ("gpu") | mpi-qulacsではサポートしない |
         | "multi-cpu" | 分散配置されたstate vector |
+        | ("gpu") | mpi-qulacsではサポートしない |
 
     - state.to_string()
       state情報を出力
@@ -133,34 +155,78 @@ $ mpirun -n 4 python test.py -n 20
     - seedを指定しない場合でも、rank0での乱数値が全ランクで共有(bcast)され、seedとして使用される。
     - seedを指定する場合、全ランクで共通の値を指定すること。
 
-- 動作確認済み機能
-  - QuantumState
-      - Constructor
-      - get_device_name
-      - sampling
-      - set_computational_basis
-      - set_Haar_random_state
-      - to_string
-  - gate
-      - X
-      - CNOT
-      - Identity / H
-      - S / Sdag
-      - T / Tdag
-      - RX / RY  RZ
-      - DenseMatrix(w/o control, single only)
+<hr>
+
+## build/install
+### use python3-venv (qenv)
+```shell
+$ python3 -m venv qenv
+$ . ./qenv/bin/activate
+$ pip install -U pip wheel (*1)
+$ pip install mpi4py (*1, *2)
+$ cd [mpi-qulacs]
+$ python setup.py install (*1)
+
+*1 要internet接続
+*2 fccを使う場合(参考)
+   $ MPICC=mpifcc pip install mpi4py
+```
+
+## c++/c library build
+### GCC
+- 前提条件 (確認済みバージョン)
+    - gcc 11.2.0
+    - openmpi 4.1.2 (gcc 11.2)
+        - configure-option: --with-openib
+```shell
+<lib. build>
+$ cd [mpi-qulacs]
+$ ./script/build_gcc.sh
+
+<test>
+$ cd build
+$ make test
+$ mpirun -n 2 ../bin/csim_test
+$ mpirun -n 2 ../bin/cppsim_test
+$ mpirun -n 2 ../bin/vqcsim_test
+
+<sample>
+$ cd ict
+$ make
+$ mpirun -n 4 mpiqtest -1 20 0
+(USAGE: mpiqtest debug-flag n-qubits target-qubit)
+(USAGE: mpiqbench [start n-qubits] [end n-qubit])
+```
+
+### fcc/FCC
+```shell
+$ cd [mpi-qulacs]
+$ ./script/build_fcc.sh
+
+<c++ program sample>
+$ cd [mpi-qulacs]/ict
+$ usefcc=1 make
+$ mpirun -n 4 mpiqtest -1 20 0
+
+<python script sample>
+$ cd [mpi-qulacs]/ict/python
+$ mpirun -n 4 python test.py -n 20
+```
+
+<hr>
 
 ## Example
 ### Python sample code
 ```python=
 from qulacs import Observable, QuantumCircuit, QuantumState
 from qulacs.gate import Y,CNOT,merge
+from mpi4py import MPI
 
-state = QuantumState(3)
+#state = QuantumState(3) # use cpu
+state = QuantumState(3, use_multi_cpu=True)
 state.set_Haar_random_state()
 
-#circuit = QuantumCircuit(3)
-circuit = QuantumCircuit(3, use_multi_cpu=True)
+circuit = QuantumCircuit(3)
 
 circuit.add_X_gate(0)
 merged_gate = merge(CNOT(0,1),Y(1))
@@ -228,71 +294,3 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 ```
-
-- 対応予定関数・機能
-  - gate
-      - Y / Z
-      - SqrtX / SqrtXdag
-      - SqrtY /SqrtYdag
-      - P0 / P1
-      (gate_named_one.hpp)
-      - U1 / U2 / U3
-      (QuantumGateMatrix)
-      - CZ
-      - SWAP
-      - DenseMatrix(multi target-qubits)
-      - DenseMatrix(with control)
-      - Pauli
-      - PauliRotation
-      - DenseMatrix
-      - DiagonalMatrix
-      - TOFFOLI
-  - QuantumState
-      - normalize
-      - copy
-      - load
-      - get_vector
-  - Observable
-  - QuantumCircuit
-  - QuantumCircuitOptimizer
-  - QuantumCircuitSimulator
-  - state
-      - inner_product
-      - tensor_product
-      - permutate_qubit
-      - drop_qubit
-      - partial_trace
-
-- 対応予定が未定な関数・機能
-  - gate
-      - FREDKIN
-      - SparseMatrix
-      - RandomUnitary
-      - ReversibleBoolean
-      - StateReflection
-      - BitFlipNoise
-      - DephasingNoise
-      - IndependentXZNoise
-      - DepolarizingNoise
-      - TwoQubitDepolarizingNoise
-      - AmplitudeDampingNoise
-      - Measurement
-      - merge
-      - add
-      - to_matrix_gate
-      - Probabilistic
-      - ProbabilisticInstrument
-      - CPTP
-      - CP
-      - Instrument
-      - Adaptive
-  - DensityMatrix (simulation)
-  - GeneralQuantumOperator
-  - ParametricQuantumCircuit
-  - PauliOperator
-  - QuantumGateBase
-  - QuantumGateMatrix
-  - QuantumGate_SingleParameter
-
-- [github(mpi-qulacs)](https://github.com/m-ymzk/mpi-qulacs.git)
-
