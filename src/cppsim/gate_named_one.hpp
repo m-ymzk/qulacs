@@ -115,8 +115,7 @@ public:
 		this->_update_func_gpu = Z_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = Z_gate_mpi;
+		this->_update_func_mpi = Z_gate_mpi;
 #endif
 	    this->_name = "Z";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Z_COMMUTE ));
