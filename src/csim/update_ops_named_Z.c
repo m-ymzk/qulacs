@@ -6,6 +6,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -149,12 +153,34 @@ void Z_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 	}
 }
 #endif
-
 #endif
 
-
-
-
+#ifdef _USE_MPI
+void Z_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+    if (target_qubit_index < inner_qc){
+        Z_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+        //printf("#debug dim,dim_work,num_work,t: %lld, %lld, %lld, %p\n", dim, dim_work, num_work, t);
+		if (rank & pair_rank_bit) {
+			ITYPE state_index = 0;
+			UINT threshold = 13;
+			if (dim < (((ITYPE)1) << threshold)) {
+				for (state_index = 0; state_index < dim; state_index += 1) {
+					state[state_index] *= -1;
+				}
+			} else {
+#pragma omp parallel for
+				for (state_index = 0; state_index < dim; state_index += 1) {
+					state[state_index] *= -1;
+				}
+			}
+		}
+    }
+}
+#endif
 
 /*
 
