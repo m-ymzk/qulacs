@@ -43,9 +43,7 @@ TEST(GateTest_multicpu, ApplySingleQubitGate) {
     std::vector< std::pair< std::function<QuantumGateBase*(UINT)>, Eigen::MatrixXcd >> funclist;
     funclist.push_back(std::make_pair(gate::Identity, Identity));
     funclist.push_back(std::make_pair(gate::X, X));
-	/*
     funclist.push_back(std::make_pair(gate::Y, Y));
-	*/
     funclist.push_back(std::make_pair(gate::Z, Z));
     funclist.push_back(std::make_pair(gate::H, H));
     funclist.push_back(std::make_pair(gate::S, S));
@@ -124,6 +122,7 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
     Eigen::VectorXcd test_state1 = Eigen::VectorXcd::Zero(dim);
     Eigen::VectorXcd test_state2 = Eigen::VectorXcd::Zero(dim);
     for (UINT repeat = 0; repeat < 10; ++repeat) {
+		//UINT funcid=0;
         for (auto func_mat : funclist) {
             UINT target = random.int32() % n;
             double angle = random.uniform() * 3.14159;
@@ -143,6 +142,11 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
             test_state1 = get_expanded_eigen_matrix_with_identity(target, small_mat, n) * test_state1;
             test_state2 = get_expanded_eigen_matrix_with_identity(target, mat, n) * test_state2;
 
+			//std::cout << "# Rot:rank,repeat,funcNo,target: " << m->get_rank() << "," << repeat << "," << ++funcid << "," << target <<
+			//	":( " << offs << ") " << state.data_cpp()[0] << ", " << test_state1[0 + offs] << ", " << test_state2[0 + offs] << std::endl <<
+			//	":( " << offs << ") " << state.data_cpp()[1] << ", " << test_state1[1 + offs] << ", " << test_state2[1 + offs] << std::endl <<
+			//	":( " << offs << ") " << state.data_cpp()[2] << ", " << test_state1[2 + offs] << ", " << test_state2[2 + offs] << std::endl <<
+			//	":( " << offs << ") " << state.data_cpp()[3] << ", " << test_state1[3 + offs] << ", " << test_state2[3 + offs] << std::endl;
             for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(real(state.data_cpp()[i] - test_state1[i + offs]), 0, eps);
             for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(real(state.data_cpp()[i] - test_state2[i + offs]), 0, eps);
             for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(imag(state.data_cpp()[i] - test_state1[i + offs]), 0, eps);

@@ -370,7 +370,7 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE mat
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
 		CTYPE* si = state;
-		for (ITYPE i=0; i < num_work; ++i) {
+		for (ITYPE iter=0; iter < num_work; ++iter) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 #ifdef _OPENMP
 			UINT threshold = 13;
@@ -383,8 +383,8 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE mat
 			}
 #else
 			single_qubit_dense_matrix_gate_single_mpi(t, matrix, si, dim_work, rank & pair_rank_bit);
-			si += dim_work;
 #endif
+			si += dim_work;
 		}
 	}
 }
