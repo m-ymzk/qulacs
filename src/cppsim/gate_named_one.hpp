@@ -87,8 +87,7 @@ public:
 		this->_update_func_gpu = Y_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = Y_gate_mpi;
+		this->_update_func_mpi = Y_gate_mpi;
 #endif
         this->_name = "Y";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE ));
