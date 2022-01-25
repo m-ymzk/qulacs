@@ -9,6 +9,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -100,3 +104,50 @@ void P1_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 }
 #endif
 
+#ifdef _USE_MPI
+void P0_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+	if (target_qubit_index < inner_qc){
+        P0_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+		const UINT threshold = 13;
+        if ((rank & pair_rank_bit) != 0) {
+			if (dim < (((ITYPE)1) << threshold)) {
+                for (ITYPE iter=0; iter < dim; ++iter) {
+                    state[iter] = 0;
+                }
+			} else {
+#pragma omp parallel for
+                for (ITYPE iter=0; iter < dim; ++iter) {
+                    state[iter] = 0;
+                }
+			}
+        } // else nothing to do.
+    }
+}
+
+void P1_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
+	if (target_qubit_index < inner_qc){
+        P1_gate(target_qubit_index, state, dim);
+    } else {
+        const MPIutil m = get_mpiutil();
+        const int rank = m->get_rank();
+        const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+		const UINT threshold = 13;
+        if ((rank & pair_rank_bit) == 0) {
+			if (dim < (((ITYPE)1) << threshold)) {
+                for (ITYPE iter=0; iter < dim; ++iter) {
+                    state[iter] = 0;
+                }
+			} else {
+#pragma omp parallel for
+                for (ITYPE iter=0; iter < dim; ++iter) {
+                    state[iter] = 0;
+                }
+			}
+        } // else nothing to do.
+    }
+}
+#endif

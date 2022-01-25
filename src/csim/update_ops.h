@@ -434,6 +434,9 @@ DllExport void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_
 DllExport void P0_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void P0_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void P0_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void P0_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english
@@ -456,6 +459,9 @@ void P0_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 DllExport void P1_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void P1_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void P1_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void P1_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english
