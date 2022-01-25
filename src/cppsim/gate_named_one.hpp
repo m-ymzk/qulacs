@@ -385,8 +385,7 @@ public:
 		this->_update_func_gpu = P0_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = P0_gate_mpi;
+		this->_update_func_mpi = P0_gate_mpi;
 #endif
         this->_name = "Projection-0";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
@@ -413,8 +412,7 @@ public:
 		this->_update_func_gpu = P1_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = P1_gate_mpi;
+		this->_update_func_mpi = P1_gate_mpi;
 #endif
         this->_name = "Projection-1";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
