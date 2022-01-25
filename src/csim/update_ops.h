@@ -219,6 +219,9 @@ DllExport void Tdag_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, U
  *
  */
 DllExport void sqrtX_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void sqrtX_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english
@@ -240,6 +243,9 @@ DllExport void sqrtX_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
  *
  */
 DllExport void sqrtXdag_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void sqrtXdag_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english
@@ -261,6 +267,9 @@ DllExport void sqrtXdag_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
  *
  */
 DllExport void sqrtY_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void sqrtY_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english
@@ -282,6 +291,9 @@ DllExport void sqrtY_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
  *
  */
 DllExport void sqrtYdag_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void sqrtYdag_gate_mpi(UINT target_qubit_index, CTYPE* state, ITYPE dim, UINT inner_qc);
+#endif
 
 /**
  * \~english

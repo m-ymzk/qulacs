@@ -31,13 +31,12 @@
       - CNOT
       - Identity / H
       - S / Sdag / T / Tdag
+      - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - RX / RY / RZ
       - DenseMatrix(single target)
 
 - 3月末版対応予定の関数・機能
   - gate
-      - SqrtX / SqrtXdag
-      - SqrtY / SqrtYdag
       - P0 / P1
       - U1 / U2 / U3
       - CZ
