@@ -30,14 +30,14 @@
       - X / Y / Z
       - CNOT
       - Identity / H
+      - P0 / P1
+      - RX / RY / RZ
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
-      - RX / RY / RZ
       - DenseMatrix(single target)
 
 - 3月末版対応予定の関数・機能
   - gate
-      - P0 / P1
       - U1 / U2 / U3
       - CZ
       - SWAP
