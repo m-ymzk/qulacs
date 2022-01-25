@@ -27,19 +27,17 @@
       - set_Haar_random_state
       - to_string
   - gate
-      - X
+      - X / Y / Z
       - CNOT
       - Identity / H
-      - S / Sdag
-      - T / Tdag
+      - S / Sdag / T / Tdag
       - RX / RY / RZ
       - DenseMatrix(single target)
 
 - 3月末版対応予定の関数・機能
   - gate
-      - Y / Z
       - SqrtX / SqrtXdag
-      - SqrtY /SqrtYdag
+      - SqrtY / SqrtYdag
       - P0 / P1
       - U1 / U2 / U3
       - CZ
