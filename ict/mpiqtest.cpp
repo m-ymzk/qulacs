@@ -7,6 +7,10 @@
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_merge.hpp>
 
+#if defined(__CLANG_FUJITSU)
+#include "fj_tool/fapp.h"
+#endif // #ifdef defined(__CLANG_FUJITSU)
+
 double get_realtime(void) {
     struct timespec t;
     //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
@@ -70,13 +74,23 @@ int main(int argc, char *argv[]) {
     /*
      * Simulate: 
      */
+#if defined(__CLANG_FUJITSU)
+    fapp_start( "update_quantum_state", 0, 0 );
+#endif // #ifdef defined(__CLANG_FUJITSU)
+
     tstart = get_realtime();
     for (int i=0; i<numLoops; ++i) {
       circuit.update_quantum_state(&state);
     }
     tsim = get_realtime() - tstart;
 
-    std::cout << "#rank, " << rank 
+#if defined(__CLANG_FUJITSU)
+    fapp_stop( "update_quantum_state", 0, 0 );
+#endif // #ifdef defined(__CLANG_FUJITSU)
+
+    std::cout << "#rank, " << rank
+              << ", nqubits, " << nqubits
+              << ", target-bit, " << target
               << ", pre time[sec], " << tpre 
               << ", avg. sim time[sec], " << tsim/numLoops
               << std::endl << std::flush;
