@@ -89,6 +89,118 @@ void single_qubit_dense_matrix_gate_single(UINT target_qubit_index, const CTYPE 
 	}
 }
 
+void single_qubit_dense_matrix_gate_single_sve(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
+	const ITYPE loop_dim = dim / 2;
+	const ITYPE mask = (1ULL << target_qubit_index);
+	const ITYPE mask_low = mask - 1;
+	const ITYPE mask_high = ~mask_low;
+#if 0
+  ITYPE state_index = 0;
+	for (state_index = 0; state_index < loop_dim; ++state_index) {
+		ITYPE basis_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
+		ITYPE basis_1 = basis_0 + mask;
+
+		// fetch values
+		CTYPE cval_0 = state[basis_0];
+		CTYPE cval_1 = state[basis_1];
+
+		// set values
+		state[basis_0] = matrix[0] * cval_0 + matrix[1] * cval_1;
+		state[basis_1] = matrix[2] * cval_0 + matrix[3] * cval_1;
+	}
+#else
+
+  ITYPE state_index = 0;
+  int vec_len = svcntw();       // length of SVE registers
+  svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+  
+  // duplicate scalar masks
+  svint64_t vec_mask = svdup_s64(pg, mask);
+  svint64_t vec_mask_low = svdup_s64(pg, mask_low);
+  svint64_t vec_mask_high = svdup_s64(mask_high);
+
+  // Prepare a vector of state_index 
+  svint64_t vec_index = svindex_s64(0, 1);
+  vec_index = svlsl_n_s64_x(pg, index, 1);
+  svint64_t basis_0, basis_1;
+
+  // offset for imag elements
+  svint64_t vec_img_offset = svzip1(svdup_s64(pg, 0), svdup_s64(8));
+
+  // SVE registers for matrix-vector products
+  svfloat64_t input0, input1, output0, output1;
+  svfloat64_t cal01_real, cal01_imag, cal1_real, cal1_imag;
+  svfloat64_t result0_real, result0_imag, result1_real, result1_imag;
+  svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag
+              mat2_real, mat2_imag, mat3_real, mat3_imag;
+
+  // load matrix elements
+  mat0_real = svdup_s64(pg, creal(matrix[0]));
+  mat0_imag = svdup_s64(pg, cimag(matrix[0]));
+  mat1_real = svdup_s64(pg, creal(matrix[1]));
+  mat1_imag = svdup_s64(pg, cimag(matrix[1]));
+  mat2_real = svdup_s64(pg, creal(matrix[2]));
+  mat2_imag = svdup_s64(pg, cimag(matrix[2]));
+  mat3_real = svdup_s64(pg, creal(matrix[3]));
+  mat3_imag = svdup_s64(pg, cimag(matrix[3]));
+
+	for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+    // calculate indices
+    basis_0 = svand_s64_x(pg, vec_index, vec_mask_high);
+    basis_0 = svadd_s64_x(pg, 
+                          svand_s64_x(pg, vec_index, vec_mask_low),
+                          svlsl_n_s64_x(pg, basis_0, 1));
+    basis_0 = svadd_s64_x(pg, basis_0, vec_img_offset);
+
+    basis_1 = svand_s64_x(pg, basis_0, vec_mask);
+
+    // get byte offset (index * 8 Bytes)
+    basis_0 = svmul_s64_x(pg, basis_0, svdup_s64(pg, 8));
+    basis_1 = svmul_s64_x(pg, basis_1, svdup_s64(pg, 8));
+
+		// fetch values
+		input0 = svld1_gather_s64offset_f64(pg, state, basis_0);
+		input1 = svld1_gather_s64offset_f64(pg, state, basis_1);
+
+    // select odd or even elements from two vectors
+    cal0_real = svuzip1_b64(input0, input0);
+    cal0_imag = svuzip2_b64(input0, input0);
+    cal1_real = svuzip1_b64(input1, input1);
+    cal1_imag = svuzip2_b64(input1, input1);
+
+    // perform matrix-vector product
+    result0_real = svmul_f64_x(pg,  cal0_real, mat0_real);
+    reault0_real = svmsb_f64_x(pg,  cal0_imag, mat0_imag);
+    reault0_real = svmadd_f64_x(pg, cal1_real, mat1_real);
+    reault0_real = svmsb_f64_x(pg,  cal1_imag, mat1_imag);
+    result0_imag = svmul_f64_x(pg,  cal0_imag, mat0_real);
+    reault0_imag = svmadd_f64_x(pg, cal0_real, mat0_imag);
+    reault0_imag = svmadd_f64_x(pg, cal1_real, mat1_imag);
+    reault0_imag = svmadd_f64_x(pg, cal1_imag, mat1_real);
+
+    result1_real = svmul_f64_x(pg,  cal0_real, mat2_real);
+    reault1_real = svmsb_f64_x(pg,  cal0_imag, mat2_imag);
+    reault1_real = svmadd_f64_x(pg, cal1_real, mat3_real);
+    reault1_real = svmsb_f64_x(pg,  cal1_imag, mat3_imag);
+    result1_imag = svmul_f64_x(pg,  cal0_imag, mat2_real);
+    reault1_imag = svmadd_f64_x(pg, cal0_real, mat2_imag);
+    reault1_imag = svmadd_f64_x(pg, cal1_real, mat3_imag);
+    reault1_imag = svmadd_f64_x(pg, cal1_imag, mat3_real);
+
+    // interleave elements from low halves of two vectors
+    output0 = svzip1_b64(result0_real, result0_imag);
+    output1 = svzip1_b64(result1_real, result1_imag);
+
+		// set values
+		svst1_scatter_s64offset_f64(pg, state, basis_0, output0);
+		svst1_scatter_s64offset_f64(pg, state, basis_1, output1);
+
+    // increment vec_index
+    vec_index = svadd_s64_x(pg, vec_index, svdup_s64(pg, vec_len>>1));
+	}
+#endif
+}
+
 #ifdef _OPENMP
 void single_qubit_dense_matrix_gate_parallel(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
 	const ITYPE loop_dim = dim / 2;
