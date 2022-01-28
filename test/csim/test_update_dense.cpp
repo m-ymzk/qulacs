@@ -56,12 +56,20 @@ TEST(UpdateTest, SingleDenseMatrixTest) {
 	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel);
 	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_unroll);
 #endif
+
 #ifdef _USE_SIMD
 	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_simd);
+#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve);
+#endif // #ifdef _USE_SIMD
+
 #ifdef _OPENMP
+#ifdef _USE_SIMD
 	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_simd);
-#endif
-#endif
+#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_sve);
+#endif // #ifdef _USE_SIMD
+#endif //#ifdef _OPENMP
 }
 
 void test_general_dense_matrix_gate(std::function<void(const UINT*, UINT, const CTYPE*, CTYPE*, ITYPE)> func) {
