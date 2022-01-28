@@ -164,14 +164,14 @@ void single_qubit_dense_matrix_gate_single_sve(UINT target_qubit_index, const CT
     cal10_imag = svuzp2_b64(input1, input0);
 
     // perform matrix-vector product
-    result01_real = svmul_f64_x(pg,  cal01_real, mat02_real);
-    reault01_real = svmsb_f64_x(pg,  cal01_imag, mat02_imag);
-    reault01_real = svmadd_f64_x(pg, cal10_real, mat13_real);
-    reault01_real = svmsb_f64_x(pg,  cal10_imag, mat13_imag);
-    result01_imag = svmul_f64_x(pg,  cal01_imag, mat02_real);
-    reault01_imag = svmadd_f64_x(pg, cal01_real, mat02_imag);
-    reault01_imag = svmadd_f64_x(pg, cal10_real, mat13_imag);
-    reault01_imag = svmadd_f64_x(pg, cal10_imag, mat13_real);
+    result01_real = svmul_f64_x(pg, cal01_real, mat02_real);
+    result01_imag = svmul_f64_x(pg, cal01_imag, mat02_real);
+    reault01_real = svmsb_f64_x(pg, cal01_imag, mat02_imag, result01_real);
+    reault01_imag = svmad_f64_x(pg, cal01_real, mat02_imag, result01_imag);
+    reault01_real = svmad_f64_x(pg, cal10_real, mat13_real, reault01_real);
+    reault01_imag = svmad_f64_x(pg, cal10_real, mat13_imag, result01_imag);
+    reault01_real = svmsb_f64_x(pg, cal10_imag, mat13_imag, reault01_real);
+    reault01_imag = svmad_f64_x(pg, cal10_imag, mat13_real, result01_imag);
 
     // interleave elements from low halves of two vectors
     output0 = svzip1_b64(result01_real, result01_imag);
