@@ -277,7 +277,7 @@ public:
 		this->_update_func_gpu = sqrtX_gate_host;
 #endif
 #ifdef _USE_MPI
-		//this->_update_func_mpi = sqrtX_gate_mpi;
+		this->_update_func_mpi = sqrtX_gate_mpi;
 #endif
         this->_name = "sqrtX";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE));
@@ -304,8 +304,7 @@ public:
 		this->_update_func_gpu = sqrtXdag_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = sqrtXdag_gate_mpi;
+		this->_update_func_mpi = sqrtXdag_gate_mpi;
 #endif
         this->_name = "sqrtXdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_X_COMMUTE));
@@ -332,8 +331,7 @@ public:
 		this->_update_func_gpu = sqrtY_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = sqrtY_gate_mpi;
+		this->_update_func_mpi = sqrtY_gate_mpi;
 #endif
         this->_name = "sqrtY";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
@@ -360,8 +358,7 @@ public:
 		this->_update_func_gpu = sqrtYdag_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = sqrtYdag_gate_mpi;
+		this->_update_func_mpi = sqrtYdag_gate_mpi;
 #endif
         this->_name = "sqrtYdag";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, FLAG_Y_COMMUTE));
@@ -388,8 +385,7 @@ public:
 		this->_update_func_gpu = P0_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = P0_gate_mpi;
+		this->_update_func_mpi = P0_gate_mpi;
 #endif
         this->_name = "Projection-0";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
@@ -416,8 +412,7 @@ public:
 		this->_update_func_gpu = P1_gate_host;
 #endif
 #ifdef _USE_MPI
-        //TODO: implement
-		//this->_update_func_mpi = P1_gate_mpi;
+		this->_update_func_mpi = P1_gate_mpi;
 #endif
         this->_name = "Projection-1";
         this->_target_qubit_list.push_back(TargetQubitInfo(target_qubit_index, 0));
