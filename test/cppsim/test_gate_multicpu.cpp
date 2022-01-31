@@ -119,10 +119,9 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
 	const UINT offs = inner_dim * m->get_rank();
     Eigen::VectorXcd test_state1 = Eigen::VectorXcd::Zero(dim);
     Eigen::VectorXcd test_state2 = Eigen::VectorXcd::Zero(dim);
-    for (UINT repeat = 0; repeat < 10; ++repeat) {
+    for (UINT target = 0; target < n; ++target) {
 		//UINT funcid=0;
         for (auto func_mat : funclist) {
-            UINT target = random.int32() % n;
             double angle = random.uniform() * 3.14159;
 
             auto func = func_mat.first;
