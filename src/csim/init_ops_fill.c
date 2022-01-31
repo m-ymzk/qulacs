@@ -63,7 +63,7 @@ void initialize_quantum_state_mpi(CTYPE *state, ITYPE dim, UINT outer_qc) {
 		initialize_quantum_state_parallel_mpi(state, dim, outer_qc);
 	}
 #else
-	initialize_quantum_state_single(state, dim);
+	initialize_quantum_state_single_mpi(state, dim, outer_qc);
 #endif
 }
 
