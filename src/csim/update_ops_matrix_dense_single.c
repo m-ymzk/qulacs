@@ -299,24 +299,11 @@ void single_qubit_dense_matrix_gate_parallel_sve(UINT target_qubit_index, const 
 	const ITYPE mask_high = ~mask_low;
 
   ITYPE state_index = 0;
-  int vec_len = svcntd();       // length of SVE registers (# of 64-bit elements)
+  ITYPE vec_len = svcntd();       // length of SVE registers (# of 64-bit elements)
 
-  if( (loop_dim % (vec_len>>1)) == 0 ){
+  if( mask >= (vec_len>>1) ){
     svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-    
-    // duplicate scalar masks
-    svuint64_t vec_mask = svdup_u64(mask);
-    svuint64_t vec_mask_low = svdup_u64(mask_low);
-    svuint64_t vec_mask_high = svdup_u64(mask_high);
-  
-    // Prepare a vector of state_index 
-    svuint64_t vec_index = svindex_u64(0, 1);
-    vec_index = svlsr_n_u64_x(pg, vec_index, 1);
-    svuint64_t basis_0, basis_1;
-  
-    // offset for imag elements
-    svuint64_t vec_img_offset = svzip1(svdup_u64(0), svdup_u64(8));
-  
+   
     // SVE registers for matrix-vector products
     svfloat64_t input0, input1, output0, output1;
     svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
@@ -329,25 +316,18 @@ void single_qubit_dense_matrix_gate_parallel_sve(UINT target_qubit_index, const 
     mat13_real = svuzp1_f64(svdup_f64(creal(matrix[1])), svdup_f64(creal(matrix[3])));
     mat13_imag = svuzp1_f64(svdup_f64(cimag(matrix[1])), svdup_f64(cimag(matrix[3])));
 
-#pragma omp parallel for
+#pragma omp parallel for private(input0, input1, output0, output1,                \
+                                 cal00_real, cal00_imag, cal11_real, cal11_imag,  \
+                                 result01_real, result01_imag )                   \
+                         shared(pg, mat02_real, mat02_imag, mat13_real, mat13_imag)
   	for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
       // calculate indices
-      svuint64_t cur_index = svdup_u64(state_index);
-      cur_index = svadd_u64_x(pg, vec_index, cur_index);
-      basis_0 = svand_u64_x(pg, cur_index, vec_mask_high);
-      basis_0 = svadd_u64_x(pg, 
-                            svand_u64_x(pg, cur_index, vec_mask_low),
-                            svlsl_n_u64_x(pg, basis_0, 1));
-  
-      basis_1 = svadd_u64_x(pg, basis_0, vec_mask);
-  
-      // get byte offset (index * 16 Bytes)
-      basis_0 = svmad_u64_x(pg, basis_0, svdup_u64(16), vec_img_offset);
-      basis_1 = svmad_u64_x(pg, basis_1, svdup_u64(16), vec_img_offset);
-  
-  		// fetch values
-  		input0 = svld1_gather_u64offset_f64(pg, (double*)state, basis_0);
-  		input1 = svld1_gather_u64offset_f64(pg, (double*)state, basis_1);
+      ITYPE basis_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
+      ITYPE basis_1 = basis_0 + mask;
+ 
+   		// fetch values
+  		input0 = svld1_f64(pg, (double*)&state[basis_0]);
+  		input1 = svld1_f64(pg, (double*)&state[basis_1]);
   
       // select odd or even elements from two vectors
       cal00_real = svuzp1_f64(input0, input0);
@@ -357,13 +337,15 @@ void single_qubit_dense_matrix_gate_parallel_sve(UINT target_qubit_index, const 
   
       // perform matrix-vector product
       result01_real = svmul_f64_x(pg, cal00_real, mat02_real);
-      result01_real = svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
-      result01_real = svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
-      result01_real = svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
-
       result01_imag = svmul_f64_x(pg, cal00_imag, mat02_real);
+
+      result01_real = svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
       result01_imag = svmad_f64_x(pg, cal00_real, mat02_imag, result01_imag);
+
+      result01_real = svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
       result01_imag = svmad_f64_x(pg, cal11_real, mat13_imag, result01_imag);
+
+      result01_real = svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
       result01_imag = svmad_f64_x(pg, cal11_imag, mat13_real, result01_imag);
   
       // interleave elements from low halves of two vectors
@@ -371,12 +353,12 @@ void single_qubit_dense_matrix_gate_parallel_sve(UINT target_qubit_index, const 
       output1 = svzip2_f64(result01_real, result01_imag);
   
   		// set values
-  		svst1_scatter_u64offset_f64(pg, (double*)state, basis_0, output0);
-  		svst1_scatter_u64offset_f64(pg, (double*)state, basis_1, output1);
+  		svst1_f64(pg, (double*)&state[basis_0], output0);
+  		svst1_f64(pg, (double*)&state[basis_1], output1);
   
   	}
   }else{
-#pragma omp parallel for 
+#pragma omp parallel for
     for (state_index = 0; state_index < loop_dim; ++state_index) {
       ITYPE basis_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
       ITYPE basis_1 = basis_0 + mask;
