@@ -1,6 +1,8 @@
 #
 
-TARGET := qtest qbench mpiqtest mpiqbench mpicnot
+#TARGET := qtest qbench mpiqtest mpiqbench mpicnot
+SOURCES := $(shell ls *.cpp)
+TARGET := $(SOURCES:%.cpp=%)
 
 ifdef usefcc
     CC := mpifcc
@@ -14,8 +16,8 @@ BUILDDIR := build
 BUILDDIR := $(abspath $(BUILDDIR))
 
 ifdef usefcc
-CFLAGS   += -Nclang -Knolargepage
-CXXFLAGS += -Nclang -Knolargepage
+CFLAGS   += -Nclang -Knolargepage 
+CXXFLAGS += -Nclang -Knolargepage -ffj-fjprof
 endif
 
 CFLAGS   += -v -I../include -fopenmp -lpthread -std=c14

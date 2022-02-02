@@ -662,6 +662,10 @@ void single_qubit_dense_matrix_gate_parallel_unroll(UINT target_qubit_index, con
 void single_qubit_dense_matrix_gate_single(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 void single_qubit_dense_matrix_gate_parallel(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 void single_qubit_dense_matrix_gate_single_simd(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+#if defined(__ARM_FEATURE_SVE)
+void single_qubit_dense_matrix_gate_single_sve(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+void single_qubit_dense_matrix_gate_parallel_sve(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+#endif // #if defined(__ARM_FEATURE_SVE)
 void single_qubit_dense_matrix_gate_parallel_simd(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
