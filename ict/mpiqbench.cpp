@@ -17,7 +17,7 @@ double get_realtime(void)
     return t.tv_sec + (double)t.tv_nsec*1e-9;
 }
 
-void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas){
+void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas, int rank){
     double dt;
     double tsum = 0;
     double tsum2 = 0;
@@ -69,44 +69,52 @@ void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas){
             tsum += dt;
             tsum2 += dt * dt;
         }
+		//circuit.~QuantumCircuit();
+		//state.~QuantumState();
     }
     double tavg = tsum / num_meas;
     double tstd = sqrt(tsum2 / num_meas - tavg * tavg);
 
-    std::cout << "opt= " << lv_opt << ", q= " << nqubits << ", time[s] " << tavg << " +- " << tstd << std::endl;
+    if (rank == 0)
+        std::cout << "opt= " << lv_opt << ", q= " << nqubits << ", time[s] " << tavg << " +- " << tstd << std::endl;
     return;
 }
 
 int main(int argc, char *argv[]){
-    int num_dmy = 3;
-    int num_meas = 5;
-    int st_nq = 10;
-    int ed_nq = 20;
-    int depth = 9;
-    if (argc > 1) st_nq = atoi(argv[1]);
-    if (argc > 2) ed_nq = atoi(argv[2]);
-    std::cout << "# nqubits: " << st_nq << " ~ " << ed_nq << std::endl;
-    std::cout << "# measure: dummy " << num_dmy << ", meas " << num_meas << std::endl;
 
     int rank, size;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    if (rank == 0)
+
+    int num_dmy = 1;
+    int num_meas = 5;
+    int st_nq = 10;
+    int ed_nq = 20;
+    int depth = 9;
+    //int depth = 99;
+    if (argc > 1) st_nq = atoi(argv[1]);
+    if (argc > 2) ed_nq = atoi(argv[2]);
+
+    if (rank == 0) {
+        std::cout << "# nqubits: " << st_nq << " ~ " << ed_nq << std::endl;
+        std::cout << "# measure: dummy " << num_dmy << ", meas " << num_meas << std::endl;
         std::cout << "# MPI_COMM_WORLD: rank " << rank << ", size " << size << std::endl;
+	}
 
     std::cout << std::scientific << std::setprecision(9);
     int i = std::max(st_nq, ed_nq);
-    std::cout << "# dummy";
-    bench(i, 9, -1, 0, 3);
+    //std::cout << "# dummy";
+    //bench(20, 9, -1, 0, 3, rank);
 
-    std::cout << "# start meas" << std::endl;
+    //std::cout << "# start meas" << std::endl;
     int stp=1;
     if (st_nq > ed_nq) stp=-1;
     ed_nq+=stp;
-    for (int lv_opt=-1; lv_opt<5; ++lv_opt){
+    //for (int lv_opt=-1; lv_opt<5; ++lv_opt){
+    for (int lv_opt=-1; lv_opt<0; ++lv_opt){
         for (int i=st_nq; i!=ed_nq; i+=stp){
-            bench(i, 9, lv_opt, num_dmy, num_meas);
+            bench(i, depth, lv_opt, num_dmy, num_meas, rank);
         }
     }
 

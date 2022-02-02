@@ -1,0 +1,29 @@
+#!/bin/bash
+
+LOG=./log_weekstrong_0202
+touch ${LOG}
+git log -n 1 >> ${LOG}
+
+echo "### weak scale, 1proc/node ###" >> ${LOG}
+mpirun -n 1 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 27 27 >> ${LOG}
+mpirun -n 2 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 28 28 >> ${LOG}
+mpirun -n 4 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 29 29 >> ${LOG}
+mpirun -n 8 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+
+echo "### strong scale, 1proc/node ###" >> ${LOG}
+mpirun -n 1 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 2 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 4 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 8 --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+
+echo "### weak scale, 4proc/node ###" >> ${LOG}
+mpirun -n 4 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 27 27 >> ${LOG}
+mpirun -n 8 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 28 28 >> ${LOG}
+mpirun -n 16 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 29 29 >> ${LOG}
+mpirun -n 32 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+
+echo "### strong scale, 4proc/node ###" >> ${LOG}
+mpirun -n 4 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 8 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 16 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
+mpirun -n 32 --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh 30 30 >> ${LOG}
