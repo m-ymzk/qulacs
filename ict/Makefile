@@ -1,6 +1,8 @@
 #
 
-TARGET := qtest qbench mpiqtest mpiqbench mpicnot
+#TARGET := qtest qbench mpiqtest mpiqbench mpicnot
+SOURCES := $(shell ls *.cpp)
+TARGET := $(SOURCES:%.cpp=%)
 
 ifdef usefcc
     CC := mpifcc
