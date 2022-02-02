@@ -3,7 +3,7 @@
 if [ $# -ge 1 ]; then
   if [ $1 = "-h" -o $1 = "--help" ]; then
     echo " Usage: $0 TargetBit NQubit NumThreads FappFlag"
-    echo " Four argumets are optional."
+    echo " Four arguments are optional."
     exit
   fi
 fi
@@ -16,7 +16,7 @@ FappFlag=${4:-0}
 PerfStatFlag=0
 
 DebugFlag=-1
-NumLoops=20
+NumLoops=100
 
 Test=mpiqtest 
 NP=1
