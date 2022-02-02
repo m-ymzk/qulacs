@@ -25,6 +25,7 @@ typedef struct {
     void (*release_workarea)();
     void (*barrier)();
     void (*m_DC_sendrecv)(void *sendbuf, void *recvbuf, int count, int pair_rank);
+    void (*m_DC_sendrecv_replace)(void *buf, int count, int pair_rank);
     void (*m_I_allreduce)(void *buf, UINT count);
     void (*s_D_allgather)(double a, void *recvbuf);
     void (*s_D_allreduce)(void *buf);
