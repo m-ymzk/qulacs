@@ -22,10 +22,10 @@
 #include <x86intrin.h>
 #endif
 #endif
-#if defined(__ARM_FEATURE_SVE)
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #include "arm_acle.h"
 #include "arm_sve.h"
-#endif  // #if defined(__ARM_FEATURE_SVE)
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 // void single_qubit_dense_matrix_gate_old_single(UINT target_qubit_index, const
 // CTYPE matrix[4], CTYPE *state, ITYPE dim); void
