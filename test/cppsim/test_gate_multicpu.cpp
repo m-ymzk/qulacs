@@ -155,17 +155,6 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
 void _ApplyTwoQubitGate(UINT n, UINT control, UINT target, std::function<QuantumGateBase*(UINT, UINT)>,
 	   	std::function<Eigen::MatrixXcd(UINT,UINT,UINT)>);
 
-TEST(GateTest_multicpu, ApplyTwoQubitGate_rand) {
-    Random random;
-    random.set_seed(2022);
-	UINT n = 10;
-	for (UINT i=0; i<10; ++i) {
-		_ApplyTwoQubitGate(n, random.int32() % n, random.int32() % n, gate::CNOT, get_eigen_matrix_full_qubit_CNOT);
-		//_ApplyTwoQubitGate(n, random.int32() % n, random.int32() % n, gate::CZ, get_eigen_matrix_full_qubit_CZ);
-	}
-	// corner-case
-}
-
 TEST(GateTest_multicpu, ApplyCNOTGate_10qubit_all) {
 	UINT n = 10;
 	for (UINT c=0; c<n; ++c) {
@@ -182,7 +171,24 @@ TEST(GateTest_multicpu, ApplyCNOTGate_small) {
 	UINT n = 2;
 	_ApplyTwoQubitGate(n, 0, 1, gate::CNOT, get_eigen_matrix_full_qubit_CNOT);
 	_ApplyTwoQubitGate(n, 1, 0, gate::CNOT, get_eigen_matrix_full_qubit_CNOT);
-	//_ApplyTwoQubitGate(n, random.int32() % n, random.int32() % n, gate::CZ, get_eigen_matrix_full_qubit_CZ);
+}
+
+TEST(GateTest_multicpu, ApplyCZGate_10qubit_all) {
+	UINT n = 10;
+	for (UINT c=0; c<n; ++c) {
+		for (UINT t=0; t<n; ++t) {
+			if (c==t) continue;
+			_ApplyTwoQubitGate(n, c, t, gate::CZ, get_eigen_matrix_full_qubit_CZ);
+		}
+	}
+}
+
+TEST(GateTest_multicpu, ApplyCZGate_small) {
+    Random random;
+    random.set_seed(2022);
+	UINT n = 2;
+	_ApplyTwoQubitGate(n, 0, 1, gate::CZ, get_eigen_matrix_full_qubit_CZ);
+	_ApplyTwoQubitGate(n, 1, 0, gate::CZ, get_eigen_matrix_full_qubit_CZ);
 }
 
 void _ApplyTwoQubitGate(UINT n, UINT control, UINT target, std::function<QuantumGateBase*(UINT, UINT)> func,
