@@ -21,6 +21,11 @@
 #include <x86intrin.h>
 #endif
 #endif
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#include "arm_acle.h"
+#include "arm_sve.h"
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 
 //void single_qubit_diagonal_matrix_gate_old_single(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
 //void single_qubit_diagonal_matrix_gate_old_parallel(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
@@ -41,10 +46,22 @@ void single_qubit_diagonal_matrix_gate(UINT target_qubit_index, const CTYPE diag
 	else {
 		single_qubit_diagonal_matrix_gate_parallel_simd(target_qubit_index, diagonal_matrix, state, dim);
 	}
-#else
+#else // #ifdef _OPENMP
 	single_qubit_diagonal_matrix_gate_single_simd(target_qubit_index, diagonal_matrix, state, dim);
-#endif
-#else
+#endif // #ifdef _OPENMP
+#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE) // #ifdef _USE_SIMD
+#ifdef _OPENMP
+	UINT threshold = 12;
+	if (dim < (((ITYPE)1) << threshold)) {
+	  single_qubit_diagonal_matrix_gate_single_sve(target_qubit_index, diagonal_matrix, state, dim);
+	}
+	else {
+		single_qubit_diagonal_matrix_gate_parallel_sve(target_qubit_index, diagonal_matrix, state, dim);
+	}
+#else // #ifdef _OPENMP
+	single_qubit_diagonal_matrix_gate_single_sve(target_qubit_index, diagonal_matrix, state, dim);
+#endif // #ifdef _OPENMP
+#else // #ifdef _USE_SIMD
 #ifdef _OPENMP
 	UINT threshold = 12;
 	if (dim < (((ITYPE)1) << threshold)) {
@@ -102,6 +119,155 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll(UINT target_qubit_index, 
 	}
 }
 #endif
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
+	// loop variables
+	const ITYPE loop_dim = dim;
+	ITYPE state_index;
+	if (target_qubit_index == 0) {
+		for (state_index = 0; state_index < loop_dim; state_index += 2) {
+			state[state_index] *= diagonal_matrix[0];
+			state[state_index+1] *= diagonal_matrix[1];
+		}
+	}
+	else {
+		ITYPE mask = 1ULL << target_qubit_index;
+    ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
+    if(target_qubit_index >= vec_len){
+      svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+      svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
+      svfloat64_t mat_real, mat_imag;
+      svfloat64_t input0, input1, output0, output1;
+      svfloat64_t cval_real, cval_imag, result_real, result_imag;
+
+      mat0_real = svdup_f64(creal(diagonal_matrix[0]));
+      mat0_imag = svdup_f64(cimag(diagonal_matrix[0]));
+      mat1_real = svdup_f64(creal(diagonal_matrix[1]));
+      mat1_imag = svdup_f64(cimag(diagonal_matrix[1]));
+
+		  for (state_index = 0; state_index < loop_dim; state_index += vec_len) {
+		  	int bitval = ((state_index&mask) != 0);
+
+        // fetch values
+        input0 = svld1_f64(pg, (double *)&state[state_index]);
+        input1 = svld1_f64(pg, (double *)&state[state_index+(vec_len>>1)]);
+
+        // select matrix elements
+        mat_real = (bitval != 0 ) ? mat1_real : mat0_real; 
+        mat_imag = (bitval != 0 ) ? mat1_imag : mat0_imag; 
+
+        // select odd or even elements from two vectors
+        cval_real = svuzp1_f64(input0, input1);
+        cval_imag = svuzp2_f64(input0, input1);
+
+        // perform complex multiplication
+        result_real = svmul_f64_x(pg, cval_real, mat_real);
+        result_imag = svmul_f64_x(pg, cval_imag, mat_real);
+
+        result_real =
+            svmsb_f64_x(pg, cval_imag, mat_imag, result_real);
+        result_imag =
+            svmad_f64_x(pg, cval_real, mat_imag, result_imag);
+
+        // interleave elements from low halves of two vectors
+        output0 = svzip1_f64(result_real, result_imag);
+        output1 = svzip2_f64(result_real, result_imag);
+
+        // set values
+        svst1_f64(pg, (double *)&state[state_index], output0);
+        svst1_f64(pg, (double *)&state[state_index + (vec_len >> 1)],
+            output1);
+		  }
+    }else{
+		  for (state_index = 0; state_index < loop_dim; state_index += 2) {
+		  	int bitval = ((state_index&mask) != 0);
+		  	state[state_index] *= diagonal_matrix[bitval];
+		  	state[state_index + 1] *= diagonal_matrix[bitval];
+		  }
+    }
+	}
+}
+
+#ifdef _OPENMP
+void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
+	// loop variables
+	const ITYPE loop_dim = dim;
+	ITYPE state_index;
+	if (target_qubit_index == 0) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; state_index += 2) {
+			state[state_index] *= diagonal_matrix[0];
+			state[state_index+1] *= diagonal_matrix[1];
+		}
+	}
+	else {
+		ITYPE mask = 1ULL << target_qubit_index;
+    ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
+    if(target_qubit_index >= vec_len){
+      svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+      svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
+      svfloat64_t mat_real, mat_imag;
+      svfloat64_t input0, input1, output0, output1;
+      svfloat64_t cval_real, cval_imag, result_real, result_imag;
+
+      mat0_real = svdup_f64(creal(diagonal_matrix[0]));
+      mat0_imag = svdup_f64(cimag(diagonal_matrix[0]));
+      mat1_real = svdup_f64(creal(diagonal_matrix[1]));
+      mat1_imag = svdup_f64(cimag(diagonal_matrix[1]));
+
+#pragma omp parallel for private(mat_real, mat_imag, \
+                                 input0, input1, output0, output1, \
+                                 cval_real, cval_imag, result_real, result_imag) \
+                         shared(mask, pg, mat0_real, mat0_imag, mat1_real, mat1_imag)
+		  for (state_index = 0; state_index < loop_dim; state_index += vec_len) {
+		  	int bitval = ((state_index&mask) != 0);
+
+        // fetch values
+        input0 = svld1_f64(pg, (double *)&state[state_index]);
+        input1 = svld1_f64(pg, (double *)&state[state_index+(vec_len>>1)]);
+
+        // select matrix elements
+        mat_real = (bitval != 0 ) ? mat1_real : mat0_real; 
+        mat_imag = (bitval != 0 ) ? mat1_imag : mat0_imag; 
+
+        // select odd or even elements from two vectors
+        cval_real = svuzp1_f64(input0, input1);
+        cval_imag = svuzp2_f64(input0, input1);
+
+        // perform complex multiplication
+        result_real = svmul_f64_x(pg, cval_real, mat_real);
+        result_imag = svmul_f64_x(pg, cval_imag, mat_real);
+
+        result_real =
+            svmsb_f64_x(pg, cval_imag, mat_imag, result_real);
+        result_imag =
+            svmad_f64_x(pg, cval_real, mat_imag, result_imag);
+
+        // interleave elements from low halves of two vectors
+        output0 = svzip1_f64(result_real, result_imag);
+        output1 = svzip2_f64(result_real, result_imag);
+
+        // set values
+        svst1_f64(pg, (double *)&state[state_index], output0);
+        svst1_f64(pg, (double *)&state[state_index + (vec_len >> 1)],
+            output1);
+		  }
+    }else{
+#pragma omp parallel for
+		  for (state_index = 0; state_index < loop_dim; state_index += 2) {
+		  	int bitval = ((state_index&mask) != 0);
+		  	state[state_index] *= diagonal_matrix[bitval];
+		  	state[state_index + 1] *= diagonal_matrix[bitval];
+		  }
+    }
+	}
+}
+
+
+#endif // #ifdef _OPENMP
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
 void single_qubit_diagonal_matrix_gate_single_simd(UINT target_qubit_index, const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
