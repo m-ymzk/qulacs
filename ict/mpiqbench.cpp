@@ -17,16 +17,17 @@ double get_realtime(void)
     return t.tv_sec + (double)t.tv_nsec*1e-9;
 }
 
-void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas, int rank){
-    double dt;
-    double tsum = 0;
-    double tsum2 = 0;
+void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas, int rank, int size) {
+    double dtp, dts;
+    double psum = 0;
+    double psum2 = 0;
+    double ssum = 0;
+    double ssum2 = 0;
 
     for (int i = 0; i < (num_dmy + num_meas); ++i) {
-        dt = -1*get_realtime();
+        dtp = -1. * get_realtime();
 
-        QuantumState state(nqubits, MPI_COMM_WORLD);
-        state.set_Haar_random_state();
+        QuantumState state(nqubits, 1);
     
         // Build Circuit
         QuantumCircuit circuit(nqubits);
@@ -60,23 +61,31 @@ void bench(int nqubits, int depth, int lv_opt, int num_dmy, int num_meas, int ra
                 opt.optimize(&circuit, lv_opt);
             }
         }
+        dtp += get_realtime();
+        dts = -1. * get_realtime();
     
         // Update State
         circuit.update_quantum_state(&state);
     
-        dt += get_realtime();
+        dts += get_realtime();
         if (i >= num_dmy){
-            tsum += dt;
-            tsum2 += dt * dt;
+            psum += dtp;
+            psum2 += dtp * dtp;
+            ssum += dts;
+            ssum2 += dts * dts;
         }
 		//circuit.~QuantumCircuit();
 		//state.~QuantumState();
     }
-    double tavg = tsum / num_meas;
-    double tstd = sqrt(tsum2 / num_meas - tavg * tavg);
+    double pavg = psum / num_meas;
+    double pstd = sqrt(psum2 / num_meas - pavg * pavg);
+    double savg = ssum / num_meas;
+    double sstd = sqrt(ssum2 / num_meas - savg * savg);
 
     if (rank == 0)
-        std::cout << "opt= " << lv_opt << ", q= " << nqubits << ", time[s] " << tavg << " +- " << tstd << std::endl;
+        std::cout << "mpisize " << size << ", opt= " << lv_opt << ", q= " << nqubits
+                  << ", prep_time[s] " << pavg << " +- " << pstd
+                  << ", sim_time[s] " << savg << " +- " << sstd << std::endl;
     return;
 }
 
@@ -96,11 +105,13 @@ int main(int argc, char *argv[]){
     if (argc > 1) st_nq = atoi(argv[1]);
     if (argc > 2) ed_nq = atoi(argv[2]);
 
+	/*
     if (rank == 0) {
         std::cout << "# nqubits: " << st_nq << " ~ " << ed_nq << std::endl;
         std::cout << "# measure: dummy " << num_dmy << ", meas " << num_meas << std::endl;
         std::cout << "# MPI_COMM_WORLD: rank " << rank << ", size " << size << std::endl;
 	}
+	*/
 
     std::cout << std::scientific << std::setprecision(9);
     int i = std::max(st_nq, ed_nq);
@@ -114,7 +125,7 @@ int main(int argc, char *argv[]){
     //for (int lv_opt=-1; lv_opt<5; ++lv_opt){
     for (int lv_opt=-1; lv_opt<0; ++lv_opt){
         for (int i=st_nq; i!=ed_nq; i+=stp){
-            bench(i, depth, lv_opt, num_dmy, num_meas, rank);
+            bench(i, depth, lv_opt, num_dmy, num_meas, rank, size);
         }
     }
 
