@@ -68,6 +68,12 @@ TEST(UpdateTest, SingleDiagonalMatrixTest) {
 	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_simd);
 #endif
 #endif
+#ifdef _USE_SVE
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_sve);
+#ifdef _OPENMP
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_sve);
+#endif
+#endif //#ifdef _USE_SVE
 }
 
 void test_single_phase_gate(std::function<void(UINT, CTYPE, CTYPE*, ITYPE)> func) {
