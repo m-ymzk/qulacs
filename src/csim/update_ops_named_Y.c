@@ -107,6 +107,53 @@ void Y_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			state[basis_index + 1] = imag * temp0;
 		}
 	}
+#ifdef __aarch64__
+	else if (6 <= target_qubit_index && target_qubit_index <= 8) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; state_index += 8) {
+			ITYPE basis_index_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
+			ITYPE basis_index_1 = basis_index_0 + mask;
+			ITYPE basis_index_2 = ((state_index + 2)&mask_low) + (((state_index + 2)&mask_high) << 1);
+			ITYPE basis_index_3 = basis_index_2 + mask;
+			ITYPE basis_index_4 = ((state_index + 4)&mask_low) + (((state_index + 4)&mask_high) << 1);
+			ITYPE basis_index_5 = basis_index_4 + mask;
+			ITYPE basis_index_6 = ((state_index + 6)&mask_low) + (((state_index + 6)&mask_high) << 1);
+			ITYPE basis_index_7 = basis_index_6 + mask;
+			CTYPE temp0 = state[basis_index_0];
+			CTYPE temp1 = state[basis_index_0 + 1];
+			CTYPE temp2 = state[basis_index_2];
+			CTYPE temp3 = state[basis_index_2 + 1];
+			CTYPE temp4 = state[basis_index_4];
+			CTYPE temp5 = state[basis_index_4 + 1];
+			CTYPE temp6 = state[basis_index_6];
+			CTYPE temp7 = state[basis_index_6 + 1];
+
+			// L1 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
+			__builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+			// L2 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+			__builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+
+			state[basis_index_0] = -imag * state[basis_index_1];
+			state[basis_index_0 + 1] = -imag * state[basis_index_1 + 1];
+			state[basis_index_2] = -imag * state[basis_index_3];
+			state[basis_index_2 + 1] = -imag * state[basis_index_3 + 1];
+			state[basis_index_4] = -imag * state[basis_index_5];
+			state[basis_index_4 + 1] = -imag * state[basis_index_5 + 1];
+			state[basis_index_6] = -imag * state[basis_index_7];
+			state[basis_index_6 + 1] = -imag * state[basis_index_7 + 1];
+			state[basis_index_1] = imag * temp0;
+			state[basis_index_1 + 1] = imag * temp1;
+			state[basis_index_3] = imag * temp2;
+			state[basis_index_3 + 1] = imag * temp3;
+			state[basis_index_5] = imag * temp4;
+			state[basis_index_5 + 1] = imag * temp5;
+			state[basis_index_7] = imag * temp6;
+			state[basis_index_7 + 1] = imag * temp7;
+		}
+	}
+#endif
 	else {
 #pragma omp parallel for
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
