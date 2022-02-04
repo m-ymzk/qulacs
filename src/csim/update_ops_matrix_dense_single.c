@@ -304,6 +304,89 @@ void single_qubit_dense_matrix_gate_single_sve(
             svst1_f64(pg, (double *)&state[basis_0], output0);
             svst1_f64(pg, (double *)&state[basis_1], output1);
         }
+    } else if (dim >= vec_len) {
+        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+        svbool_t select_flag;
+
+        svuint64_t vec_shuffle_table;
+        svuint64_t vec_index = svindex_u64(0, 1);
+        vec_index = svlsr_n_u64_z(pg, vec_index, 1);
+        select_flag = svcmpne_u64(pg, svdup_u64(0),
+                                  svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
+        vec_shuffle_table = sveor_u64_z(pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index+1)));
+
+        // SVE registers for matrix-vector products
+        svfloat64_t input0, input1, output0, output1;
+        svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
+        svfloat64_t shuffle0, shuffle1, result01_real, result01_imag;
+        svfloat64_t mat02_real, mat02_imag, mat13_real, mat13_imag;
+
+        // load matrix elements
+        mat02_real = svuzp1_f64(
+            svdup_f64(creal(matrix[0])), svdup_f64(creal(matrix[2])));
+        mat02_imag = svuzp1_f64(
+            svdup_f64(cimag(matrix[0])), svdup_f64(cimag(matrix[2])));
+        mat13_real = svuzp1_f64(
+            svdup_f64(creal(matrix[1])), svdup_f64(creal(matrix[3])));
+        mat13_imag = svuzp1_f64(
+            svdup_f64(cimag(matrix[1])), svdup_f64(cimag(matrix[3])));
+
+        for (state_index = 0; state_index < dim;
+             state_index += vec_len) {
+
+            // fetch values
+            input0 = svld1_f64(pg, (double *)&state[state_index]);
+            input1 = svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
+
+            // shuffle
+            shuffle0 = svsel_f64(select_flag,
+                                 svtbl_f64( input1, vec_shuffle_table),
+                                  input0);
+            shuffle1 = svsel_f64(select_flag,
+                                  input1,
+                                 svtbl_f64( input0, vec_shuffle_table ));
+            
+            // select odd or even elements from two vectors
+            cal00_real = svuzp1_f64(shuffle0, shuffle0);
+            cal00_imag = svuzp2_f64(shuffle0, shuffle0);
+            cal11_real = svuzp1_f64(shuffle1, shuffle1);
+            cal11_imag = svuzp2_f64(shuffle1, shuffle1);
+
+            // perform matrix-vector product
+            result01_real = svmul_f64_x(pg, cal00_real, mat02_real);
+            result01_imag = svmul_f64_x(pg, cal00_imag, mat02_real);
+
+            result01_real =
+                svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
+            result01_imag =
+                svmad_f64_x(pg, cal00_real, mat02_imag, result01_imag);
+
+            result01_real =
+                svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
+            result01_imag =
+                svmad_f64_x(pg, cal11_real, mat13_imag, result01_imag);
+
+            result01_real =
+                svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
+            result01_imag =
+                svmad_f64_x(pg, cal11_imag, mat13_real, result01_imag);
+
+            // interleave elements from low halves of two vectors
+            shuffle0 = svzip1_f64(result01_real, result01_imag);
+            shuffle1 = svzip2_f64(result01_real, result01_imag);
+
+            // re-shuffle
+            output0 = svsel_f64(select_flag,
+                                svtbl_f64( shuffle1, vec_shuffle_table ),
+                                shuffle0);
+            output1 = svsel_f64(select_flag,
+                                shuffle1,
+                                svtbl_f64( shuffle0, vec_shuffle_table ));
+
+            // set values
+            svst1_f64(pg, (double *)&state[state_index], output0);
+            svst1_f64(pg, (double *)&state[state_index + (vec_len>>1)], output1);
+        }
     } else {
         for (state_index = 0; state_index < loop_dim; ++state_index) {
             ITYPE basis_0 =
