@@ -103,6 +103,31 @@ void Z_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			state[state_index] *= -1;
 		}
 	}
+#ifdef __aarch64__
+	else if (5 <= target_qubit_index && target_qubit_index <= 9) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; state_index += 8) {
+			ITYPE basis_index_0 = (state_index&mask_low) + ((state_index&mask_high) << 1) + mask;
+			ITYPE basis_index_1 = ((state_index + 2)&mask_low) + (((state_index + 2)&mask_high) << 1) + mask;
+			ITYPE basis_index_2 = ((state_index + 4)&mask_low) + (((state_index + 4)&mask_high) << 1) + mask;
+			ITYPE basis_index_3 = ((state_index + 6)&mask_low) + (((state_index + 6)&mask_high) << 1) + mask;
+
+			// L1 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
+			// L2 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+
+			state[basis_index_0] *= -1;
+			state[basis_index_0 + 1] *= -1;
+			state[basis_index_1] *= -1;
+			state[basis_index_1 + 1] *= -1;
+			state[basis_index_2] *= -1;
+			state[basis_index_2 + 1] *= -1;
+			state[basis_index_3] *= -1;
+			state[basis_index_3 + 1] *= -1;
+		}
+	}
+#endif
 	else {
 #pragma omp parallel for
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
