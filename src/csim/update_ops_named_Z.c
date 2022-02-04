@@ -70,6 +70,11 @@ void Z_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			state[state_index] *= -1;
 		}
 	}
+	else if (target_qubit_index == IS_OUTER_QB) {
+		for (state_index = 0; state_index < dim; ++state_index) {
+			state[state_index] *= -1;
+		}
+	}
 	else {
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
 			ITYPE basis_index = (state_index&mask_low) + ((state_index&mask_high) << 1) + mask;
@@ -89,6 +94,12 @@ void Z_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 	if (target_qubit_index == 0) {
 #pragma omp parallel for
 		for (state_index = 1; state_index < dim; state_index += 2) {
+			state[state_index] *= -1;
+		}
+	}
+	else if (target_qubit_index == IS_OUTER_QB) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < dim; ++state_index) {
 			state[state_index] *= -1;
 		}
 	}
@@ -113,6 +124,11 @@ void Z_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 	__m256d minus_one = _mm256_set_pd(-1,-1,-1,-1);
 	if (target_qubit_index == 0) {
 		for (state_index = 1; state_index < dim; state_index += 2) {
+			state[state_index] *= -1;
+		}
+	}
+	else if (target_qubit_index == IS_OUTER_QB) {
+		for (state_index = 0; state_index < dim; ++state_index) {
 			state[state_index] *= -1;
 		}
 	}
@@ -141,6 +157,12 @@ void Z_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			state[state_index] *= -1;
 		}
 	}
+	else if (target_qubit_index == IS_OUTER_QB) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < dim; ++state_index) {
+			state[state_index] *= -1;
+		}
+	}
 	else {
 #pragma omp parallel for
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
@@ -163,20 +185,8 @@ void Z_gate_mpi(UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc)
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
-        //printf("#debug dim,dim_work,num_work,t: %lld, %lld, %lld, %p\n", dim, dim_work, num_work, t);
 		if (rank & pair_rank_bit) {
-			ITYPE state_index = 0;
-			UINT threshold = 13;
-			if (dim < (((ITYPE)1) << threshold)) {
-				for (state_index = 0; state_index < dim; state_index += 1) {
-					state[state_index] *= -1;
-				}
-			} else {
-#pragma omp parallel for
-				for (state_index = 0; state_index < dim; state_index += 1) {
-					state[state_index] *= -1;
-				}
-			}
+            Z_gate(IS_OUTER_QB, state, dim);
 		}
     }
 }

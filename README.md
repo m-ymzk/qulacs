@@ -28,7 +28,7 @@
       - to_string
   - gate
       - X / Y / Z
-      - CNOT
+      - CNOT / CZ
       - Identity / H
       - P0 / P1
       - RX / RY / RZ
@@ -39,7 +39,6 @@
 - 3月末版対応予定の関数・機能
   - gate
       - U1 / U2 / U3
-      - CZ
       - SWAP
       - Measurement
       - Pauli

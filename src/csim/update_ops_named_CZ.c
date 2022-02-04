@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
@@ -225,18 +226,35 @@ void CZ_gate_parallel_simd(UINT control_qubit_index, UINT target_qubit_index, CT
 
 #ifdef _USE_MPI
 void CZ_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc) {
-    if (control_qubit_index < inner_qc){
-        if (target_qubit_index < inner_qc){
-            CZ_gate(control_qubit_index, target_qubit_index, state, dim);
-        }
-    } else {
-        //int tgt_rank_bit = 1 << (target_qubit_index - inner_qc - 1);
-        //MPIutil m = get_mpiutil();
-        //int rank = m->get_rank();
-        //if (rank & tgt_rank_bit){
-            //single_qubit_phase_gate(ISOUTERQB, phase, state, dim);
-        //} // if else, nothing to do.
-    }
+	UINT left_qubit, right_qubit;
+	if (control_qubit_index > target_qubit_index) {
+		left_qubit = control_qubit_index;
+		right_qubit = target_qubit_index;
+	} else {
+		left_qubit = target_qubit_index;
+		right_qubit = control_qubit_index;
+	}
+
+    if (left_qubit < inner_qc){
+        CZ_gate(control_qubit_index, target_qubit_index, state, dim);
+    } else if (right_qubit < inner_qc) { // one is outer_qubit
+		//printf("#enter CZ gate, one is outer_qubit\n");
+        const MPIutil m = get_mpiutil();
+        const UINT rank = m->get_rank();
+		const UINT tgt_rank_bit = 1 << (left_qubit - inner_qc);
+		if (rank & tgt_rank_bit) {
+			Z_gate(right_qubit, state, dim);
+        } // if else, nothing to do.
+    } else { // both is outer_qubit;
+		//printf("#enter CZ gate, both is outer_qubit\n");
+        const MPIutil m = get_mpiutil();
+        const UINT rank = m->get_rank();
+		const UINT tgt0_rank_bit = 1 << (left_qubit - inner_qc);
+		const UINT tgt1_rank_bit = 1 << (right_qubit - inner_qc);
+		if (rank & tgt0_rank_bit && rank & tgt1_rank_bit) {
+			Z_gate(IS_OUTER_QB, state, dim);
+        } // if else, nothing to do.
+	}
 }
 #endif
 
