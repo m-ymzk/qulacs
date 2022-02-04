@@ -31,9 +31,13 @@ case ${NT} in
     Cmd="numactl -N 0 ./${Test} ${DebugFlag} ${NQubit} ${TargetBit} ${NumLoops}"
     ;;
   12)
+    export OMP_PROC_BIND=TRUE
+    export GOMP_CPU_AFFINITY=0-11
     Cmd="numactl -N 0 ./${Test} ${DebugFlag} ${NQubit} ${TargetBit} ${NumLoops}"
     ;;
   48)
+    export OMP_PROC_BIND=TRUE
+    export GOMP_CPU_AFFINITY=0-47
     Cmd="numactl -N 0-3 ./${Test} ${DebugFlag} ${NQubit} ${TargetBit} ${NumLoops}"
     ;;
   *)
