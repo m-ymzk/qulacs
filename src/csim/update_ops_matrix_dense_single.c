@@ -312,8 +312,9 @@ void single_qubit_dense_matrix_gate_single_sve(
         svuint64_t vec_index = svindex_u64(0, 1);
         vec_index = svlsr_n_u64_z(pg, vec_index, 1);
         select_flag = svcmpne_u64(pg, svdup_u64(0),
-                                  svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
-        vec_shuffle_table = sveor_u64_z(pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index+1)));
+            svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
+        vec_shuffle_table = sveor_u64_z(
+            pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index + 1)));
 
         // SVE registers for matrix-vector products
         svfloat64_t input0, input1, output0, output1;
@@ -331,21 +332,18 @@ void single_qubit_dense_matrix_gate_single_sve(
         mat13_imag = svuzp1_f64(
             svdup_f64(cimag(matrix[1])), svdup_f64(cimag(matrix[3])));
 
-        for (state_index = 0; state_index < dim;
-             state_index += vec_len) {
-
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1_f64(pg, (double *)&state[state_index]);
-            input1 = svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 =
+                svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // shuffle
-            shuffle0 = svsel_f64(select_flag,
-                                 svtbl_f64( input1, vec_shuffle_table),
-                                  input0);
-            shuffle1 = svsel_f64(select_flag,
-                                  input1,
-                                 svtbl_f64( input0, vec_shuffle_table ));
-            
+            shuffle0 = svsel_f64(
+                select_flag, svtbl_f64(input1, vec_shuffle_table), input0);
+            shuffle1 = svsel_f64(
+                select_flag, input1, svtbl_f64(input0, vec_shuffle_table));
+
             // select odd or even elements from two vectors
             cal00_real = svuzp1_f64(shuffle0, shuffle0);
             cal00_imag = svuzp2_f64(shuffle0, shuffle0);
@@ -376,16 +374,15 @@ void single_qubit_dense_matrix_gate_single_sve(
             shuffle1 = svzip2_f64(result01_real, result01_imag);
 
             // re-shuffle
-            output0 = svsel_f64(select_flag,
-                                svtbl_f64( shuffle1, vec_shuffle_table ),
-                                shuffle0);
-            output1 = svsel_f64(select_flag,
-                                shuffle1,
-                                svtbl_f64( shuffle0, vec_shuffle_table ));
+            output0 = svsel_f64(
+                select_flag, svtbl_f64(shuffle1, vec_shuffle_table), shuffle0);
+            output1 = svsel_f64(
+                select_flag, shuffle1, svtbl_f64(shuffle0, vec_shuffle_table));
 
             // set values
             svst1_f64(pg, (double *)&state[state_index], output0);
-            svst1_f64(pg, (double *)&state[state_index + (vec_len>>1)], output1);
+            svst1_f64(
+                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
         for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -490,8 +487,9 @@ void single_qubit_dense_matrix_gate_parallel_sve(
         svuint64_t vec_index = svindex_u64(0, 1);
         vec_index = svlsr_n_u64_z(pg, vec_index, 1);
         select_flag = svcmpne_u64(pg, svdup_u64(0),
-                                  svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
-        vec_shuffle_table = sveor_u64_z(pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index+1)));
+            svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
+        vec_shuffle_table = sveor_u64_z(
+            pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index + 1)));
 
         // SVE registers for matrix-vector products
         svfloat64_t input0, input1, output0, output1;
@@ -510,23 +508,21 @@ void single_qubit_dense_matrix_gate_parallel_sve(
             svdup_f64(cimag(matrix[1])), svdup_f64(cimag(matrix[3])));
 
 #pragma omp parallel for private(input0, input1, output0, output1, cal00_real, \
-    cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag, shuffle0, shuffle1)          \
-    shared(pg, select_flag, vec_index, vec_shuffle_table, mat02_real, mat02_imag, mat13_real, mat13_imag)
-        for (state_index = 0; state_index < dim;
-             state_index += vec_len) {
-
+    cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag,          \
+    shuffle0, shuffle1) shared(pg, select_flag, vec_index, vec_shuffle_table,  \
+    mat02_real, mat02_imag, mat13_real, mat13_imag)
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1_f64(pg, (double *)&state[state_index]);
-            input1 = svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 =
+                svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // shuffle
-            shuffle0 = svsel_f64(select_flag,
-                                 svtbl_f64( input1, vec_shuffle_table),
-                                  input0);
-            shuffle1 = svsel_f64(select_flag,
-                                  input1,
-                                 svtbl_f64( input0, vec_shuffle_table ));
-            
+            shuffle0 = svsel_f64(
+                select_flag, svtbl_f64(input1, vec_shuffle_table), input0);
+            shuffle1 = svsel_f64(
+                select_flag, input1, svtbl_f64(input0, vec_shuffle_table));
+
             // select odd or even elements from two vectors
             cal00_real = svuzp1_f64(shuffle0, shuffle0);
             cal00_imag = svuzp2_f64(shuffle0, shuffle0);
@@ -557,16 +553,15 @@ void single_qubit_dense_matrix_gate_parallel_sve(
             shuffle1 = svzip2_f64(result01_real, result01_imag);
 
             // re-shuffle
-            output0 = svsel_f64(select_flag,
-                                svtbl_f64( shuffle1, vec_shuffle_table ),
-                                shuffle0);
-            output1 = svsel_f64(select_flag,
-                                shuffle1,
-                                svtbl_f64( shuffle0, vec_shuffle_table ));
+            output0 = svsel_f64(
+                select_flag, svtbl_f64(shuffle1, vec_shuffle_table), shuffle0);
+            output1 = svsel_f64(
+                select_flag, shuffle1, svtbl_f64(shuffle0, vec_shuffle_table));
 
             // set values
             svst1_f64(pg, (double *)&state[state_index], output0);
-            svst1_f64(pg, (double *)&state[state_index + (vec_len>>1)], output1);
+            svst1_f64(
+                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
 #pragma omp parallel for
