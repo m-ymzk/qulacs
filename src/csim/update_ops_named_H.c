@@ -113,6 +113,61 @@ void H_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 			state[basis_index + 1] = (temp0 - temp1)*sqrt2inv;
 		}
 	}
+#ifdef __aarch64__
+	else if (6 <= target_qubit_index && target_qubit_index <= 8) {
+#pragma omp parallel for
+		for (state_index = 0; state_index < loop_dim; state_index += 8) {
+			ITYPE basis_index_0 = (state_index&mask_low) + ((state_index&mask_high) << 1);
+			ITYPE basis_index_1 = basis_index_0 + mask;
+			ITYPE basis_index_2 = ((state_index + 2)&mask_low) + (((state_index + 2)&mask_high) << 1);
+			ITYPE basis_index_3 = basis_index_2 + mask;
+			ITYPE basis_index_4 = ((state_index + 4)&mask_low) + (((state_index + 4)&mask_high) << 1);
+			ITYPE basis_index_5 = basis_index_4 + mask;
+			ITYPE basis_index_6 = ((state_index + 6)&mask_low) + (((state_index + 6)&mask_high) << 1);
+			ITYPE basis_index_7 = basis_index_6 + mask;
+			CTYPE temp_a0 = state[basis_index_0];
+			CTYPE temp_a1 = state[basis_index_1];
+			CTYPE temp_a2 = state[basis_index_2];
+			CTYPE temp_a3 = state[basis_index_3];
+			CTYPE temp_a4 = state[basis_index_4];
+			CTYPE temp_a5 = state[basis_index_5];
+			CTYPE temp_a6 = state[basis_index_6];
+			CTYPE temp_a7 = state[basis_index_7];
+			CTYPE temp_b0 = state[basis_index_0 + 1];
+			CTYPE temp_b1 = state[basis_index_1 + 1];
+			CTYPE temp_b2 = state[basis_index_2 + 1];
+			CTYPE temp_b3 = state[basis_index_3 + 1];
+			CTYPE temp_b4 = state[basis_index_4 + 1];
+			CTYPE temp_b5 = state[basis_index_5 + 1];
+			CTYPE temp_b6 = state[basis_index_6 + 1];
+			CTYPE temp_b7 = state[basis_index_7 + 1];
+
+			// L1 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
+			__builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+			// L2 prefetch
+			__builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+			__builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+
+			state[basis_index_0] = (temp_a0 + temp_a1)*sqrt2inv;
+			state[basis_index_1] = (temp_a0 - temp_a1)*sqrt2inv;
+			state[basis_index_2] = (temp_a2 + temp_a3)*sqrt2inv;
+			state[basis_index_3] = (temp_a2 - temp_a3)*sqrt2inv;
+			state[basis_index_4] = (temp_a4 + temp_a5)*sqrt2inv;
+			state[basis_index_5] = (temp_a4 - temp_a5)*sqrt2inv;
+			state[basis_index_6] = (temp_a6 + temp_a7)*sqrt2inv;
+			state[basis_index_7] = (temp_a6 - temp_a7)*sqrt2inv;
+			state[basis_index_0 + 1] = (temp_b0 + temp_b1)*sqrt2inv;
+			state[basis_index_1 + 1] = (temp_b0 - temp_b1)*sqrt2inv;
+			state[basis_index_2 + 1] = (temp_b2 + temp_b3)*sqrt2inv;
+			state[basis_index_3 + 1] = (temp_b2 - temp_b3)*sqrt2inv;
+			state[basis_index_4 + 1] = (temp_b4 + temp_b5)*sqrt2inv;
+			state[basis_index_5 + 1] = (temp_b4 - temp_b5)*sqrt2inv;
+			state[basis_index_6 + 1] = (temp_b6 + temp_b7)*sqrt2inv;
+			state[basis_index_7 + 1] = (temp_b6 - temp_b7)*sqrt2inv;
+		}
+	}
+#endif
 	else {
 #pragma omp parallel for
 		for (state_index = 0; state_index < loop_dim; state_index += 2) {
