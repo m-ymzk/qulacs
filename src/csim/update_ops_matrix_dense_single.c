@@ -432,52 +432,109 @@ void single_qubit_dense_matrix_gate_parallel_sve(
         mat13_imag = svuzp1_f64(
             svdup_f64(cimag(matrix[1])), svdup_f64(cimag(matrix[3])));
 
+        if (5 <= target_qubit_index && target_qubit_index <= 9) {
 #pragma omp parallel for private(input0, input1, output0, output1, cal00_real, \
     cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag)          \
     shared(pg, mat02_real, mat02_imag, mat13_real, mat13_imag)
-        for (state_index = 0; state_index < loop_dim;
-             state_index += (vec_len >> 1)) {
-            // calculate indices
-            ITYPE basis_0 =
-                (state_index & mask_low) + ((state_index & mask_high) << 1);
-            ITYPE basis_1 = basis_0 + mask;
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += (vec_len >> 1)) {
+                // calculate indices
+                ITYPE basis_0 =
+                    (state_index & mask_low) + ((state_index & mask_high) << 1);
+                ITYPE basis_1 = basis_0 + mask;
 
-            // fetch values
-            input0 = svld1_f64(pg, (double *)&state[basis_0]);
-            input1 = svld1_f64(pg, (double *)&state[basis_1]);
+                // fetch values
+                input0 = svld1_f64(pg, (double *)&state[basis_0]);
+                input1 = svld1_f64(pg, (double *)&state[basis_1]);
 
-            // select odd or even elements from two vectors
-            cal00_real = svuzp1_f64(input0, input0);
-            cal00_imag = svuzp2_f64(input0, input0);
-            cal11_real = svuzp1_f64(input1, input1);
-            cal11_imag = svuzp2_f64(input1, input1);
+                // select odd or even elements from two vectors
+                cal00_real = svuzp1_f64(input0, input0);
+                cal00_imag = svuzp2_f64(input0, input0);
+                cal11_real = svuzp1_f64(input1, input1);
+                cal11_imag = svuzp2_f64(input1, input1);
 
-            // perform matrix-vector product
-            result01_real = svmul_f64_x(pg, cal00_real, mat02_real);
-            result01_imag = svmul_f64_x(pg, cal00_imag, mat02_real);
+                // perform matrix-vector product
+                result01_real = svmul_f64_x(pg, cal00_real, mat02_real);
+                result01_imag = svmul_f64_x(pg, cal00_imag, mat02_real);
 
-            result01_real =
-                svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
-            result01_imag =
-                svmad_f64_x(pg, cal00_real, mat02_imag, result01_imag);
+                result01_real =
+                    svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal00_real, mat02_imag, result01_imag);
 
-            result01_real =
-                svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
-            result01_imag =
-                svmad_f64_x(pg, cal11_real, mat13_imag, result01_imag);
+                result01_real =
+                    svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal11_real, mat13_imag, result01_imag);
 
-            result01_real =
-                svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
-            result01_imag =
-                svmad_f64_x(pg, cal11_imag, mat13_real, result01_imag);
+                result01_real =
+                    svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal11_imag, mat13_real, result01_imag);
 
-            // interleave elements from low halves of two vectors
-            output0 = svzip1_f64(result01_real, result01_imag);
-            output1 = svzip2_f64(result01_real, result01_imag);
+                // interleave elements from low halves of two vectors
+                output0 = svzip1_f64(result01_real, result01_imag);
+                output1 = svzip2_f64(result01_real, result01_imag);
 
-            // set values
-            svst1_f64(pg, (double *)&state[basis_0], output0);
-            svst1_f64(pg, (double *)&state[basis_1], output1);
+                // L1 prefetch
+                __builtin_prefetch(&state[basis_0 + mask * 2], 1, 3);
+                __builtin_prefetch(&state[basis_1 + mask * 2], 1, 3);
+                // L2 prefetch
+                __builtin_prefetch(&state[basis_0 + mask * 4], 1, 2);
+                __builtin_prefetch(&state[basis_1 + mask * 4], 1, 2);
+
+                // set values
+                svst1_f64(pg, (double *)&state[basis_0], output0);
+                svst1_f64(pg, (double *)&state[basis_1], output1);
+            }
+        } else {
+#pragma omp parallel for private(input0, input1, output0, output1, cal00_real, \
+    cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag)          \
+    shared(pg, mat02_real, mat02_imag, mat13_real, mat13_imag)
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += (vec_len >> 1)) {
+                // calculate indices
+                ITYPE basis_0 =
+                    (state_index & mask_low) + ((state_index & mask_high) << 1);
+                ITYPE basis_1 = basis_0 + mask;
+
+                // fetch values
+                input0 = svld1_f64(pg, (double *)&state[basis_0]);
+                input1 = svld1_f64(pg, (double *)&state[basis_1]);
+
+                // select odd or even elements from two vectors
+                cal00_real = svuzp1_f64(input0, input0);
+                cal00_imag = svuzp2_f64(input0, input0);
+                cal11_real = svuzp1_f64(input1, input1);
+                cal11_imag = svuzp2_f64(input1, input1);
+
+                // perform matrix-vector product
+                result01_real = svmul_f64_x(pg, cal00_real, mat02_real);
+                result01_imag = svmul_f64_x(pg, cal00_imag, mat02_real);
+
+                result01_real =
+                    svmsb_f64_x(pg, cal00_imag, mat02_imag, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal00_real, mat02_imag, result01_imag);
+
+                result01_real =
+                    svmad_f64_x(pg, cal11_real, mat13_real, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal11_real, mat13_imag, result01_imag);
+
+                result01_real =
+                    svmsb_f64_x(pg, cal11_imag, mat13_imag, result01_real);
+                result01_imag =
+                    svmad_f64_x(pg, cal11_imag, mat13_real, result01_imag);
+
+                // interleave elements from low halves of two vectors
+                output0 = svzip1_f64(result01_real, result01_imag);
+                output1 = svzip2_f64(result01_real, result01_imag);
+
+                // set values
+                svst1_f64(pg, (double *)&state[basis_0], output0);
+                svst1_f64(pg, (double *)&state[basis_1], output1);
+            }
         }
     } else if (dim >= vec_len) {
         svbool_t pg = svptrue_b64();  // this predicate register is all 1.
