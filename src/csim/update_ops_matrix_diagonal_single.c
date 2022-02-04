@@ -512,7 +512,7 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
 void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int isone) {
     // loop variables
-    ITYPE state_index; 
+    ITYPE state_index;
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
 
@@ -524,12 +524,11 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
 
         mat_real = svdup_f64(creal(diagonal_matrix[isone]));
         mat_imag = svdup_f64(cimag(diagonal_matrix[isone]));
-        for (state_index = 0; state_index < dim;
-             state_index += vec_len) {
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1_f64(pg, (double *)&state[state_index]);
-            input1 = svld1_f64(
-                pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 =
+                svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1_f64(input0, input1);
@@ -548,11 +547,11 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
 
             // set values
             svst1_f64(pg, (double *)&state[state_index], output0);
-            svst1_f64(pg, (double *)&state[state_index + (vec_len >> 1)],
-                output1);
+            svst1_f64(
+                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
-    } else 
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    } else
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     {
         for (state_index = 0; state_index < dim; state_index += 2) {
             state[state_index] *= diagonal_matrix[isone];
@@ -578,15 +577,13 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
         mat_real = svdup_f64(creal(diagonal_matrix[isone]));
         mat_imag = svdup_f64(cimag(diagonal_matrix[isone]));
 
-#pragma omp parallel for private( input0, input1, output0, output1, \
-                                  cval_real, cval_imag, result_real, result_imag) \
-                         shared(pg, mat_real, mat_imag)
-        for (state_index = 0; state_index < dim;
-             state_index += vec_len) {
+#pragma omp parallel for private(input0, input1, output0, output1, cval_real, \
+    cval_imag, result_real, result_imag) shared(pg, mat_real, mat_imag)
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1_f64(pg, (double *)&state[state_index]);
-            input1 = svld1_f64(
-                pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 =
+                svld1_f64(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1_f64(input0, input1);
@@ -605,11 +602,11 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
 
             // set values
             svst1_f64(pg, (double *)&state[state_index], output0);
-            svst1_f64(pg, (double *)&state[state_index + (vec_len >> 1)],
-                output1);
+            svst1_f64(
+                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
-    } else 
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    } else
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     {
 #pragma omp parallel for
         for (state_index = 0; state_index < dim; state_index += 2) {
