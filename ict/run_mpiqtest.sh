@@ -22,13 +22,15 @@ Test=mpiqtest
 NP=1
 
 export OMP_NUM_THREADS=${NT}
+export OMP_PROC_BIND=TRUE
 
 echo "OMP_NUM_THREADS: ${OMP_NUM_THREADS}"
 echo "NumLoops: ${NumLoops}"
 
 case ${NT} in
   1)
-    Cmd="numactl -N 0 ./${Test} ${DebugFlag} ${NQubit} ${TargetBit} ${NumLoops}"
+    export GOMP_CPU_AFFINITY=0
+    Cmd="numactl -N 0 -m 0 ./${Test} ${DebugFlag} ${NQubit} ${TargetBit} ${NumLoops}"
     ;;
   12)
     export OMP_PROC_BIND=TRUE
