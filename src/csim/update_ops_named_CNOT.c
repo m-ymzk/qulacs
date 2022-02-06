@@ -403,11 +403,11 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index, CTYPE *sta
 					//printf("#%d: call m_DC_sendrecv, dim = %lld, pair_rank=%d\n", rank, dim, pair_rank);
 					m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 					memcpy(si, t, dim_work * sizeof(CTYPE));
+				    si += dim_work;
 				}
 				else {
 					m->get_tag(); // dummy to count up tag
 				}
-				si += dim_work;
 			}
 		}
 	}

@@ -191,6 +191,25 @@ TEST(GateTest_multicpu, ApplyCZGate_small) {
 	_ApplyTwoQubitGate(n, 1, 0, gate::CZ, get_eigen_matrix_full_qubit_CZ);
 }
 
+TEST(GateTest_multicpu, ApplySWAPGate_10qubit_all) {
+	UINT n = 10;
+	for (UINT c=0; c<n; ++c) {
+		for (UINT t=0; t<n; ++t) {
+			if (c==t) continue;
+			_ApplyTwoQubitGate(n, c, t, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
+		}
+	}
+}
+
+TEST(GateTest_multicpu, ApplySWAPGate_corner) {
+    Random random;
+    random.set_seed(2022);
+	_ApplyTwoQubitGate(2, 0, 1, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
+	_ApplyTwoQubitGate(2, 1, 0, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
+	_ApplyTwoQubitGate(5, 4, 3, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
+	_ApplyTwoQubitGate(5, 3, 4, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
+}
+
 void _ApplyTwoQubitGate(UINT n, UINT control, UINT target, std::function<QuantumGateBase*(UINT, UINT)> func,
 	   	std::function<Eigen::MatrixXcd(UINT,UINT,UINT)> func_eig) {
     const ITYPE dim = 1ULL << n;
@@ -204,81 +223,41 @@ void _ApplyTwoQubitGate(UINT n, UINT control, UINT target, std::function<Quantum
 	const UINT offs = inner_dim * m->get_rank();
     Eigen::VectorXcd test_state1 = Eigen::VectorXcd::Zero(dim);
 	{
-		UINT j=0;
-        {
-            if (target == control) target = (target + 1) % n;
+        if (target == control) target = (target + 1) % n;
 
-            state_ref.set_Haar_random_state(2022);
-            for (ITYPE i = 0; i < dim; ++i) test_state1[i] = state_ref.data_cpp()[i];
-            for (ITYPE i = 0; i < inner_dim; ++i) state.data_cpp()[i] = state_ref.data_cpp()[(i + offs)%dim];
-            //test_state.load(&state);
-            for (ITYPE i = 0; i < inner_dim; ++i) test_state.data_cpp()[i] = state_ref.data_cpp()[(i + offs)%dim];
+        state_ref.set_Haar_random_state(2022);
+        for (ITYPE i = 0; i < dim; ++i) test_state1[i] = state_ref.data_cpp()[i];
+        for (ITYPE i = 0; i < inner_dim; ++i) state.data_cpp()[i] = state_ref.data_cpp()[(i + offs)%dim];
+        //test_state.load(&state);
+        for (ITYPE i = 0; i < inner_dim; ++i) test_state.data_cpp()[i] = state_ref.data_cpp()[(i + offs)%dim];
 
-            // update state
-            auto gate = func(control, target);
-            gate->update_quantum_state(&state);
-            gate->update_quantum_state(&state_ref);
+        // update state
+        auto gate = func(control, target);
+        gate->update_quantum_state(&state);
+        gate->update_quantum_state(&state_ref);
 
-            // update eigen state
-            Eigen::MatrixXcd large_mat = func_eig(control,target,n);
-            test_state1 = large_mat * test_state1;
+        // update eigen state
+        Eigen::MatrixXcd large_mat = func_eig(control,target,n);
+        test_state1 = large_mat * test_state1;
 
-            // update dense state
-            ComplexMatrix small_mat;
-            gate->set_matrix(small_mat);
-            auto gate_dense = new QuantumGateMatrix(gate->target_qubit_list,small_mat,gate->control_qubit_list);
-            //gate_dense->update_quantum_state(&test_state);
-            delete gate_dense;
+        // update dense state
+        ComplexMatrix small_mat;
+        gate->set_matrix(small_mat);
+        auto gate_dense = new QuantumGateMatrix(gate->target_qubit_list,small_mat,gate->control_qubit_list);
+        //gate_dense->update_quantum_state(&test_state);
+        delete gate_dense;
 
-			//std::cout << "# rank,tgt,cnt: " << m->get_rank() << "," << target << "," << control
-			//	<< ":0 " << state.data_cpp()[0] << ", " << test_state1[0+offs]
-			//	<< ":1 " << state.data_cpp()[1] << ", " << test_state1[1+offs]
-			//	<< std::endl;
-			//	<< ": " << state.data_cpp()[32%inner_dim] << ", " << test_state1[(32+offs)%dim] << ", " << state_ref.data_cpp()[(32+offs)%dim]
-			//	<< ": " << state.data_cpp()[64%inner_dim] << ", " << test_state1[(64+offs)%dim] << ", " << state_ref.data_cpp()[(64+offs)%dim]
-            for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state1[(i + offs)%dim]), 0, eps);
-            //for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i + offs]), 0, eps);
-            for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - state_ref.data_cpp()[(i + offs)%dim]), 0, eps);
-        }
+		//std::cout << "# rank,tgt,cnt: " << m->get_rank() << "," << target << "," << control
+		//	<< ":0 " << state.data_cpp()[0] << ", " << test_state1[0+offs]
+		//	<< ":1 " << state.data_cpp()[1] << ", " << test_state1[1+offs]
+		//	<< std::endl;
+		//	<< ": " << state.data_cpp()[32%inner_dim] << ", " << test_state1[(32+offs)%dim] << ", " << state_ref.data_cpp()[(32+offs)%dim]
+		//	<< ": " << state.data_cpp()[64%inner_dim] << ", " << test_state1[(64+offs)%dim] << ", " << state_ref.data_cpp()[(64+offs)%dim]
+        for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state1[(i + offs)%dim]), 0, eps);
+        //for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i + offs]), 0, eps);
+        for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - state_ref.data_cpp()[(i + offs)%dim]), 0, eps);
     }
 }
-
-/*
-void _ApplySWAPGate(UINT n, UINT control, UINT target) {
-    funclist.clear();
-    funclist.push_back(std::make_pair(gate::SWAP, get_eigen_matrix_full_qubit_SWAP));
-    for (UINT repeat = 0; repeat < 10; ++repeat) {
-        for (auto func_mat : funclist) {
-            UINT control = random.int32() % n;
-            UINT target = random.int32() % n;
-            if (target == control) target = (target + 1) % n;
-
-            auto func = func_mat.first;
-            auto func_eig = func_mat.second;
-
-            state.set_Haar_random_state();
-            test_state.load(&state);
-            for (ITYPE i = 0; i < dim; ++i) test_state1[i] = state.data_cpp()[i];
-
-            auto gate = func(control, target);
-            gate->update_quantum_state(&state);
-
-            Eigen::MatrixXcd large_mat = func_eig(control, target, n);
-            test_state1 = large_mat * test_state1;
-
-            // update dense state
-            ComplexMatrix small_mat;
-            gate->set_matrix(small_mat);
-            auto gate_dense = new QuantumGateMatrix(gate->target_qubit_list, small_mat, gate->control_qubit_list);
-            gate_dense->update_quantum_state(&test_state);
-            delete gate_dense;
-
-            for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state1[i]), 0, eps);
-            for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
-        }
-    }
-}
-*/
 
 /*
 TEST(GateTest_multicpu, ApplyMultiQubitGate) {

@@ -41,11 +41,9 @@ public:
 				_update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 			}
 #else
-            // index, state, dim, inner_qc
 #ifdef _USE_MPI
             if (state->outer_qc == 0)
 #endif //#ifdef _USE_MPI
-                // index, state, dim
 			    _update_func(this->_target_qubit_list[0].index(), state->data_c(), state->dim);
 #ifdef _USE_MPI
             else
@@ -108,14 +106,12 @@ public:
 			}
 #else //#ifdef _USE_GPU
 #ifdef _USE_MPI
-            // index x 2, state, dim
-            if (state->inner_qc > this->_target_qubit_list[0].index()) {
-                //std::cout << "#update qstate-2qubit " << state->inner_qc << ", " << this->_target_qubit_list[0].index()
-                //    << ", " << this->_target_qubit_list[1].index() << std::endl;
+            if (state->outer_qc == 0)
+#endif //#ifdef _USE_MPI
+			    _update_func(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim);
+#ifdef _USE_MPI
+            else
 			    _update_func_mpi(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim, state->inner_qc);
-            }
-#else //#ifdef _USE_MPI
-			_update_func(this->_target_qubit_list[0].index(), this->_target_qubit_list[1].index(), state->data_c(), state->dim);
 #endif //#ifdef _USE_MPI
 #endif //#ifdef _USE_GPU
 		}
