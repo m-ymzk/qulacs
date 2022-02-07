@@ -1,25 +1,28 @@
 #!/bin/bash
 
-LOG=./log_weakstrong_0202py
+LOG=./log_weakstrong_0207py
 touch ${LOG}
+echo "### mpi-qulacs version ###" >> ${LOG}
 git log -n 1 >> ${LOG}
 
 echo "### weak scale, 1proc/node ###" >> ${LOG}
-for i in {0..3}; do
-	mpirun -n $((2**i)) --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh -n $((27+i)) >> ${LOG}
+ppn=1
+for i in {0..6}; do
+	echo mpirun -n $((2**i)) --npernode $ppn --hostfile hostfile -x UCX_IB_MLX5_DEVX=no ./job.sh -n $((27+i)) >> ${LOG}
 done
 
 echo "### strong scale, 1proc/node ###" >> ${LOG}
-for i in {0..3}; do
-	mpirun -n $((2**i)) --prefix /share/yamazaki/opt --hostfile hostfile_slot1 -x LD_LIBRARY_PATH ./job.sh -n 30 >> ${LOG}
+for i in {0..6}; do
+	echo mpirun -n $((2**i)) --npernode $ppn --hostfile hostfile -x UCX_IB_MLX5_DEVX=no ./job.sh -n 30 >> ${LOG}
 done
 
 echo "### weak scale, 4proc/node ###" >> ${LOG}
-for i in {0..3}; do
-	mpirun -n $((4*2**i)) --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh -n $((27+i)) >> ${LOG}
+ppn=4
+for i in {0..6}; do
+	echo mpirun -n $((4*2**i)) --npernode $ppn --hostfile hostfile -x UCX_IB_MLX5_DEVX=no ./job.sh -n $((27+i)) >> ${LOG}
 done
 
 echo "### strong scale, 4proc/node ###" >> ${LOG}
-for i in {0..3}; do
-	mpirun -n $((4*2**i)) --prefix /share/yamazaki/opt --hostfile hostfile_slot4 -x LD_LIBRARY_PATH ./job.sh -n 30 >> ${LOG}
+for i in {0..6}; do
+	echo mpirun -n $((4*2**i)) --npernode $ppn --hostfile hostfile -x UCX_IB_MLX5_DEVX=no ./job.sh -n 30 >> ${LOG}
 done

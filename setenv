@@ -1,0 +1,10 @@
+#!/bin/bash
+
+### use gcc-11
+source /opt/rh/gcc-toolset-11/enable
+
+### use openmpi-4.1
+export PATH="/usr/mpi/gcc/openmpi-4.1.0rc5/bin":$PATH
+
+### activate qenv
+. /home/yamazaki/mpi-qulacs/qenv/bin/activate

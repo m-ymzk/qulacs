@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #-ex
-export QHOME=/share/yamazaki/qulacs/qulacs-gcc
+export QHOME=/home/yamazaki/mpi-qulacs
 
-. ${QHOME}/../setenv-gcc
+. ${QHOME}/setenv
 #ulimit -s 1048576
 #export OMP_STACKSIZE=1G
 #export FLIB_BARRIER=HARD
