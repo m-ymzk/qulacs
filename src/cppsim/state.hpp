@@ -398,6 +398,8 @@ public:
      * \~japanese-en デストラクタ
      */
     virtual ~QuantumStateCpu(){
+        MPIutil m = get_mpiutil();
+        m->release_workarea();
         release_quantum_state(this->data_c());
     }
     /**

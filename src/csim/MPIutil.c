@@ -69,6 +69,14 @@ static void m_DC_sendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank
                  mpicomm, &mpistat);
     }
 
+static void m_DC_sendrecv_replace(void *buf, int count, int pair_rank) {
+    int tag0 = get_tag();
+    int mpi_tag1 = tag0 + ((mpirank & pair_rank)<<1) + (mpirank > pair_rank);
+    int mpi_tag2 = mpi_tag1 ^ 1;
+    MPI_Sendrecv_replace(buf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+                 pair_rank, mpi_tag2, mpicomm, &mpistat);
+    }
+
 /*
 static void m_DC_isendrecv(void *sendbuf, void *recvbuf, int count, int pair_rank) {
     MPI_Request send_request;
@@ -148,6 +156,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
+    REGISTER_METHOD_POINTER(m_DC_sendrecv_replace)
     REGISTER_METHOD_POINTER(m_I_allreduce)
     REGISTER_METHOD_POINTER(s_D_allgather)
     REGISTER_METHOD_POINTER(s_D_allreduce)
