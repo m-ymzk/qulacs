@@ -4,10 +4,10 @@
  * @brief basic definitins of types and macros
  */
 
-
 #pragma once
 
-// When csim is compiled with C++, std::complex<double> is used instead of double _Complex
+// When csim is compiled with C++, std::complex<double> is used instead of
+// double _Complex
 #ifdef _MSC_VER
 #include <complex>
 #else
@@ -39,12 +39,14 @@ typedef double _Complex CTYPE;
 //! complex value (SVE)
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
-typedef svfloat64_t SV_FTYPE __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
-typedef svuint64_t SV_UTYPE __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
-typedef svbool_t SV_PRED __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+typedef svfloat64_t SV_FTYPE
+    __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+typedef svuint64_t SV_UTYPE
+    __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+typedef svbool_t SV_PRED
+    __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
 
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 //! dimension index
 #ifdef _MSC_VER
@@ -69,5 +71,5 @@ typedef unsigned long long ITYPE;
 #if defined(__MINGW32__) || defined(_MSC_VER)
 #define DllExport __declspec(dllexport)
 #else
-#define DllExport __attribute__((visibility ("default")))
+#define DllExport __attribute__((visibility("default")))
 #endif

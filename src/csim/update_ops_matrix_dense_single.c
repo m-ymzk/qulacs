@@ -824,7 +824,6 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index,
 
 void single_qubit_dense_matrix_gate_single_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
-
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
     if (dim >= vec_len) {
@@ -970,7 +969,6 @@ void single_qubit_dense_matrix_gate_single_mpi(
 #ifdef _OPENMP
 void single_qubit_dense_matrix_gate_parallel_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
-
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
     if (dim >= vec_len) {
