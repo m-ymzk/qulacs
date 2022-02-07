@@ -22,11 +22,6 @@
 #include <x86intrin.h>
 #endif
 #endif
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-#include "arm_acle.h"
-#include "arm_sve.h"
-#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-
 // void single_qubit_dense_matrix_gate_old_single(UINT target_qubit_index, const
 // CTYPE matrix[4], CTYPE *state, ITYPE dim); void
 // single_qubit_dense_matrix_gate_old_parallel(UINT target_qubit_index, const
@@ -242,13 +237,13 @@ void single_qubit_dense_matrix_gate_single_sve(
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
 
     if (mask >= (vec_len >> 1)) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
-        svfloat64_t result01_real, result01_imag;
-        svfloat64_t mat02_real, mat02_imag, mat13_real, mat13_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
+        SV_FTYPE result01_real, result01_imag;
+        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
 
         // load matrix elements
         mat02_real = svuzp1_f64(
@@ -314,11 +309,11 @@ void single_qubit_dense_matrix_gate_single_sve(
             svst1_f64(pg, (double *)&state[basis_1], output1);
         }
     } else if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svbool_t select_flag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED select_flag;
 
-        svuint64_t vec_shuffle_table;
-        svuint64_t vec_index = svindex_u64(0, 1);
+        SV_UTYPE vec_shuffle_table;
+        SV_UTYPE vec_index = svindex_u64(0, 1);
         vec_index = svlsr_n_u64_z(pg, vec_index, 1);
         select_flag = svcmpne_u64(pg, svdup_u64(0),
             svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
@@ -326,10 +321,10 @@ void single_qubit_dense_matrix_gate_single_sve(
             pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index + 1)));
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
-        svfloat64_t shuffle0, shuffle1, result01_real, result01_imag;
-        svfloat64_t mat02_real, mat02_imag, mat13_real, mat13_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
+        SV_FTYPE shuffle0, shuffle1, result01_real, result01_imag;
+        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
 
         // load matrix elements
         mat02_real = svuzp1_f64(
@@ -423,13 +418,13 @@ void single_qubit_dense_matrix_gate_parallel_sve(
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
 
     if (mask >= (vec_len >> 1)) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
-        svfloat64_t result01_real, result01_imag;
-        svfloat64_t mat02_real, mat02_imag, mat13_real, mat13_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
+        SV_FTYPE result01_real, result01_imag;
+        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
 
         // load matrix elements
         mat02_real = svuzp1_f64(
@@ -498,11 +493,11 @@ void single_qubit_dense_matrix_gate_parallel_sve(
             svst1_f64(pg, (double *)&state[basis_1], output1);
         }
     } else if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svbool_t select_flag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED select_flag;
 
-        svuint64_t vec_shuffle_table;
-        svuint64_t vec_index = svindex_u64(0, 1);
+        SV_UTYPE vec_shuffle_table;
+        SV_UTYPE vec_index = svindex_u64(0, 1);
         vec_index = svlsr_n_u64_z(pg, vec_index, 1);
         select_flag = svcmpne_u64(pg, svdup_u64(0),
             svand_u64_z(pg, vec_index, svdup_u64(1ULL << target_qubit_index)));
@@ -510,10 +505,10 @@ void single_qubit_dense_matrix_gate_parallel_sve(
             pg, svindex_u64(0, 1), svdup_u64(1ULL << (target_qubit_index + 1)));
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cal00_real, cal00_imag, cal11_real, cal11_imag;
-        svfloat64_t shuffle0, shuffle1, result01_real, result01_imag;
-        svfloat64_t mat02_real, mat02_imag, mat13_real, mat13_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
+        SV_FTYPE shuffle0, shuffle1, result01_real, result01_imag;
+        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
 
         // load matrix elements
         mat02_real = svuzp1_f64(
@@ -829,20 +824,20 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index,
 
 void single_qubit_dense_matrix_gate_single_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
     if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, input2, input3, output0, output1;
-        svfloat64_t cval02_real, cval02_imag, cval13_real, cval13_imag;
-        svfloat64_t result01_real, result01_imag;
+        SV_FTYPE input0, input1, input2, input3, output0, output1;
+        SV_FTYPE cval02_real, cval02_imag, cval13_real, cval13_imag;
+        SV_FTYPE result01_real, result01_imag;
 
         if (flag) {
             // SVE registers for matrix[4]
-            svfloat64_t mat2_real, mat2_imag, mat3_real, mat3_imag;
+            SV_FTYPE mat2_real, mat2_imag, mat3_real, mat3_imag;
 
             // load matrix elements
             mat2_real = svdup_f64(creal(matrix[2]));
@@ -896,7 +891,7 @@ void single_qubit_dense_matrix_gate_single_mpi(
             }
         } else {  // val=0
             // SVE registers for matrix[4]
-            svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
+            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
 
             // load matrix elements
             mat0_real = svdup_f64(creal(matrix[0]));
@@ -975,20 +970,20 @@ void single_qubit_dense_matrix_gate_single_mpi(
 #ifdef _OPENMP
 void single_qubit_dense_matrix_gate_parallel_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
     if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
 
         // SVE registers for matrix-vector products
-        svfloat64_t input0, input1, input2, input3, output0, output1;
-        svfloat64_t cval02_real, cval02_imag, cval13_real, cval13_imag;
-        svfloat64_t result01_real, result01_imag;
+        SV_FTYPE input0, input1, input2, input3, output0, output1;
+        SV_FTYPE cval02_real, cval02_imag, cval13_real, cval13_imag;
+        SV_FTYPE result01_real, result01_imag;
 
         if (flag) {
             // SVE registers for matrix[4]
-            svfloat64_t mat2_real, mat2_imag, mat3_real, mat3_imag;
+            SV_FTYPE mat2_real, mat2_imag, mat3_real, mat3_imag;
 
             // load matrix elements
             mat2_real = svdup_f64(creal(matrix[2]));
@@ -1046,7 +1041,7 @@ void single_qubit_dense_matrix_gate_parallel_mpi(
             }
         } else {  // val=0
             // SVE registers for matrix[4]
-            svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
+            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
 
             // load matrix elements
             mat0_real = svdup_f64(creal(matrix[0]));

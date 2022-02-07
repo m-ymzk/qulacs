@@ -22,10 +22,6 @@
 #include <x86intrin.h>
 #endif
 #endif
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-#include "arm_acle.h"
-#include "arm_sve.h"
-#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 // void single_qubit_diagonal_matrix_gate_old_single(UINT target_qubit_index,
 // const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim); void
@@ -145,11 +141,12 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
     ITYPE mask = 1ULL << target_qubit_index;
 
     if (target_qubit_index >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
-        svfloat64_t mat_real, mat_imag;
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cval_real, cval_imag, result_real, result_imag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+
+        SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
+        SV_FTYPE mat_real, mat_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
         mat0_real = svdup_f64(creal(diagonal_matrix[0]));
         mat0_imag = svdup_f64(cimag(diagonal_matrix[0]));
@@ -190,15 +187,16 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
         }
     } else {
         if (loop_dim >= vec_len) {
-            svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-            svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
-            svfloat64_t mat_real, mat_imag;
-            svfloat64_t input0, input1, output0, output1;
-            svfloat64_t cval_real, cval_imag, result_real, result_imag;
+            SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+            SV_PRED select_flag;
+
+            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
+            SV_FTYPE mat_real, mat_imag;
+            SV_FTYPE input0, input1, output0, output1;
+            SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
             // SVE registers for control factor elements
-            svuint64_t vec_index_diff, vec_bitval;
-            svbool_t select_flag;
+            SV_UTYPE vec_index_diff, vec_bitval;
             vec_index_diff = svindex_u64(0, 1);  // (0, 1, 2, 3, 4,...)
 
             mat0_real = svdup_f64(creal(diagonal_matrix[0]));
@@ -260,11 +258,12 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
     ITYPE mask = 1ULL << target_qubit_index;
 
     if (target_qubit_index >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
-        svfloat64_t mat_real, mat_imag;
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cval_real, cval_imag, result_real, result_imag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+
+        SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
+        SV_FTYPE mat_real, mat_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
         mat0_real = svdup_f64(creal(diagonal_matrix[0]));
         mat0_imag = svdup_f64(cimag(diagonal_matrix[0]));
@@ -308,15 +307,16 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
         }
     } else {
         if (loop_dim >= vec_len) {
-            svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-            svfloat64_t mat0_real, mat0_imag, mat1_real, mat1_imag;
-            svfloat64_t mat_real, mat_imag;
-            svfloat64_t input0, input1, output0, output1;
-            svfloat64_t cval_real, cval_imag, result_real, result_imag;
+            SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+            SV_PRED select_flag;
+
+            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
+            SV_FTYPE mat_real, mat_imag;
+            SV_FTYPE input0, input1, output0, output1;
+            SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
             // SVE registers for control factor elements
-            svuint64_t vec_index_diff, vec_bitval;
-            svbool_t select_flag;
+            SV_UTYPE vec_index_diff, vec_bitval;
             vec_index_diff = svindex_u64(0, 1);  // (0, 1, 2, 3, 4,...)
 
             mat0_real = svdup_f64(creal(diagonal_matrix[0]));
@@ -517,10 +517,11 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
 
     if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svfloat64_t mat_real, mat_imag;
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cval_real, cval_imag, result_real, result_imag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+
+        SV_FTYPE mat_real, mat_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
         mat_real = svdup_f64(creal(diagonal_matrix[isone]));
         mat_imag = svdup_f64(cimag(diagonal_matrix[isone]));
@@ -569,10 +570,11 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
     ITYPE vec_len = svcntd();  // length of SVE registers (# of 64-bit elements)
 
     if (dim >= vec_len) {
-        svbool_t pg = svptrue_b64();  // this predicate register is all 1.
-        svfloat64_t mat_real, mat_imag;
-        svfloat64_t input0, input1, output0, output1;
-        svfloat64_t cval_real, cval_imag, result_real, result_imag;
+        SV_PRED pg = svptrue_b64();  // this predicate register is all 1.
+
+        SV_FTYPE mat_real, mat_imag;
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
         mat_real = svdup_f64(creal(diagonal_matrix[isone]));
         mat_imag = svdup_f64(cimag(diagonal_matrix[isone]));

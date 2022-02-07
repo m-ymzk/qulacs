@@ -17,6 +17,11 @@
 //! size_t for gcc
 #include <stddef.h>
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#include "arm_acle.h"
+#include "arm_sve.h"
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 //! unsigned integer
 typedef unsigned int UINT;
 
@@ -30,6 +35,16 @@ inline static double cimag(CTYPE val) { return std::imag(val); }
 #else
 typedef double _Complex CTYPE;
 #endif
+
+//! complex value (SVE)
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+typedef svfloat64_t SV_FTYPE __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+typedef svuint64_t SV_UTYPE __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+typedef svbool_t SV_PRED __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
+
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 
 //! dimension index
 #ifdef _MSC_VER
