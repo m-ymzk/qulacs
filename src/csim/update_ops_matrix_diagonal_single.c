@@ -137,7 +137,8 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
     // loop variables
     const ITYPE loop_dim = dim;
     ITYPE state_index;
-    ITYPE vec_len = getVecLength();  // length of SVE registers (# of 64-bit elements)
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
     ITYPE mask = 1ULL << target_qubit_index;
 
     if (target_qubit_index >= vec_len) {
@@ -158,8 +159,7 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
 
             // fetch values
             input0 = svld1(pg, (double *)&state[state_index]);
-            input1 =
-                svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select matrix elements
             mat_real = (bitval != 0) ? mat1_real : mat0_real;
@@ -182,8 +182,7 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
 
             // set values
             svst1(pg, (double *)&state[state_index], output0);
-            svst1(
-                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
         if (loop_dim >= vec_len) {
@@ -207,8 +206,8 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
                  state_index += vec_len) {
                 // fetch values
                 input0 = svld1(pg, (double *)&state[state_index]);
-                input1 = svld1(
-                    pg, (double *)&state[state_index + (vec_len >> 1)]);
+                input1 =
+                    svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
                 vec_bitval =
@@ -254,7 +253,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
     // loop variables
     const ITYPE loop_dim = dim;
     ITYPE state_index;
-    ITYPE vec_len = getVecLength();  // length of SVE registers (# of 64-bit elements)
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
     ITYPE mask = 1ULL << target_qubit_index;
 
     if (target_qubit_index >= vec_len) {
@@ -278,8 +278,7 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
 
             // fetch values
             input0 = svld1(pg, (double *)&state[state_index]);
-            input1 =
-                svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select matrix elements
             mat_real = (bitval != 0) ? mat1_real : mat0_real;
@@ -302,8 +301,7 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
 
             // set values
             svst1(pg, (double *)&state[state_index], output0);
-            svst1(
-                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
         if (loop_dim >= vec_len) {
@@ -332,8 +330,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
                  state_index += vec_len) {
                 // fetch values
                 input0 = svld1(pg, (double *)&state[state_index]);
-                input1 = svld1(
-                    pg, (double *)&state[state_index + (vec_len >> 1)]);
+                input1 =
+                    svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
                 vec_bitval =
@@ -514,7 +512,8 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
     // loop variables
     ITYPE state_index;
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    ITYPE vec_len = getVecLength();  // length of SVE registers (# of 64-bit elements)
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
 
     if (dim >= vec_len) {
         SV_PRED pg = Svptrue();  // this predicate register is all 1.
@@ -528,8 +527,7 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1(pg, (double *)&state[state_index]);
-            input1 =
-                svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1(input0, input1);
@@ -548,8 +546,7 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
 
             // set values
             svst1(pg, (double *)&state[state_index], output0);
-            svst1(
-                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -567,7 +564,8 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
     // loop variables
     ITYPE state_index;
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    ITYPE vec_len = getVecLength();  // length of SVE registers (# of 64-bit elements)
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
 
     if (dim >= vec_len) {
         SV_PRED pg = Svptrue();  // this predicate register is all 1.
@@ -584,8 +582,7 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
             input0 = svld1(pg, (double *)&state[state_index]);
-            input1 =
-                svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1(input0, input1);
@@ -604,8 +601,7 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
 
             // set values
             svst1(pg, (double *)&state[state_index], output0);
-            svst1(
-                pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)

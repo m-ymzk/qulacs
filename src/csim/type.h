@@ -61,7 +61,6 @@ inline static SV_FTYPE Svdup(double val) { return svdup_f64(val); }
 
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
-
 //! check AVX2 support
 #ifdef _MSC_VER
 // MSVC
