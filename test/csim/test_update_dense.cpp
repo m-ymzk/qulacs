@@ -20,8 +20,8 @@ extern "C" {
 #endif
 #include <csim/update_ops_cpp.hpp>
 
-void test_single_dense_matrix_gate(std::function<void(UINT, const CTYPE*, CTYPE*, ITYPE)> func) {
-	const UINT n = 6;
+void test_single_dense_matrix_gate(std::function<void(UINT, const CTYPE*, CTYPE*, ITYPE)> func, UINT Nqubit) {
+	const UINT n = Nqubit;
 	const ITYPE dim = 1ULL << n;
 	const UINT max_repeat = 10;
 
@@ -49,28 +49,37 @@ void test_single_dense_matrix_gate(std::function<void(UINT, const CTYPE*, CTYPE*
 }
 
 TEST(UpdateTest, SingleDenseMatrixTest) {
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate);
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single);
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_unroll);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate, 6);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single, 6);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_unroll, 6);
 #ifdef _OPENMP
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel);
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_unroll);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel, 6);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_unroll, 6);
 #endif
 
 #ifdef _USE_SIMD
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_simd);
-#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_simd, 6);
 #endif // #ifdef _USE_SIMD
 
 #ifdef _OPENMP
 #ifdef _USE_SIMD
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_simd);
-#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_sve);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_simd, 6);
 #endif // #ifdef _USE_SIMD
 #endif //#ifdef _OPENMP
 }
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, SingleDenseMatrixSVE) {
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve, 1);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve, 6);
+
+#ifdef _OPENMP
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_sve, 1);
+	test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_parallel_sve, 6);
+#endif //#ifdef _OPENMP
+}
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 
 void test_general_dense_matrix_gate(std::function<void(const UINT*, UINT, const CTYPE*, CTYPE*, ITYPE)> func) {
 	const UINT n = 6;
