@@ -1,17 +1,17 @@
-#include <csim/update_ops.h>
 #include <gtest/gtest.h>
+#include "../util/util.h"
 
 #include <cmath>
-#include <cppsim/gate.hpp>
+#include <cppsim/state.hpp>
 #include <cppsim/gate_factory.hpp>
+#include <cppsim/gate.hpp>
 #include <cppsim/gate_matrix.hpp>
 #include <cppsim/gate_merge.hpp>
 #include <cppsim/pauli_operator.hpp>
-#include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
+#include <csim/update_ops.h>
 #include <functional>
 
-#include "../util/util.h"
 
 TEST(GateTest_multicpu, ApplySingleQubitGate) {
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2),
