@@ -26,7 +26,6 @@ void test_single_diagonal_matrix_gate(
     std::function<void(UINT, const CTYPE*, CTYPE*, ITYPE)> func, UINT Nqubit) {
     const UINT n = Nqubit;
     const ITYPE dim = 1ULL << n;
-    const UINT max_repeat = 10;
 
     Eigen::MatrixXcd Identity(2, 2), Z(2, 2);
     Identity << 1, 0, 0, 1;
@@ -44,9 +43,9 @@ void test_single_diagonal_matrix_gate(
 
     Eigen::MatrixXcd whole_I = Eigen::MatrixXcd::Identity(dim, dim);
 
-    for (UINT rep = 0; rep < max_repeat; ++rep) {
+    for (UINT rep = 0; rep < n; ++rep) {
         // single qubit diagonal matrix gate
-        target = rand_int(n);
+        target = rep;
         icoef = rand_real();
         zcoef = rand_real();
         norm = sqrt(icoef * icoef + zcoef * zcoef);
