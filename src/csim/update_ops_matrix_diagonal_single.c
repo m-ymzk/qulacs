@@ -149,17 +149,17 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
-        mat0_real = Svdup(creal(diagonal_matrix[0]));
-        mat0_imag = Svdup(cimag(diagonal_matrix[0]));
-        mat1_real = Svdup(creal(diagonal_matrix[1]));
-        mat1_imag = Svdup(cimag(diagonal_matrix[1]));
+        mat0_real = SvdupF(creal(diagonal_matrix[0]));
+        mat0_imag = SvdupF(cimag(diagonal_matrix[0]));
+        mat1_real = SvdupF(creal(diagonal_matrix[1]));
+        mat1_imag = SvdupF(cimag(diagonal_matrix[1]));
 
         for (state_index = 0; state_index < loop_dim; state_index += vec_len) {
             int bitval = ((state_index & mask) != 0);
 
             // fetch values
-            input0 = svld1(pg, (double *)&state[state_index]);
-            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // select matrix elements
             mat_real = (bitval != 0) ? mat1_real : mat0_real;
@@ -181,8 +181,8 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
             output1 = svzip2(result_real, result_imag);
 
             // set values
-            svst1(pg, (double *)&state[state_index], output0);
-            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
         if (loop_dim >= vec_len) {
@@ -195,25 +195,25 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
             SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
             // SVE registers for control factor elements
-            SV_UTYPE vec_index_diff, vec_bitval;
-            vec_index_diff = svindex_u64(0, 1);  // (0, 1, 2, 3, 4,...)
+            SV_ITYPE vec_index_diff, vec_bitval;
+            vec_index_diff = SvindexI(0, 1);  // (0, 1, 2, 3, 4,...)
 
-            mat0_real = Svdup(creal(diagonal_matrix[0]));
-            mat0_imag = Svdup(cimag(diagonal_matrix[0]));
-            mat1_real = Svdup(creal(diagonal_matrix[1]));
-            mat1_imag = Svdup(cimag(diagonal_matrix[1]));
+            mat0_real = SvdupF(creal(diagonal_matrix[0]));
+            mat0_imag = SvdupF(cimag(diagonal_matrix[0]));
+            mat1_real = SvdupF(creal(diagonal_matrix[1]));
+            mat1_imag = SvdupF(cimag(diagonal_matrix[1]));
             for (state_index = 0; state_index < loop_dim;
                  state_index += vec_len) {
                 // fetch values
-                input0 = svld1(pg, (double *)&state[state_index]);
+                input0 = svld1(pg, (ETYPE *)&state[state_index]);
                 input1 =
-                    svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
                 vec_bitval =
-                    svadd_u64_z(pg, vec_index_diff, svdup_u64(state_index));
-                vec_bitval = svand_u64_z(pg, vec_bitval, svdup_u64(mask));
-                select_flag = svcmpne_u64(pg, vec_bitval, svdup_u64(0));
+                    svadd_z(pg, vec_index_diff, SvdupI(state_index));
+                vec_bitval = svand_z(pg, vec_bitval, SvdupI(mask));
+                select_flag = svcmpne(pg, vec_bitval, SvdupI(0));
 
                 mat_real = svsel(select_flag, mat1_real, mat0_real);
                 mat_imag = svsel(select_flag, mat1_imag, mat0_imag);
@@ -234,8 +234,8 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
                 output1 = svzip2(result_real, result_imag);
 
                 // set values
-                svst1(pg, (double *)&state[state_index], output0);
-                svst1(pg, (double *)&state[state_index + (vec_len >> 1)],
+                svst1(pg, (ETYPE *)&state[state_index], output0);
+                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
                     output1);
             }
         } else {
@@ -265,10 +265,10 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
-        mat0_real = Svdup(creal(diagonal_matrix[0]));
-        mat0_imag = Svdup(cimag(diagonal_matrix[0]));
-        mat1_real = Svdup(creal(diagonal_matrix[1]));
-        mat1_imag = Svdup(cimag(diagonal_matrix[1]));
+        mat0_real = SvdupF(creal(diagonal_matrix[0]));
+        mat0_imag = SvdupF(cimag(diagonal_matrix[0]));
+        mat1_real = SvdupF(creal(diagonal_matrix[1]));
+        mat1_imag = SvdupF(cimag(diagonal_matrix[1]));
 
 #pragma omp parallel for private(mat_real, mat_imag, input0, input1, output0, \
     output1, cval_real, cval_imag, result_real, result_imag)                  \
@@ -277,8 +277,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
             int bitval = ((state_index & mask) != 0);
 
             // fetch values
-            input0 = svld1(pg, (double *)&state[state_index]);
-            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // select matrix elements
             mat_real = (bitval != 0) ? mat1_real : mat0_real;
@@ -300,8 +300,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
             output1 = svzip2(result_real, result_imag);
 
             // set values
-            svst1(pg, (double *)&state[state_index], output0);
-            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
         if (loop_dim >= vec_len) {
@@ -314,13 +314,13 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
             SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
             // SVE registers for control factor elements
-            SV_UTYPE vec_index_diff, vec_bitval;
-            vec_index_diff = svindex_u64(0, 1);  // (0, 1, 2, 3, 4,...)
+            SV_ITYPE vec_index_diff, vec_bitval;
+            vec_index_diff = SvindexI(0, 1);  // (0, 1, 2, 3, 4,...)
 
-            mat0_real = Svdup(creal(diagonal_matrix[0]));
-            mat0_imag = Svdup(cimag(diagonal_matrix[0]));
-            mat1_real = Svdup(creal(diagonal_matrix[1]));
-            mat1_imag = Svdup(cimag(diagonal_matrix[1]));
+            mat0_real = SvdupF(creal(diagonal_matrix[0]));
+            mat0_imag = SvdupF(cimag(diagonal_matrix[0]));
+            mat1_real = SvdupF(creal(diagonal_matrix[1]));
+            mat1_imag = SvdupF(cimag(diagonal_matrix[1]));
 
 #pragma omp parallel for private(mat_real, mat_imag, input0, input1, output0, \
     output1, cval_real, cval_imag, result_real, result_imag, vec_bitval,      \
@@ -329,15 +329,15 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
             for (state_index = 0; state_index < loop_dim;
                  state_index += vec_len) {
                 // fetch values
-                input0 = svld1(pg, (double *)&state[state_index]);
+                input0 = svld1(pg, (ETYPE *)&state[state_index]);
                 input1 =
-                    svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
                 vec_bitval =
-                    svadd_u64_z(pg, vec_index_diff, svdup_u64(state_index));
-                vec_bitval = svand_u64_z(pg, vec_bitval, svdup_u64(mask));
-                select_flag = svcmpne_u64(pg, vec_bitval, svdup_u64(0));
+                    svadd_z(pg, vec_index_diff, SvdupI(state_index));
+                vec_bitval = svand_z(pg, vec_bitval, SvdupI(mask));
+                select_flag = svcmpne(pg, vec_bitval, SvdupI(0));
 
                 mat_real = svsel(select_flag, mat1_real, mat0_real);
                 mat_imag = svsel(select_flag, mat1_imag, mat0_imag);
@@ -358,8 +358,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
                 output1 = svzip2(result_real, result_imag);
 
                 // set values
-                svst1(pg, (double *)&state[state_index], output0);
-                svst1(pg, (double *)&state[state_index + (vec_len >> 1)],
+                svst1(pg, (ETYPE *)&state[state_index], output0);
+                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
                     output1);
             }
         } else {
@@ -522,12 +522,12 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
-        mat_real = Svdup(creal(diagonal_matrix[isone]));
-        mat_imag = Svdup(cimag(diagonal_matrix[isone]));
+        mat_real = SvdupF(creal(diagonal_matrix[isone]));
+        mat_imag = SvdupF(cimag(diagonal_matrix[isone]));
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
-            input0 = svld1(pg, (double *)&state[state_index]);
-            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1(input0, input1);
@@ -545,8 +545,8 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
             output1 = svzip2(result_real, result_imag);
 
             // set values
-            svst1(pg, (double *)&state[state_index], output0);
-            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -574,15 +574,15 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE cval_real, cval_imag, result_real, result_imag;
 
-        mat_real = Svdup(creal(diagonal_matrix[isone]));
-        mat_imag = Svdup(cimag(diagonal_matrix[isone]));
+        mat_real = SvdupF(creal(diagonal_matrix[isone]));
+        mat_imag = SvdupF(cimag(diagonal_matrix[isone]));
 
 #pragma omp parallel for private(input0, input1, output0, output1, cval_real, \
     cval_imag, result_real, result_imag) shared(pg, mat_real, mat_imag)
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
-            input0 = svld1(pg, (double *)&state[state_index]);
-            input1 = svld1(pg, (double *)&state[state_index + (vec_len >> 1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
             cval_real = svuzp1(input0, input1);
@@ -600,8 +600,8 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
             output1 = svzip2(result_real, result_imag);
 
             // set values
-            svst1(pg, (double *)&state[state_index], output0);
-            svst1(pg, (double *)&state[state_index + (vec_len >> 1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
