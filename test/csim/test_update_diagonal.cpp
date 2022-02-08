@@ -20,8 +20,8 @@ extern "C" {
 #endif
 #include <csim/update_ops_cpp.hpp>
 
-void test_single_diagonal_matrix_gate(std::function<void(UINT, const CTYPE*, CTYPE*, ITYPE)> func) {
-	const UINT n = 6;
+void test_single_diagonal_matrix_gate(std::function<void(UINT, const CTYPE*, CTYPE*, ITYPE)> func, UINT Nqubit) {
+	const UINT n = Nqubit;
 	const ITYPE dim = 1ULL << n;
 	const UINT max_repeat = 10;
 
@@ -57,24 +57,29 @@ void test_single_diagonal_matrix_gate(std::function<void(UINT, const CTYPE*, CTY
 }
 
 TEST(UpdateTest, SingleDiagonalMatrixTest) {
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate);
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_unroll);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate, 6);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_unroll, 6);
 #ifdef _OPENMP
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_unroll);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_unroll, 6);
 #endif
 #ifdef _USE_SIMD
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_simd);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_simd, 6);
 #ifdef _OPENMP
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_simd);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_simd, 6);
 #endif
 #endif
-#ifdef _USE_SVE
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_sve);
-#ifdef _OPENMP
-	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_sve);
-#endif
-#endif //#ifdef _USE_SVE
 }
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, SingleDiagonalMatrixTestSVE) {
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_sve, 1);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_single_sve, 6);
+#ifdef _OPENMP
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_sve, 1);
+	test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_parallel_sve, 6);
+#endif
+}
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 void test_single_phase_gate(std::function<void(UINT, CTYPE, CTYPE*, ITYPE)> func) {
 	const UINT n = 6;
