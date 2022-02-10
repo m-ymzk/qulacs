@@ -300,7 +300,7 @@ void single_qubit_dense_matrix_gate_single_sve(
             output0 = svzip1_f64(result01_real, result01_imag);
             output1 = svzip2_f64(result01_real, result01_imag);
 
-            if (5 <= target_qubit_index && target_qubit_index <= 9) {
+            if (5 <= target_qubit_index && target_qubit_index <= 10) {
                 // L1 prefetch
                 __builtin_prefetch(&state[basis_0 + mask * 2], 1, 3);
                 __builtin_prefetch(&state[basis_1 + mask * 2], 1, 3);
@@ -484,7 +484,7 @@ void single_qubit_dense_matrix_gate_parallel_sve(
             output0 = svzip1_f64(result01_real, result01_imag);
             output1 = svzip2_f64(result01_real, result01_imag);
 
-            if (5 <= target_qubit_index && target_qubit_index <= 9) {
+            if (5 <= target_qubit_index && target_qubit_index <= 10) {
                 // L1 prefetch
                 __builtin_prefetch(&state[basis_0 + mask * 2], 1, 3);
                 __builtin_prefetch(&state[basis_1 + mask * 2], 1, 3);
