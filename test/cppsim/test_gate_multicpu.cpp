@@ -32,7 +32,7 @@ TEST(GateTest_multicpu, ApplySingleQubitGate) {
 
     const UINT n = 10;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     random.set_seed(2022);
@@ -117,7 +117,7 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
 
     const UINT n = 10;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     random.set_seed(2022);
@@ -259,7 +259,7 @@ void _ApplyTwoQubitGate(UINT n, UINT control, UINT target,
     std::function<QuantumGateBase*(UINT, UINT)> func,
     std::function<Eigen::MatrixXcd(UINT, UINT, UINT)> func_eig) {
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     QuantumState state_ref(n);
     QuantumState state(n, 1), test_state(n, 1);
@@ -328,7 +328,7 @@ TEST(GateTest_multicpu, ApplyMultiQubitGate) {
 
     const UINT n = 1;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     QuantumState state(n, 1);

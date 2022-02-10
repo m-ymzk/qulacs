@@ -3,7 +3,7 @@
  * @file type.h
  * @brief basic definitins of types and macros
  */
-
+#pragma once
 #ifndef __TYPE_H__
 #define __TYPE_H__
 // When csim is compiled with C++, std::complex<double> is used instead of
@@ -48,6 +48,8 @@ inline static float cimag(CTYPE val) { return std::imag(val); }
 typedef float _Complex CTYPE;
 #endif
 
+#define _EPS 1e-7
+
 #else
 
 #ifdef _MSC_VER
@@ -59,6 +61,8 @@ inline static double cimag(CTYPE val) { return std::imag(val); }
 #else
 typedef double _Complex CTYPE;
 #endif
+
+#define _EPS 1e-14
 
 #endif
 

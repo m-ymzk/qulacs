@@ -1,4 +1,6 @@
 #pragma once
+#ifndef TYPE_HPP_
+#define TYPE_HPP_
 
 #ifndef _MSC_VER
 extern "C" {
@@ -36,4 +38,6 @@ inline static void pclose(FILE* fp) { _pclose(fp);  }
 #define DllExport __declspec(dllexport)
 #else
 #define DllExport __attribute__((visibility ("default")))
+#endif
+
 #endif
