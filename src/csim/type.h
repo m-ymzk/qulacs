@@ -4,8 +4,8 @@
  * @brief basic definitins of types and macros
  */
 #pragma once
-#ifndef __TYPE_H__
-#define __TYPE_H__
+#ifndef TYPE_H_
+#define TYPE_H_
 // When csim is compiled with C++, std::complex<double> is used instead of
 // double _Complex
 #ifdef _MSC_VER
@@ -120,4 +120,5 @@ inline static SV_ITYPE SvindexI(UINT base, UINT step) { return svindex_u64(base,
 #else
 #define DllExport __attribute__((visibility("default")))
 #endif
-#endif
+
+#endif // #ifndef TYPE_H_

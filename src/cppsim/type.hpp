@@ -33,11 +33,4 @@ inline static void pclose(FILE* fp) { _pclose(fp);  }
 #define strcasecmp _stricmp
 #endif
 
-
-#if defined(__MINGW32__) || defined(_MSC_VER)
-#define DllExport __declspec(dllexport)
-#else
-#define DllExport __attribute__((visibility ("default")))
-#endif
-
 #endif
