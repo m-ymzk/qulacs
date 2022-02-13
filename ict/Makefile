@@ -9,7 +9,7 @@ ifdef usefcc
     CXX := mpiFCC
 else
     CC := mpicc
-    CXX := mpiCC
+    CXX := mpic++
 endif
 
 BUILDDIR := build

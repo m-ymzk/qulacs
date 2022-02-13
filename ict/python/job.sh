@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #-ex
-export QHOME=/home/yamazaki/mpi-qulacs
+export QHOME=${HOME}/mpi-qulacs
 
 . ${QHOME}/setenv
 #ulimit -s 1048576
