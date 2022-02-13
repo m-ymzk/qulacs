@@ -145,14 +145,14 @@ void single_qubit_phase_gate_single_simd(
 
     // loop varaibles
     const ITYPE loop_dim = dim / 2;
-    if (target_qubit_index == 0) {
+    if (target_qubit_index == IS_OUTER_QB) {
         ITYPE state_index;
-        for (state_index = 1; state_index < dim; state_index += 2) {
+        for (state_index = 0; state_index < dim; state_index++) {
             state[state_index] *= phase;
         }
-    } else if (target_qubit_index == IS_OUTER_QB) {
+    } else if (target_qubit_index == 0) {
         ITYPE state_index;
-        for (state_index = 1; state_index < dim; state_index++) {
+        for (state_index = 1; state_index < dim; state_index += 2) {
             state[state_index] *= phase;
         }
     } else {
@@ -184,16 +184,16 @@ void single_qubit_phase_gate_parallel_simd(
 
     // loop varaibles
     const ITYPE loop_dim = dim / 2;
-    if (target_qubit_index == 0) {
+    if (target_qubit_index == IS_OUTER_QB) {
+        ITYPE state_index;
+#pragma omp parallel for
+        for (state_index = 0; state_index < dim; state_index++) {
+            state[state_index] *= phase;
+        }
+    } else if (target_qubit_index == 0) {
         ITYPE state_index;
 #pragma omp parallel for
         for (state_index = 1; state_index < dim; state_index += 2) {
-            state[state_index] *= phase;
-        }
-    } else if (target_qubit_index == IS_OUTER_QB) {
-        ITYPE state_index;
-#pragma omp parallel for
-        for (state_index = 1; state_index < dim; state_index++) {
             state[state_index] *= phase;
         }
     } else {

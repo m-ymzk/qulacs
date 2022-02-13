@@ -22,25 +22,8 @@
 #endif
 #endif
 
-// void CNOT_gate_old_single(UINT control_qubit_index, UINT target_qubit_index,
-// CTYPE *state, ITYPE dim); void CNOT_gate_old_parallel(UINT
-// control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim); void
-// CNOT_gate_single(UINT control_qubit_index, UINT target_qubit_index, CTYPE
-// *state, ITYPE dim);
-
 void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state,
     ITYPE dim) {
-    // printf("#enter control_qubit_index, %lld, %d, %d\n", dim,
-    // control_qubit_index, target_qubit_index);
-    // CNOT_gate_old_single(control_qubit_index, target_qubit_index, state,
-    // dim); CNOT_gate_old_parallel(control_qubit_index, target_qubit_index,
-    // state, dim); CNOT_gate_single(control_qubit_index, target_qubit_index,
-    // state, dim); CNOT_gate_single_unroll(control_qubit_index,
-    // target_qubit_index, state, dim);
-    // CNOT_gate_single_simd(control_qubit_index, target_qubit_index, state,
-    // dim); CNOT_gate_parallel(control_qubit_index, target_qubit_index, state,
-    // dim); return;
-
 #ifdef _USE_SIMD
 #ifdef _OPENMP
     UINT threshold = 13;
@@ -149,7 +132,6 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
 }
 
 #ifdef _OPENMP
-
 void CNOT_gate_parallel_unroll(UINT control_qubit_index,
     UINT target_qubit_index, CTYPE* state, ITYPE dim) {
     // printf("#enter CNOT_g_p_u, %lld, %d, %d\n", dim, control_qubit_index,
@@ -252,7 +234,27 @@ void CNOT_gate_single_simd(UINT control_qubit_index, UINT target_qubit_index,
     const ITYPE high_mask = ~(max_qubit_mask - 1);
 
     ITYPE state_index = 0;
-    if (target_qubit_index == 0) {
+    if (control_qubit_index == IS_OUTER_QB) {
+        if (target_qubit_index == 0) {
+            // swap neighboring two basis in ALL_AREA
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index = (state_index << 1);
+                CTYPE temp = state[basis_index];
+                state[basis_index] = state[basis_index + 1];
+                state[basis_index + 1] = temp;
+            }
+        } else {
+            // a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index_0 = (state_index & low_mask) +
+                                      ((state_index & (~low_mask)) << 1);
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp = state[basis_index_0];
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_1] = temp;
+            }
+        }
+    } else if (target_qubit_index == 0) {
         // swap neighboring two basis
         for (state_index = 0; state_index < loop_dim; ++state_index) {
             ITYPE basis_index = ((state_index & mid_mask) << 1) +
@@ -292,7 +294,6 @@ void CNOT_gate_single_simd(UINT control_qubit_index, UINT target_qubit_index,
 }
 
 #ifdef _OPENMP
-
 void CNOT_gate_parallel_simd(UINT control_qubit_index, UINT target_qubit_index,
     CTYPE* state, ITYPE dim) {
     const ITYPE loop_dim = dim / 4;
@@ -311,7 +312,29 @@ void CNOT_gate_parallel_simd(UINT control_qubit_index, UINT target_qubit_index,
     const ITYPE high_mask = ~(max_qubit_mask - 1);
 
     ITYPE state_index = 0;
-    if (target_qubit_index == 0) {
+    if (control_qubit_index == IS_OUTER_QB) {
+        if (target_qubit_index == 0) {
+            // swap neighboring two basis in ALL_AREA
+#pragma omp parallel for
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index = (state_index << 1);
+                CTYPE temp = state[basis_index];
+                state[basis_index] = state[basis_index + 1];
+                state[basis_index + 1] = temp;
+            }
+        } else {
+            // a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+#pragma omp parallel for
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index_0 = (state_index & low_mask) +
+                                      ((state_index & (~low_mask)) << 1);
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp = state[basis_index_0];
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_1] = temp;
+            }
+        }
+    } else if (target_qubit_index == 0) {
         // swap neighboring two basis
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -435,15 +458,8 @@ void CNOT_gate_single_unroll_cin_tout(
         CTYPE* t_recv = t + dim_work;
         const ITYPE num_control_block = (dim / dim_work) >> 1;
         assert(num_control_block > 0);
-        // const ITYPE num_elem_block = dim >> (control_qubit_index + 1);
         const ITYPE num_elem_block = dim_work >> control_qubit_index;
-        // const ITYPE num_work_block = get_max_ll(1, control_isone_offset /
-        // dim_work);
         assert(num_elem_block > 0);
-        // printf("#enter CNOT_gate_single_unroll_cin_tout(with gather), %d,
-        // %lld, %lld, %lld, %lld, %lld\n", 		control_qubit_index,
-        //num_control_block, num_work_block, num_elem_block, dim_work,
-        //control_isone_offset);
         CTYPE* si0 = state + control_isone_offset;
         for (ITYPE i = 0; i < num_control_block; ++i) {
             // gather
@@ -466,13 +482,11 @@ void CNOT_gate_single_unroll_cin_tout(
                 si += control_isone_offset;
                 ti += (control_isone_offset << 1);
             }
-            // si0 += (control_isone_offset << 1);
             si0 += (dim_work << 1);
         }
     } else {  // transfar unit size >= dim_work
         // printf("#enter CNOT_gate_single_unroll_cin_tout(w/o gather), %d,
         // %lld, %lld\n", control_qubit_index, dim_work, dim);
-
         const ITYPE num_control_block = dim >> (control_qubit_index + 1);
         const ITYPE num_work_block = control_isone_offset / dim_work;
 
@@ -487,172 +501,5 @@ void CNOT_gate_single_unroll_cin_tout(
         }
     }
 }
-
-/*
-#ifdef _OPENMP
-// CNOT_gate_mpi, control_qubit_index is inner, target_qubit_index is outer.
-void CNOT_gate_parallel_unroll_cin_tout(UINT control_qubit_index, UINT
-pair_rank, CTYPE *state, ITYPE dim) { const MPIutil m = get_mpiutil(); ITYPE
-dim_work = dim; ITYPE num_work = 0; CTYPE* t = m->get_workarea(&dim_work,
-&num_work); assert(num_work > 0); assert(dim_work > 0);
-
-        const ITYPE control_isone_offset = 1ULL << control_qubit_index;
-
-        if (control_isone_offset < dim_work) { // dim_work > 1
-                dim_work >>= 1; // 1/2: for send, 1/2: for recv
-                CTYPE* t_send = t;
-                CTYPE* t_recv = t + dim_work;
-                const ITYPE num_control_block = (dim / dim_work) >> 1;
-                assert(num_control_block > 0);
-                //const ITYPE num_elem_block = dim >> (control_qubit_index + 1);
-                const ITYPE num_elem_block = dim_work >> control_qubit_index;
-                //const ITYPE num_work_block = get_max_ll(1,
-control_isone_offset / dim_work); assert(num_elem_block > 0);
-                //printf("#enter CNOT_gate_single_unroll_cin_tout(with gather),
-%d, %lld, %lld, %lld, %lld, %lld\n",
-                //		control_qubit_index, num_control_block,
-num_work_block, num_elem_block, dim_work, control_isone_offset); CTYPE* si0 =
-state + control_isone_offset; for (ITYPE i=0; i < num_control_block; ++i) {
-                        // gather
-                        CTYPE* si = si0;
-                        CTYPE* ti = t_send;
-#pragma omp parallel for
-                        for (ITYPE k=0; k < num_elem_block; ++k) {
-                                memcpy(ti, si, control_isone_offset *
-sizeof(CTYPE)); si += (control_isone_offset << 1); ti += control_isone_offset;
-                        }
-
-                        // sendrecv
-                        m->m_DC_sendrecv(t_send, t_recv, dim_work, pair_rank);
-
-                        // scatter
-                        si = t_recv;
-                        ti = si0;
-#pragma omp parallel for
-                        for (ITYPE k=0; k < num_elem_block; ++k) {
-                                memcpy(ti, si, control_isone_offset *
-sizeof(CTYPE)); si += control_isone_offset; ti += (control_isone_offset << 1);
-                        }
-                        //si0 += (control_isone_offset << 1);
-                        si0 += (dim_work << 1);
-                }
-        } else { // transfar unit size >= dim_work
-                //printf("#enter CNOT_gate_single_unroll_cin_tout(w/o gather),
-%d, %lld, %lld\n", control_qubit_index, dim_work, dim);
-
-                const ITYPE num_control_block = dim >> (control_qubit_index +
-1); const ITYPE num_work_block = control_isone_offset / dim_work;
-
-                CTYPE* si = state + control_isone_offset;
-                for (ITYPE i=0; i < num_control_block; ++i) {
-                    for (ITYPE j=0; j < num_work_block; ++j) {
-                                m->m_DC_sendrecv(si, t, dim_work, pair_rank);
-                                memcpy(si, t, dim_work * sizeof(CTYPE));
-                                si += dim_work;
-                        }
-                    si += control_isone_offset;
-                }
-        }
-}
-#endif //#ifdef _OPENMP
-*/
 #endif  //#ifdef _USE_MPI
 
-/*
-
-#ifdef _OPENMP
-void CNOT_gate_parallel(UINT control_qubit_index, UINT target_qubit_index, CTYPE
-*state, ITYPE dim) { const ITYPE loop_dim = dim / 4;
-
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        const ITYPE control_mask = 1ULL << control_qubit_index;
-
-        const UINT min_qubit_index = get_min_ui(control_qubit_index,
-target_qubit_index); const UINT max_qubit_index =
-get_max_ui(control_qubit_index, target_qubit_index); const ITYPE min_qubit_mask
-= 1ULL << min_qubit_index; const ITYPE max_qubit_mask = 1ULL << (max_qubit_index
-- 1); const ITYPE low_mask = min_qubit_mask - 1; const ITYPE mid_mask =
-(max_qubit_mask - 1) ^ low_mask; const ITYPE high_mask = ~(max_qubit_mask - 1);
-
-        ITYPE state_index = 0;
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_index_0 = (state_index&low_mask)
-                        + ((state_index&mid_mask) << 1)
-                        + ((state_index&high_mask) << 2)
-                        + control_mask;
-                ITYPE basis_index_1 = basis_index_0 + target_mask;
-                CTYPE temp = state[basis_index_0];
-                state[basis_index_0] = state[basis_index_1];
-                state[basis_index_1] = temp;
-        }
-}
-#endif
-
-void CNOT_gate_old_single(UINT control_qubit_index, UINT target_qubit_index,
-CTYPE *state, ITYPE dim) { const ITYPE loop_dim = dim / 4; const UINT
-min_qubit_index = get_min_ui(control_qubit_index, target_qubit_index); const
-UINT max_qubit_index = get_max_ui(control_qubit_index, target_qubit_index);
-        const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
-        const ITYPE max_qubit_mask = 1ULL << max_qubit_index;
-        const ITYPE control_mask = 1ULL << control_qubit_index;
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        ITYPE state_index;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_insert_only_min =
-insert_zero_to_basis_index(state_index, min_qubit_mask, min_qubit_index); ITYPE
-basis_c1t0 = insert_zero_to_basis_index(basis_insert_only_min, max_qubit_mask,
-max_qubit_index) ^ control_mask; ITYPE basis_c1t1 = basis_c1t0 ^ target_mask;
-                swap_amplitude(state, basis_c1t0, basis_c1t1);
-        }
-}
-
-#ifdef _OPENMP
-void CNOT_gate_old_parallel(UINT control_qubit_index, UINT target_qubit_index,
-CTYPE *state, ITYPE dim) { const ITYPE loop_dim = dim / 4; const UINT
-min_qubit_index = get_min_ui(control_qubit_index, target_qubit_index); const
-UINT max_qubit_index = get_max_ui(control_qubit_index, target_qubit_index);
-        const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
-        const ITYPE max_qubit_mask = 1ULL << max_qubit_index;
-        const ITYPE control_mask = 1ULL << control_qubit_index;
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        ITYPE state_index;
-
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_insert_only_min =
-insert_zero_to_basis_index(state_index, min_qubit_mask, min_qubit_index); ITYPE
-basis_c1t0 = insert_zero_to_basis_index(basis_insert_only_min, max_qubit_mask,
-max_qubit_index) ^ control_mask; ITYPE basis_c1t1 = basis_c1t0 ^ target_mask;
-                swap_amplitude(state, basis_c1t0, basis_c1t1);
-        }
-}
-#endif
-
-
-void CNOT_gate_single(UINT control_qubit_index, UINT target_qubit_index, CTYPE
-*state, ITYPE dim) { const ITYPE loop_dim = dim / 4;
-
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        const ITYPE control_mask = 1ULL << control_qubit_index;
-
-        const UINT min_qubit_index = get_min_ui(control_qubit_index,
-target_qubit_index); const UINT max_qubit_index =
-get_max_ui(control_qubit_index, target_qubit_index); const ITYPE min_qubit_mask
-= 1ULL << min_qubit_index; const ITYPE max_qubit_mask = 1ULL << (max_qubit_index
-- 1); const ITYPE low_mask = min_qubit_mask - 1; const ITYPE mid_mask =
-(max_qubit_mask - 1) ^ low_mask; const ITYPE high_mask = ~(max_qubit_mask - 1);
-
-        ITYPE state_index = 0;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_index_0 = (state_index&low_mask)
-                        + ((state_index&mid_mask) << 1)
-                        + ((state_index&high_mask) << 2)
-                        + control_mask;
-                ITYPE basis_index_1 = basis_index_0 + target_mask;
-                CTYPE temp = state[basis_index_0];
-                state[basis_index_0] = state[basis_index_1];
-                state[basis_index_1] = temp;
-        }
-}
-*/
