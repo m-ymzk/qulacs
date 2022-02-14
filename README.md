@@ -154,12 +154,12 @@
 ## build/install
 ### use python3-venv (qenv)
 ```shell
+$ cd [mpi-qulacs]
 $ python3 -m venv qenv
 $ . ./qenv/bin/activate
 $ pip install -U pip wheel (*1)
-$ pip install mpi4py (*1, *2)
-$ cd [mpi-qulacs]
-$ python setup.py install (*1)
+$ pip install pytest numpy mpi4py (*1, *2)
+$ python setup_mpi.py install (*1)
 
 *1 要internet接続
 *2 fccを使う場合(参考)
@@ -169,8 +169,8 @@ $ python setup.py install (*1)
 ## c++/c library build
 ### GCC
 - 前提条件 (確認済みバージョン)
-    - gcc 11.2.0
-    - openmpi 4.1.2 (gcc 11.2)
+    - gcc 11.2
+    - openmpi 4.1 (gcc 11.2)
         - configure-option: --with-openib
 ```shell
 <lib. build>
