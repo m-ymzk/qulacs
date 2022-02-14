@@ -216,6 +216,15 @@ void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             output0 = svmul_x(pg, output0, factor);
             output1 = svmul_x(pg, output1, factor);
 
+            if( 5 <= target_qubit_index && target_qubit_index <= 8) {
+                // L1 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+                // L2 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+            }
+
             svst1(pg, (ETYPE*)&state[basis_index_0], output0);
             svst1(pg, (ETYPE*)&state[basis_index_1], output1);
         }
@@ -263,6 +272,15 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             output1 = svsub_x(pg, input0, input1);
             output0 = svmul_x(pg, output0, factor);
             output1 = svmul_x(pg, output1, factor);
+
+            if( 5 <= target_qubit_index && target_qubit_index <= 8) {
+                // L1 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+                // L2 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+            }
 
             svst1(pg, (ETYPE*)&state[basis_index_0], output0);
             svst1(pg, (ETYPE*)&state[basis_index_1], output1);
