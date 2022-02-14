@@ -107,6 +107,17 @@ TEST(UpdateTest, HGate) {
 #endif
 }
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, HGateSVE) {
+	Eigen::MatrixXcd mat(2, 2);
+	mat << 1, 1, 1, -1; mat /= sqrt(2.);
+	test_single_qubit_named_gate(1, "HGate", H_gate_single_sve, mat);
+	test_single_qubit_named_gate(6, "HGate", H_gate_single_sve, mat);
+	test_single_qubit_named_gate(1, "HGate", H_gate_parallel_sve, mat);
+	test_single_qubit_named_gate(6, "HGate", H_gate_parallel_sve, mat);
+}
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 TEST(UpdateTest, SGate) {
 	const UINT n = 3;
 	Eigen::MatrixXcd mat(2, 2);
