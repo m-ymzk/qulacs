@@ -228,6 +228,47 @@ void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             svst1(pg, (ETYPE*)&state[basis_index_0], output0);
             svst1(pg, (ETYPE*)&state[basis_index_1], output1);
         }
+    }else if(dim >= vec_len){
+        SV_PRED pg = Svptrue();
+        SV_PRED select_flag;
+
+        SV_ITYPE vec_shuffle_table;
+        SV_ITYPE vec_index = SvindexI(0, 1);
+        vec_index = svlsr_z(pg, vec_index, 1);
+        select_flag = svcmpne(pg, SvdupI(0),
+            svand_z(pg, vec_index, SvdupI(1ULL << target_qubit_index)));
+        vec_shuffle_table = sveor_z(
+            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
+
+        SV_FTYPE factor = SvdupF(sqrt2inv);
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE shuffle0, shuffle1;
+
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
+
+            input0 = svld1(pg, (ETYPE*)&state[state_index]);
+            input1 = svld1(pg, (ETYPE*)&state[state_index+(vec_len>>1)]);
+
+            // shuffle
+            shuffle0 =
+                svsel(select_flag, svtbl(input1, vec_shuffle_table), input0);
+            shuffle1 =
+                svsel(select_flag, input1, svtbl(input0, vec_shuffle_table));
+
+            output0 = svadd_x(pg, shuffle0, shuffle1);
+            output1 = svsub_x(pg, shuffle0, shuffle1);
+            shuffle0 = svmul_x(pg, output0, factor);
+            shuffle1 = svmul_x(pg, output1, factor);
+
+            // re-shuffle
+            output0 = svsel(
+                select_flag, svtbl(shuffle1, vec_shuffle_table), shuffle0);
+            output1 = svsel(
+                select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
+
+            svst1(pg, (ETYPE*)&state[state_index], output0);
+            svst1(pg, (ETYPE*)&state[state_index+(vec_len>>1)], output1);
+        }
     } else {
         for (state_index = 0; state_index < loop_dim; state_index ++) {
             ITYPE basis_index_0 =
@@ -284,6 +325,49 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 
             svst1(pg, (ETYPE*)&state[basis_index_0], output0);
             svst1(pg, (ETYPE*)&state[basis_index_1], output1);
+        }
+    }else if(dim >= vec_len){
+        SV_PRED pg = Svptrue();
+        SV_PRED select_flag;
+
+        SV_ITYPE vec_shuffle_table;
+        SV_ITYPE vec_index = SvindexI(0, 1);
+        vec_index = svlsr_z(pg, vec_index, 1);
+        select_flag = svcmpne(pg, SvdupI(0),
+            svand_z(pg, vec_index, SvdupI(1ULL << target_qubit_index)));
+        vec_shuffle_table = sveor_z(
+            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
+
+        SV_FTYPE factor = SvdupF(sqrt2inv);
+        SV_FTYPE input0, input1, output0, output1;
+        SV_FTYPE shuffle0, shuffle1;
+
+#pragma omp parallel for private(input0, input1, output0, output1, shuffle0, shuffle1) \
+                         shared(pg, select_flag, vec_index, vec_shuffle_table, factor)
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
+
+            input0 = svld1(pg, (ETYPE*)&state[state_index]);
+            input1 = svld1(pg, (ETYPE*)&state[state_index+(vec_len>>1)]);
+
+            // shuffle
+            shuffle0 =
+                svsel(select_flag, svtbl(input1, vec_shuffle_table), input0);
+            shuffle1 =
+                svsel(select_flag, input1, svtbl(input0, vec_shuffle_table));
+
+            output0 = svadd_x(pg, shuffle0, shuffle1);
+            output1 = svsub_x(pg, shuffle0, shuffle1);
+            shuffle0 = svmul_x(pg, output0, factor);
+            shuffle1 = svmul_x(pg, output1, factor);
+
+            // re-shuffle
+            output0 = svsel(
+                select_flag, svtbl(shuffle1, vec_shuffle_table), shuffle0);
+            output1 = svsel(
+                select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
+
+            svst1(pg, (ETYPE*)&state[state_index], output0);
+            svst1(pg, (ETYPE*)&state[state_index + (vec_len>>1)], output1);
         }
     } else {
 #pragma omp parallel for
