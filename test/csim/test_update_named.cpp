@@ -113,8 +113,10 @@ TEST(UpdateTest, HGateSVE) {
 	mat << 1, 1, 1, -1; mat /= sqrt(2.);
 	test_single_qubit_named_gate(1, "HGate", H_gate_single_sve, mat);
 	test_single_qubit_named_gate(6, "HGate", H_gate_single_sve, mat);
+#ifdef _OPENMP
 	test_single_qubit_named_gate(1, "HGate", H_gate_parallel_sve, mat);
 	test_single_qubit_named_gate(6, "HGate", H_gate_parallel_sve, mat);
+#endif
 }
 #endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 

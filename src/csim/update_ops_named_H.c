@@ -519,15 +519,15 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = getVecLength();
-    if(dim >= (vec_len>>1)){
+    if (dim >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
         SV_FTYPE factor = SvdupF(sqrt2inv);
         SV_FTYPE input0, input1, output;
 
-        if (flag){
-            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
-
+        if (flag) {
+            for (state_index = 0; state_index < dim;
+                 state_index += (vec_len >> 1)) {
                 input0 = svld1(pg, (ETYPE *)&t[state_index]);
                 input1 = svld1(pg, (ETYPE *)&si[state_index]);
 
@@ -536,9 +536,9 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 
                 svst1(pg, (ETYPE *)&si[state_index], output);
             }
-        }else{
-            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
-
+        } else {
+            for (state_index = 0; state_index < dim;
+                 state_index += (vec_len >> 1)) {
                 input0 = svld1(pg, (ETYPE *)&si[state_index]);
                 input1 = svld1(pg, (ETYPE *)&t[state_index]);
 
@@ -548,8 +548,7 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
                 svst1(pg, (ETYPE *)&si[state_index], output);
             }
         }
-    }
-    else
+    } else
 #endif
     {
         for (state_index = 0; state_index < dim; state_index += 2) {
@@ -576,17 +575,16 @@ void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len = getVecLength();
-    if(dim >= (vec_len>>1)){
+    if (dim >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
         SV_FTYPE factor = SvdupF(sqrt2inv);
         SV_FTYPE input0, input1, output;
 
-        if (flag){
-#pragma omp parallel for private(input0, input1, output) \
-                         shared(pg, factor)
-            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
-
+        if (flag) {
+#pragma omp parallel for private(input0, input1, output) shared(pg, factor)
+            for (state_index = 0; state_index < dim;
+                 state_index += (vec_len >> 1)) {
                 input0 = svld1(pg, (ETYPE *)&t[state_index]);
                 input1 = svld1(pg, (ETYPE *)&si[state_index]);
 
@@ -595,11 +593,10 @@ void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 
                 svst1(pg, (ETYPE *)&si[state_index], output);
             }
-        }else{
-#pragma omp parallel for private(input0, input1, output) \
-                         shared(pg, factor)
-            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
-
+        } else {
+#pragma omp parallel for private(input0, input1, output) shared(pg, factor)
+            for (state_index = 0; state_index < dim;
+                 state_index += (vec_len >> 1)) {
                 input0 = svld1(pg, (ETYPE *)&si[state_index]);
                 input1 = svld1(pg, (ETYPE *)&t[state_index]);
 
@@ -609,8 +606,7 @@ void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
                 svst1(pg, (ETYPE *)&si[state_index], output);
             }
         }
-    }
-    else
+    } else
 #endif
     {
 #pragma omp parallel for
