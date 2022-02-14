@@ -516,18 +516,55 @@ void H_gate_mpi(
 void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
     const double sqrt2inv = 1. / sqrt(2.);
     ITYPE state_index = 0;
-    for (state_index = 0; state_index < dim; state_index += 2) {
-        // flag: My qubit(target in outer_qubit) value.
-        if (flag) {
-            // state-value=0, t-value=1
-            si[state_index] = (t[state_index] - si[state_index]) * sqrt2inv;
-            si[state_index + 1] =
-                (t[state_index + 1] - si[state_index + 1]) * sqrt2inv;
-        } else {
-            // state-value=1, t-value=0
-            si[state_index] = (si[state_index] + t[state_index]) * sqrt2inv;
-            si[state_index + 1] =
-                (si[state_index + 1] + t[state_index + 1]) * sqrt2inv;
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    ITYPE vec_len = getVecLength();
+    if(dim >= (vec_len>>1)){
+        SV_PRED pg = Svptrue();
+
+        SV_FTYPE factor = SvdupF(sqrt2inv);
+        SV_FTYPE input0, input1, output;
+
+        if (flag){
+            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
+
+                input0 = svld1(pg, (ETYPE *)&t[state_index]);
+                input1 = svld1(pg, (ETYPE *)&si[state_index]);
+
+                output = svsub_x(pg, input0, input1);
+                output = svmul_x(pg, output, factor);
+
+                svst1(pg, (ETYPE *)&si[state_index], output);
+            }
+        }else{
+            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
+
+                input0 = svld1(pg, (ETYPE *)&si[state_index]);
+                input1 = svld1(pg, (ETYPE *)&t[state_index]);
+
+                output = svadd_x(pg, input0, input1);
+                output = svmul_x(pg, output, factor);
+
+                svst1(pg, (ETYPE *)&si[state_index], output);
+            }
+        }
+    }
+    else
+#endif
+    {
+        for (state_index = 0; state_index < dim; state_index += 2) {
+            // flag: My qubit(target in outer_qubit) value.
+            if (flag) {
+                // state-value=0, t-value=1
+                si[state_index] = (t[state_index] - si[state_index]) * sqrt2inv;
+                si[state_index + 1] =
+                    (t[state_index + 1] - si[state_index + 1]) * sqrt2inv;
+            } else {
+                // state-value=1, t-value=0
+                si[state_index] = (si[state_index] + t[state_index]) * sqrt2inv;
+                si[state_index + 1] =
+                    (si[state_index + 1] + t[state_index + 1]) * sqrt2inv;
+            }
         }
     }
 }
@@ -536,19 +573,60 @@ void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
 void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
     const double sqrt2inv = 1. / sqrt(2.);
     ITYPE state_index = 0;
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    ITYPE vec_len = getVecLength();
+    if(dim >= (vec_len>>1)){
+        SV_PRED pg = Svptrue();
+
+        SV_FTYPE factor = SvdupF(sqrt2inv);
+        SV_FTYPE input0, input1, output;
+
+        if (flag){
+#pragma omp parallel for private(input0, input1, output) \
+                         shared(pg, factor)
+            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
+
+                input0 = svld1(pg, (ETYPE *)&t[state_index]);
+                input1 = svld1(pg, (ETYPE *)&si[state_index]);
+
+                output = svsub_x(pg, input0, input1);
+                output = svmul_x(pg, output, factor);
+
+                svst1(pg, (ETYPE *)&si[state_index], output);
+            }
+        }else{
+#pragma omp parallel for private(input0, input1, output) \
+                         shared(pg, factor)
+            for (state_index = 0; state_index < dim; state_index += (vec_len >> 1)) {
+
+                input0 = svld1(pg, (ETYPE *)&si[state_index]);
+                input1 = svld1(pg, (ETYPE *)&t[state_index]);
+
+                output = svadd_x(pg, input0, input1);
+                output = svmul_x(pg, output, factor);
+
+                svst1(pg, (ETYPE *)&si[state_index], output);
+            }
+        }
+    }
+    else
+#endif
+    {
 #pragma omp parallel for
-    for (state_index = 0; state_index < dim; state_index += 2) {
-        // flag: My qubit(target in outer_qubit) value.
-        if (flag) {
-            // state-value=0, t-value=1
-            si[state_index] = (t[state_index] - si[state_index]) * sqrt2inv;
-            si[state_index + 1] =
-                (t[state_index + 1] - si[state_index + 1]) * sqrt2inv;
-        } else {
-            // state-value=1, t-value=0
-            si[state_index] = (si[state_index] + t[state_index]) * sqrt2inv;
-            si[state_index + 1] =
-                (si[state_index + 1] + t[state_index + 1]) * sqrt2inv;
+        for (state_index = 0; state_index < dim; state_index += 2) {
+            // flag: My qubit(target in outer_qubit) value.
+            if (flag) {
+                // state-value=0, t-value=1
+                si[state_index] = (t[state_index] - si[state_index]) * sqrt2inv;
+                si[state_index + 1] =
+                    (t[state_index + 1] - si[state_index + 1]) * sqrt2inv;
+            } else {
+                // state-value=1, t-value=0
+                si[state_index] = (si[state_index] + t[state_index]) * sqrt2inv;
+                si[state_index + 1] =
+                    (si[state_index + 1] + t[state_index + 1]) * sqrt2inv;
+            }
         }
     }
 }
