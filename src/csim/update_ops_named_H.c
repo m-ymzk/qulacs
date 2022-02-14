@@ -23,9 +23,7 @@
 #endif
 #endif
 
-
 void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     UINT threshold = 13;
     if (dim < (((ITYPE)1) << threshold)) {
@@ -196,39 +194,39 @@ void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
     ITYPE state_index = 0;
     ITYPE vec_len = getVecLength();
 
-    if (mask >= (vec_len>>1)) {
-
+    if (mask >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
         SV_FTYPE factor = SvdupF(sqrt2inv);
         SV_FTYPE input0, input1, output0, output1;
 
-        for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
             ITYPE basis_index_0 =
                 (state_index & mask_low) + ((state_index & mask_high) << 1);
             ITYPE basis_index_1 = basis_index_0 + mask;
 
-            input0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
-            input1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+            input0 = svld1(pg, (ETYPE *)&state[basis_index_0]);
+            input1 = svld1(pg, (ETYPE *)&state[basis_index_1]);
 
             output0 = svadd_x(pg, input0, input1);
             output1 = svsub_x(pg, input0, input1);
             output0 = svmul_x(pg, output0, factor);
             output1 = svmul_x(pg, output1, factor);
 
-            if( 5 <= target_qubit_index && target_qubit_index <= 8) {
+            if (5 <= target_qubit_index && target_qubit_index <= 8) {
                 // L1 prefetch
-                __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
-                __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
                 // L2 prefetch
-                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
-                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+                __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
             }
 
-            svst1(pg, (ETYPE*)&state[basis_index_0], output0);
-            svst1(pg, (ETYPE*)&state[basis_index_1], output1);
+            svst1(pg, (ETYPE *)&state[basis_index_0], output0);
+            svst1(pg, (ETYPE *)&state[basis_index_1], output1);
         }
-    }else if(dim >= vec_len){
+    } else if (dim >= vec_len) {
         SV_PRED pg = Svptrue();
         SV_PRED select_flag;
 
@@ -245,9 +243,8 @@ void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         SV_FTYPE shuffle0, shuffle1;
 
         for (state_index = 0; state_index < dim; state_index += vec_len) {
-
-            input0 = svld1(pg, (ETYPE*)&state[state_index]);
-            input1 = svld1(pg, (ETYPE*)&state[state_index+(vec_len>>1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // shuffle
             shuffle0 =
@@ -266,11 +263,11 @@ void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             output1 = svsel(
                 select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
 
-            svst1(pg, (ETYPE*)&state[state_index], output0);
-            svst1(pg, (ETYPE*)&state[state_index+(vec_len>>1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
-        for (state_index = 0; state_index < loop_dim; state_index ++) {
+        for (state_index = 0; state_index < loop_dim; state_index++) {
             ITYPE basis_index_0 =
                 (state_index & mask_low) + ((state_index & mask_high) << 1);
             ITYPE basis_index_1 = basis_index_0 + mask;
@@ -292,41 +289,41 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
     ITYPE state_index = 0;
     ITYPE vec_len = getVecLength();
 
-    if (mask >= (vec_len>>1)) {
-
+    if (mask >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
         SV_FTYPE factor = SvdupF(sqrt2inv);
         SV_FTYPE input0, input1, output0, output1;
 
 #pragma omp parallel for private(input0, input1, output0, output1) \
-                         shared(pg, factor)
-        for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+    shared(pg, factor)
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
             ITYPE basis_index_0 =
                 (state_index & mask_low) + ((state_index & mask_high) << 1);
             ITYPE basis_index_1 = basis_index_0 + mask;
 
-            input0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
-            input1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+            input0 = svld1(pg, (ETYPE *)&state[basis_index_0]);
+            input1 = svld1(pg, (ETYPE *)&state[basis_index_1]);
 
             output0 = svadd_x(pg, input0, input1);
             output1 = svsub_x(pg, input0, input1);
             output0 = svmul_x(pg, output0, factor);
             output1 = svmul_x(pg, output1, factor);
 
-            if( 5 <= target_qubit_index && target_qubit_index <= 8) {
+            if (5 <= target_qubit_index && target_qubit_index <= 8) {
                 // L1 prefetch
-                __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
-                __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
                 // L2 prefetch
-                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
-                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
+                __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
             }
 
-            svst1(pg, (ETYPE*)&state[basis_index_0], output0);
-            svst1(pg, (ETYPE*)&state[basis_index_1], output1);
+            svst1(pg, (ETYPE *)&state[basis_index_0], output0);
+            svst1(pg, (ETYPE *)&state[basis_index_1], output1);
         }
-    }else if(dim >= vec_len){
+    } else if (dim >= vec_len) {
         SV_PRED pg = Svptrue();
         SV_PRED select_flag;
 
@@ -342,12 +339,11 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE shuffle0, shuffle1;
 
-#pragma omp parallel for private(input0, input1, output0, output1, shuffle0, shuffle1) \
-                         shared(pg, select_flag, vec_index, vec_shuffle_table, factor)
+#pragma omp parallel for private(input0, input1, output0, output1, shuffle0, \
+    shuffle1) shared(pg, select_flag, vec_index, vec_shuffle_table, factor)
         for (state_index = 0; state_index < dim; state_index += vec_len) {
-
-            input0 = svld1(pg, (ETYPE*)&state[state_index]);
-            input1 = svld1(pg, (ETYPE*)&state[state_index+(vec_len>>1)]);
+            input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // shuffle
             shuffle0 =
@@ -366,12 +362,12 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             output1 = svsel(
                 select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
 
-            svst1(pg, (ETYPE*)&state[state_index], output0);
-            svst1(pg, (ETYPE*)&state[state_index + (vec_len>>1)], output1);
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else {
 #pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; state_index ++) {
+        for (state_index = 0; state_index < loop_dim; state_index++) {
             ITYPE basis_index_0 =
                 (state_index & mask_low) + ((state_index & mask_high) << 1);
             ITYPE basis_index_1 = basis_index_0 + mask;
@@ -383,8 +379,8 @@ void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
     }
 }
 
-#endif // #ifdef _OPENMP
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#endif  // #ifdef _OPENMP
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
 void H_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
