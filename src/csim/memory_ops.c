@@ -1,6 +1,8 @@
+#include "memory_ops.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "memory_ops.h"
+
 #include "utility.h"
 #ifdef _OPENMP
 #include <omp.h>
@@ -18,20 +20,20 @@
 
 // memory allocation
 CTYPE* allocate_quantum_state(ITYPE dim) {
-    CTYPE* state = (CTYPE*)malloc((size_t)(sizeof(CTYPE)*dim));
-	//CTYPE* state = (CTYPE*)_aligned_malloc((size_t)(sizeof(CTYPE)*dim), 32);
+    CTYPE* state = (CTYPE*)malloc((size_t)(sizeof(CTYPE) * dim));
+    // CTYPE* state = (CTYPE*)_aligned_malloc((size_t)(sizeof(CTYPE)*dim), 32);
 
-    if (!state){
-        fprintf(stderr,"Out of memory\n");
-		fflush(stderr);
+    if (!state) {
+        fprintf(stderr, "Out of memory\n");
+        fflush(stderr);
         exit(1);
     }
     return state;
 }
 
 void release_quantum_state(CTYPE* state) {
-	free(state);
-	//_aligned_free(state);
+    free(state);
+    //_aligned_free(state);
 }
 
 #if defined(__ARM_FEATURE_SVE)
@@ -59,4 +61,3 @@ void memcpy_sve(double* Out, double* In, ITYPE Num){
 
 }
 #endif
-
