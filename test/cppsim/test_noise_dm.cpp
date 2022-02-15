@@ -78,7 +78,7 @@ TEST(DensityMatrixGeneralGateTest, AdaptiveGate) {
 TEST(DensityMatrixGeneralGateTest, CheckProbabilisticGate) {
 	const UINT n = 5;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 	const UINT gate_count = 5;
 
 	Random random;
@@ -135,7 +135,7 @@ TEST(DensityMatrixGeneralGateTest, CheckProbabilisticGate) {
 TEST(DensityMatrixGeneralGateTest, CheckCPTPMap) {
 	const UINT n = 2;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 	const UINT gate_count = 5;
 
 	Random random;
@@ -191,7 +191,7 @@ TEST(DensityMatrixGeneralGateTest, CheckCPTPMap) {
 TEST(DensityMatrixGeneralGateTest, AmplitudeDampingTest) {
 	const UINT n = 1;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 
 	Random random;
 	DensityMatrix state(n);
@@ -242,7 +242,7 @@ TEST(DensityMatrixGeneralGateTest, AmplitudeDampingTest) {
 TEST(DensityMatrixGeneralGateTest, DepolarizingTest) {
 	const UINT n = 1;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 	double prob = 0.2;
 
 	Random random;
@@ -274,7 +274,7 @@ TEST(DensityMatrixGeneralGateTest, DepolarizingTest) {
 TEST(DensityMatrixGeneralGateTest, TwoQubitDepolarizingTest) {
 	const UINT n = 2;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 	double prob = 0.2;
 
 	Random random;
@@ -308,7 +308,7 @@ TEST(DensityMatrixGeneralGateTest, TwoQubitDepolarizingTest) {
 TEST(DensityMatrixGeneralGateTest, NoiseSampling) {
 	const UINT n = 1;
 	const ITYPE dim = 1ULL << n;
-	double eps = 1e-15;
+	double eps = _EPS;
 	double prob = 0.2;
 
 	Random random;

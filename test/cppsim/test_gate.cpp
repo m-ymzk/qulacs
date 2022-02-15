@@ -34,7 +34,7 @@ TEST(GateTest, ApplySingleQubitGate) {
 
     const UINT n = 5;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     QuantumState state(n);
@@ -93,7 +93,7 @@ TEST(GateTest, ApplySingleQubitRotationGate) {
 
     const UINT n = 5;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     QuantumState state(n);
@@ -134,7 +134,7 @@ TEST(GateTest, ApplyTwoQubitGate) {
 
     const UINT n = 5;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     QuantumState state(n),test_state(n);
@@ -216,7 +216,7 @@ TEST(GateTest, ApplyMultiQubitGate) {
 
     const UINT n = 1;
     const ITYPE dim = 1ULL << n;
-    double eps = 1e-15;
+    double eps = _EPS;
 
     Random random;
     QuantumState state(n);
