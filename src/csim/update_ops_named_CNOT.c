@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "constant.h"
+#include "memory_ops.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
@@ -393,20 +394,11 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
             const UINT rank = m->get_rank();
             const UINT pair_rank_bit = 1 << (target_qubit_index - inner_qc);
             const UINT pair_rank = rank ^ pair_rank_bit;
-            //#ifdef _OPENMP
-            // UINT threshold = 13;
-            // if (dim < (((ITYPE)1) << threshold)) {
-            //    CNOT_gate_single_unroll_mpi(control_qubit_index, state, dim);
-            //}
-            // else {
-            // CNOT_gate_parallel_unroll_mpi(control_qubit_index, state, dim);
-            //}
-            //#else
+
             CNOT_gate_single_unroll_cin_tout(
                 control_qubit_index, pair_rank, state, dim);
-            //#endif
         }
-    } else {
+    } else { // (control_qubit_index >= inner_qc)
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int control_rank_bit = 1 << (control_qubit_index - inner_qc);
@@ -430,14 +422,18 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
                     // printf("#%d: call m_DC_sendrecv, dim = %lld,
                     // pair_rank=%d\n", rank, dim, pair_rank);
                     m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
                     memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
                     si += dim_work;
                 } else {
                     m->get_tag();  // dummy to count up tag
                 }
             }
-        }
-    }
+        } // (target_qubit_index < inner_qc)
+    } // (control_qubit_index >= inner_qc)
 }
 
 // CNOT_gate_mpi, control_qubit_index is inner, target_qubit_index is outer.
@@ -452,7 +448,7 @@ void CNOT_gate_single_unroll_cin_tout(
 
     const ITYPE control_isone_offset = 1ULL << control_qubit_index;
 
-    if (control_isone_offset < dim_work) {  // dim_work > 1
+    if (control_isone_offset < dim_work) {
         dim_work >>= 1;                     // 1/2: for send, 1/2: for recv
         CTYPE* t_send = t;
         CTYPE* t_recv = t + dim_work;
@@ -494,7 +490,11 @@ void CNOT_gate_single_unroll_cin_tout(
         for (ITYPE i = 0; i < num_control_block; ++i) {
             for (ITYPE j = 0; j < num_work_block; ++j) {
                 m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+#if defined(__ARM_FEATURE_SVE)
+                memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
                 memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
                 si += dim_work;
             }
             si += control_isone_offset;

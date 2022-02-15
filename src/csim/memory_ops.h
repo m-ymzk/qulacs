@@ -24,3 +24,7 @@ DllExport CTYPE* allocate_quantum_state(ITYPE dim);
  * @param[in] psi quantum state
  */
 DllExport void release_quantum_state(CTYPE* state);
+
+#if defined(__ARM_FEATURE_SVE)
+void memcpy_sve(double* Out, double* In, ITYPE Num);
+#endif

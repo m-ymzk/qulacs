@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "constant.h"
+#include "memory_ops.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
@@ -260,7 +261,11 @@ void X_gate_mpi(
         CTYPE* si = state;
         for (ITYPE i = 0; i < num_work; ++i) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+#if defined(__ARM_FEATURE_SVE)
+            memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
             memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
             si += dim_work;
         }
     }
