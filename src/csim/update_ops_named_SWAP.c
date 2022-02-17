@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "constant.h"
+#include "memory_ops.h"
 #include "update_ops.h"
 #include "utility.h"
 #ifdef _OPENMP
@@ -344,7 +345,11 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
             for (ITYPE i = 0; i < num_rtgt_block; ++i) {
                 for (ITYPE j = 0; j < num_work_block; ++j) {
                     m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
                     memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
                     si += dim_work;
                 }
                 si += rtgt_blk_dim;
@@ -371,7 +376,11 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         for (ITYPE i = 0; i < num_work; ++i) {
             if (not_zerozero && with_zero) {  // 01 or 10
                 m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+#if defined(__ARM_FEATURE_SVE)
+                memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
                 memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
                 si += dim_work;
             } else {
                 m->get_tag();  // dummy to count up tag
