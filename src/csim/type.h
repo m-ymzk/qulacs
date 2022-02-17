@@ -6,6 +6,7 @@
 #pragma once
 #ifndef TYPE_H_
 #define TYPE_H_
+
 // When csim is compiled with C++, std::complex<double> is used instead of
 // double _Complex
 #ifdef _MSC_VER

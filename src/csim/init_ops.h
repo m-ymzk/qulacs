@@ -7,8 +7,8 @@
 #pragma once
 
 #include "type.h"
- 
- /**
+
+/**
  * intiialize quantum state to zero state
  *
  * intiialize quantum state to zero state
@@ -18,10 +18,13 @@
 DllExport void initialize_quantum_state(CTYPE *state, ITYPE dim);
 
 DllExport void initialize_Haar_random_state(CTYPE *state, ITYPE dim);
-DllExport void initialize_Haar_random_state_with_seed(CTYPE *state, ITYPE dim, UINT seed);
+DllExport void initialize_Haar_random_state_with_seed(
+    CTYPE *state, ITYPE dim, UINT seed);
 
 #ifdef _USE_MPI
-DllExport void initialize_quantum_state_mpi(CTYPE *state, ITYPE dim, UINT outer_qc);
+DllExport void initialize_quantum_state_mpi(
+    CTYPE *state, ITYPE dim, UINT outer_qc);
 
-DllExport void initialize_Haar_random_state_mpi_with_seed(CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
+DllExport void initialize_Haar_random_state_mpi_with_seed(
+    CTYPE *state, ITYPE dim, UINT outer_qc, UINT seed);
 #endif
