@@ -313,9 +313,8 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
     if ((min_qubit_mask >= (vec_len >> 1))) {
         SV_PRED pg = Svptrue();
         SV_FTYPE vec_temp0, vec_temp1;
-        if (((5 <= target_qubit_index) && (target_qubit_index <= 10))
-                || ((5 <= control_qubit_index) && (control_qubit_index <= 10))) {
-
+        if (((5 <= target_qubit_index) && (target_qubit_index <= 10)) ||
+            ((5 <= control_qubit_index) && (control_qubit_index <= 10))) {
 #pragma omp parallel for private(vec_temp0, vec_temp1) shared(pg)
             for (state_index = 0; state_index < loop_dim;
                  state_index += (vec_len >> 1)) {
@@ -323,29 +322,28 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
                     (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                     ((state_index & high_mask) << 2) + control_mask;
                 ITYPE basis_index_1 = basis_index_0 + target_mask;
-    
+
                 vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
                 vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
-   
-                { 
+
+                {
                     ITYPE base_0 = state_index + (control_mask);
-                    base_0 = (base_0&low_mask) + ((base_0&mid_mask) << 1)
-                                   + ((base_0&high_mask) << 2) + control_mask;
-                    ITYPE base_1 = state_index + (control_mask<<2);
-                    base_1 = (base_1&low_mask)+((base_1&mid_mask) << 1)
-                                   +((base_1&high_mask) << 2)+control_mask;
+                    base_0 = (base_0 & low_mask) + ((base_0 & mid_mask) << 1) +
+                             ((base_0 & high_mask) << 2) + control_mask;
+                    ITYPE base_1 = state_index + (control_mask << 2);
+                    base_1 = (base_1 & low_mask) + ((base_1 & mid_mask) << 1) +
+                             ((base_1 & high_mask) << 2) + control_mask;
                     // L1 prefetch
                     __builtin_prefetch(&state[base_0], 1, 3);
-                    __builtin_prefetch(&state[base_0+target_mask], 1, 3);
+                    __builtin_prefetch(&state[base_0 + target_mask], 1, 3);
                     // L2 prefetch
                     __builtin_prefetch(&state[base_1], 1, 2);
-                    __builtin_prefetch(&state[base_1+target_mask], 1, 2);
+                    __builtin_prefetch(&state[base_1 + target_mask], 1, 2);
                 }
                 svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
                 svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
             }
-        }else{
- 
+        } else {
 #pragma omp parallel for private(vec_temp0, vec_temp1) shared(pg)
             for (state_index = 0; state_index < loop_dim;
                  state_index += (vec_len >> 1)) {
@@ -353,10 +351,10 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
                     (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                     ((state_index & high_mask) << 2) + control_mask;
                 ITYPE basis_index_1 = basis_index_0 + target_mask;
-    
+
                 vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
                 vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
-   
+
                 svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
                 svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
             }
