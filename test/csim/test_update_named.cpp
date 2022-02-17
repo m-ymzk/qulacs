@@ -284,6 +284,19 @@ TEST(UpdateTest, CNOTGate) {
 #endif
 }
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, CNOTGateSVE) {
+  test_two_qubit_named_gate(1, "CNOTGateSVE", CNOT_gate_single_sve, get_eigen_matrix_full_qubit_CNOT);
+  test_two_qubit_named_gate(4, "CNOTGateSVE", CNOT_gate_single_sve, get_eigen_matrix_full_qubit_CNOT);
+  test_two_qubit_named_gate(6, "CNOTGateSVE", CNOT_gate_single_sve, get_eigen_matrix_full_qubit_CNOT);
+#ifdef _OPENMP
+  test_two_qubit_named_gate(1, "CNOTGateSVE", CNOT_gate_parallel_sve, get_eigen_matrix_full_qubit_CNOT);
+  test_two_qubit_named_gate(4, "CNOTGateSVE", CNOT_gate_parallel_sve, get_eigen_matrix_full_qubit_CNOT);
+  test_two_qubit_named_gate(6, "CNOTGateSVE", CNOT_gate_parallel_sve, get_eigen_matrix_full_qubit_CNOT);
+#endif
+}
+#endif
+
 TEST(UpdateTest, CZGate) {
 	const UINT n = 4;
 	test_two_qubit_named_gate(n, "CZ", CZ_gate, get_eigen_matrix_full_qubit_CZ);
