@@ -255,26 +255,27 @@ void CNOT_gate_single_sve(UINT control_qubit_index, UINT target_qubit_index,
     ITYPE vec_len =
         getVecLength();  // length of SVE registers (# of 64-bit elements)
 
-    if((min_qubit_mask >= (vec_len>>1))){
+    if ((min_qubit_mask >= (vec_len >> 1))) {
         SV_PRED pg = Svptrue();
         SV_FTYPE vec_temp0, vec_temp1;
 
-        for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
             ITYPE basis_index_0 =
                 (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                 ((state_index & high_mask) << 2) + control_mask;
             ITYPE basis_index_1 = basis_index_0 + target_mask;
 
-            vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);            
-            vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);            
+            vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+            vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
 
             svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
             svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
         }
 
-    }else {
+    } else {
         // a,a+1 is swapped to a^m, a^m+1, respectively
-        for (state_index = 0; state_index < loop_dim; state_index ++) {
+        for (state_index = 0; state_index < loop_dim; state_index++) {
             ITYPE basis_index_0 =
                 (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                 ((state_index & high_mask) << 2) + control_mask;
@@ -309,28 +310,29 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
     ITYPE vec_len =
         getVecLength();  // length of SVE registers (# of 64-bit elements)
 
-    if((min_qubit_mask >= (vec_len>>1))){
+    if ((min_qubit_mask >= (vec_len >> 1))) {
         SV_PRED pg = Svptrue();
         SV_FTYPE vec_temp0, vec_temp1;
 
 #pragma omp parallel for private(vec_temp0, vec_temp1) shared(pg)
-        for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
             ITYPE basis_index_0 =
                 (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                 ((state_index & high_mask) << 2) + control_mask;
             ITYPE basis_index_1 = basis_index_0 + target_mask;
 
-            vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);            
-            vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);            
+            vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+            vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
 
             svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
             svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
         }
 
-    }else {
+    } else {
         // a,a+1 is swapped to a^m, a^m+1, respectively
 #pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; state_index ++) {
+        for (state_index = 0; state_index < loop_dim; state_index++) {
             ITYPE basis_index_0 =
                 (state_index & low_mask) + ((state_index & mid_mask) << 1) +
                 ((state_index & high_mask) << 2) + control_mask;
@@ -342,8 +344,8 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
     }
 }
 
-#endif // #ifdef _OPENMP
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#endif  // #ifdef _OPENMP
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
 void CNOT_gate_single_simd(UINT control_qubit_index, UINT target_qubit_index,
@@ -632,4 +634,3 @@ void CNOT_gate_single_unroll_cin_tout(
     }
 }
 #endif  //#ifdef _USE_MPI
-
