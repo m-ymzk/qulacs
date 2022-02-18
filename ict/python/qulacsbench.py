@@ -50,7 +50,7 @@ if __name__ == '__main__':
     args = get_option()
     n=args.nqubits
     pairs = [(i, (i + 1) % n) for i in range(n)]
-    numRepeats = 6
+    numRepeats = 1
 
     np.random.seed(seed=32)
     mode = "w/o opt"
@@ -73,10 +73,16 @@ if __name__ == '__main__':
         del st
 
     if rank==0:
-        print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-            mode, n,
-            np.average(constTimes[1:]), np.std(constTimes[1:]), 
-            np.average(simTimes[1:]), np.std(simTimes[1:])))
+        if numRepeats == 1:
+            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+                mode, n,
+                np.average(constTimes), np.std(constTimes),
+                np.average(simTimes), np.std(simTimes)))
+        else:
+            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+                mode, n,
+                np.average(constTimes[1:]), np.std(constTimes[1:]),
+                np.average(simTimes[1:]), np.std(simTimes[1:])))
 
     #print('[qulacs construction] {}, {} qubits, {}, {}, {}'.format(
     #    mode, n, np.average(constTimes[1:]), np.std(constTimes[1:]), constTimes))

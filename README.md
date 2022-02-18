@@ -175,7 +175,8 @@ $ python setup_mpi.py install (*1)
 ```shell
 <lib. build>
 $ cd [mpi-qulacs]
-$ ./script/build_gcc.sh
+$ . ./setenv
+$ ./script/build_mpicc.sh
 
 <test>
 $ cd build
