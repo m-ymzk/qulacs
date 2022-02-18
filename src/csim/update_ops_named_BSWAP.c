@@ -22,6 +22,13 @@
 #endif
 #endif
 
+void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    UINT num_qubit, CTYPE* state, ITYPE dim) {
+    for (UINT i = 0; i < num_qubit; ++i) {
+        SWAP_gate(target_qubit_index_0 + i, target_qubit_index_1 + i, state, dim);
+    }
+}
+
 #ifdef _USE_MPI
 
 void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,

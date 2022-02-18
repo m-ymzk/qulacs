@@ -152,6 +152,79 @@ public:
 };
 
 /**
+ * \~japanese-en N量子ビットペアを対象とする回転角固定のゲートのクラス
+ */
+class QuantumGate_NQubitpair : public QuantumGateBase {
+protected:
+    typedef void(T_UPDATE_FUNC)(UINT, UINT, UINT, CTYPE*, ITYPE);
+    typedef void(T_UPDATE_FUNC_MPI)(UINT, UINT, UINT, CTYPE*, ITYPE, UINT);
+    typedef void(T_GPU_UPDATE_FUNC)(UINT, UINT, void*, ITYPE, void*, UINT);
+    T_UPDATE_FUNC* _update_func;
+    T_UPDATE_FUNC* _update_func_dm;
+    T_GPU_UPDATE_FUNC* _update_func_gpu;
+    T_UPDATE_FUNC_MPI* _update_func_mpi;
+    ComplexMatrix _matrix_element;
+    UINT _num_qubits;
+
+    QuantumGate_NQubitpair(){};
+
+public:
+    /**
+     * \~japanese-en 量子状態を更新する
+     *
+     * @param state 更新する量子状態
+     */
+    virtual void update_quantum_state(QuantumStateBase* state) override {
+        if (state->is_state_vector()) {
+#ifdef _USE_GPU
+            if (state->get_device_name() == "gpu") {
+                _update_func_gpu(this->_target_qubit_list[0].index(),
+                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data(),
+                    state->dim, state->get_cuda_stream(), state->device_number);
+            } else {
+                _update_func(this->_target_qubit_list[0].index(),
+                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
+                    state->dim);
+            }
+#else  //#ifdef _USE_GPU
+#ifdef _USE_MPI
+            if (state->outer_qc == 0)
+#endif  //#ifdef _USE_MPI
+                _update_func(this->_target_qubit_list[0].index(),
+                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
+                    state->dim);
+#ifdef _USE_MPI
+            else
+                _update_func_mpi(this->_target_qubit_list[0].index(),
+                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
+                    state->dim, state->inner_qc);
+#endif  //#ifdef _USE_MPI
+#endif  //#ifdef _USE_GPU
+        } else {
+            _update_func_dm(this->_target_qubit_list[0].index(),
+                this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
+                state->dim);
+        }
+    };
+    /**
+     * \~japanese-en 自身のディープコピーを生成する
+     *
+     * @return 自身のディープコピー
+     */
+    virtual QuantumGateBase* copy() const override {
+        return new QuantumGate_NQubitpair(*this);
+    };
+    /**
+     * \~japanese-en 自身のゲート行列をセットする
+     *
+     * @param matrix 行列をセットする変数の参照
+     */
+    virtual void set_matrix(ComplexMatrix& matrix) const override {
+        matrix = this->_matrix_element;
+    }
+};
+
+/**
  * \~japanese-en
  * 1量子ビットを対象とし1量子ビットにコントロールされる回転角固定のゲートのクラス
  */

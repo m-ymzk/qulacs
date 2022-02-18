@@ -324,6 +324,11 @@ PYBIND11_MODULE(qulacs, m) {
 		if (ptr == NULL) throw std::invalid_argument("Invalid argument passed to SWAP.");
 		return ptr;
 	}, pybind11::return_value_policy::take_ownership, "Create SWAP gate", py::arg("target1"), py::arg("target2")); 
+	mgate.def("BSWAP", [](UINT target_index1, UINT target_index2, UINT num_qubits) {
+		auto ptr = gate::BSWAP(target_index1, target_index2, num_qubits);
+		if (ptr == NULL) throw std::invalid_argument("Invalid argument passed to BSWAP.");
+		return ptr;
+	}, pybind11::return_value_policy::take_ownership, "Create BSWAP gate", py::arg("target1"), py::arg("target2"), py::arg("numqubits")); 
 
 	mgate.def("TOFFOLI", [](UINT control_index1, UINT control_index2, UINT target_index) {
 		auto ptr = gate::X(target_index);
@@ -491,6 +496,7 @@ PYBIND11_MODULE(qulacs, m) {
         .def("add_CNOT_gate", &QuantumCircuit::add_CNOT_gate, "Add CNOT gate", py::arg("control"), py::arg("target"))
         .def("add_CZ_gate", &QuantumCircuit::add_CZ_gate, "Add CNOT gate", py::arg("control"), py::arg("target"))
         .def("add_SWAP_gate", &QuantumCircuit::add_SWAP_gate, "Add SWAP gate", py::arg("target1"), py::arg("target2"))
+        .def("add_BSWAP_gate", &QuantumCircuit::add_BSWAP_gate, "Add BSWAP gate", py::arg("target1"), py::arg("target2"), py::arg("numqubits"))
 
         .def("add_RX_gate", &QuantumCircuit::add_RX_gate, "Add Pauli-X rotation gate", py::arg("index"), py::arg("angle"))
         .def("add_RY_gate", &QuantumCircuit::add_RY_gate, "Add Pauli-Y rotation gate", py::arg("index"), py::arg("angle"))
