@@ -26,11 +26,11 @@
 
 void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT num_qubit, CTYPE* state, ITYPE dim, UINT inner_qc) {
+#if 1
     for (UINT i = 0; i < num_qubit; i++){
         SWAP_gate_mpi(target_qubit_index_0+i, target_qubit_index_1+i, state, dim, inner_qc);
     }
-
-#if 0
+#else 
     // UINT _inner_qc = count_population(dim - 1);
     // printf("#enter SWAP, %d, %d, %d\n", target_qubit_index_0,
     // target_qubit_index_1, inner_qc);
