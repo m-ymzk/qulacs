@@ -48,7 +48,6 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     }
     assert(left_qubit > (right_qubit + num_qubit - 1));
 
-    UINT qubit_distance = num_qubit;
     UINT act_bs = num_qubit;
     if ((left_qubit + num_qubit - 1) < inner_qc) {  // all swaps are in inner
 	for (UINT i = 0; i < num_qubit; i++){
@@ -59,10 +58,9 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
     if ((right_qubit + num_qubit - 1) >= inner_qc){ // part of right qubit is in outer
 	UINT num_outer_swap = right_qubit + num_qubit - inner_qc;
-	printf("Not implemented both outer swap exception yet\n");
-	/* TODO outer swap individualy */
-
-	/********************************/
+	for (UINT i = num_qubit-1; i > num_qubit-1-num_outer_swap; i--){
+           SWAP_gate_mpi(target_qubit_index_0+i, target_qubit_index_1+i, state, dim, inner_qc);
+	}
 	act_bs -= num_outer_swap;
     }
 
@@ -87,7 +85,6 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     ITYPE dim_work = dim;
     ITYPE num_work = 0;
     CTYPE* t = m->get_workarea(&dim_work, &num_work);
-    const ITYPE tgt_rank_bit = 1 << qubit_distance;
     const ITYPE rtgt_blk_dim = 1 << right_qubit;
     const UINT total_peer_procs = 1 << act_bs;
     const UINT tgt_outer_rank = left_qubit - inner_qc;
