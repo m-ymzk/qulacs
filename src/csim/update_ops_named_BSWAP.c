@@ -33,14 +33,11 @@ void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
 void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT num_qubit, CTYPE* state, ITYPE dim, UINT inner_qc) {
-#if 1
+#if 0
     for (UINT i = 0; i < num_qubit; i++){
         SWAP_gate_mpi(target_qubit_index_0+i, target_qubit_index_1+i, state, dim, inner_qc);
     }
 #else 
-    // UINT _inner_qc = count_population(dim - 1);
-    // printf("#enter SWAP, %d, %d, %d\n", target_qubit_index_0,
-    // target_qubit_index_1, inner_qc);
     UINT left_qubit, right_qubit;
     if (target_qubit_index_0 > target_qubit_index_1) {
         left_qubit = target_qubit_index_0;
@@ -49,35 +46,63 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         left_qubit = target_qubit_index_1;
         right_qubit = target_qubit_index_0;
     }
+    assert(left_qubit > (right_qubit + num_qubit - 1));
 
-    if (left_qubit < inner_qc) {  // both qubits are inner
-        // printf("#SWAP both targets are inner, %d, %d, %d\n", left_qubit,
-        // right_qubit, inner_qc);
-        SWAP_gate(target_qubit_index_0, target_qubit_index_1, state, dim);
-    } else if (right_qubit < inner_qc) {  // one target is outer
-        // printf("#SWAP one target is outer, %d, %d, %d\n", left_qubit,
-        // right_qubit, inner_qc);
-        const MPIutil m = get_mpiutil();
-        const UINT rank = m->get_rank();
-        ITYPE dim_work = dim;
-        ITYPE num_work = 0;
-        CTYPE* t = m->get_workarea(&dim_work, &num_work);
-        const ITYPE tgt_rank_bit = 1 << (left_qubit - inner_qc);
-        const ITYPE rtgt_blk_dim = 1 << right_qubit;
-        const int pair_rank = rank ^ tgt_rank_bit;
+    UINT qubit_distance = num_qubit;
+    UINT act_bs = num_qubit;
+    if ((left_qubit + num_qubit - 1) < inner_qc) {  // all swaps are in inner
+	for (UINT i = 0; i < num_qubit; i++){
+           SWAP_gate(target_qubit_index_0+i, target_qubit_index_1+i, state, dim);
+	}
+        return;
+    }
 
-        ITYPE rtgt_offset = 0;
-        if ((rank & tgt_rank_bit) == 0) rtgt_offset = rtgt_blk_dim;
+    if ((right_qubit + num_qubit - 1) >= inner_qc){ // part of right qubit is in outer
+	UINT num_outer_swap = right_qubit + num_qubit - inner_qc;
+	printf("Not implemented both outer swap exception yet\n");
+	/* TODO outer swap individualy */
 
-        if (rtgt_blk_dim < dim_work) {
-            // printf("#SWAP rtgt_blk_dim < dim_work, %lld, %lld, %d\n",
-            // tgt_rank_bit, rtgt_blk_dim, pair_rank);
+	/********************************/
+	act_bs -= num_outer_swap;
+    }
+
+    if (left_qubit < inner_qc){ // part of left qubit is in inner
+	UINT num_inner_swap = inner_qc - left_qubit;
+	/* Do inner swap individualy*/
+        for (UINT i = 0; i < num_inner_swap; i++){
+            SWAP_gate_mpi(target_qubit_index_0+i, target_qubit_index_1+i, state, dim, inner_qc);
+        }
+	act_bs -= num_inner_swap;
+	left_qubit += num_inner_swap;
+	right_qubit += num_inner_swap;
+    }
+    
+    if (act_bs == 0) { return; }
+
+    /*  BSWAP main */
+    /* All remained swaps are pairs of inner and outer */
+
+    const MPIutil m = get_mpiutil();
+    const UINT rank = m->get_rank();
+    ITYPE dim_work = dim;
+    ITYPE num_work = 0;
+    CTYPE* t = m->get_workarea(&dim_work, &num_work);
+    const ITYPE tgt_rank_bit = 1 << qubit_distance;
+    const ITYPE rtgt_blk_dim = 1 << right_qubit;
+    const UINT total_peer_procs = 1 << act_bs;
+    const UINT tgt_outer_rank = left_qubit - inner_qc;
+
+    dim_work = get_min_ll(dim_work, dim >> (act_bs-1));
+
+    if (rtgt_blk_dim < dim_work) { // unit elems block smaller than worksize
+        for (UINT step = 1; step < total_peer_procs; ++step){
+            const UINT peer_rank = rank ^ (step << tgt_outer_rank);
+            UINT rtgt_offset = rank^step * rtgt_blk_dim;
             dim_work >>= 1;  // 1/2: for send, 1/2: for recv
             CTYPE* t_send = t;
             CTYPE* t_recv = t + dim_work;
-            const ITYPE num_rtgt_block = (dim / dim_work) >> 1;
+            const ITYPE num_rtgt_block = (dim / dim_work) >> act_bs;
             const ITYPE num_elem_block = dim_work >> right_qubit;
-
             CTYPE* si0 = state + rtgt_offset;
             for (ITYPE i = 0; i < num_rtgt_block; ++i) {
                 // gather
@@ -85,75 +110,27 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 CTYPE* ti = t_send;
                 for (ITYPE k = 0; k < num_elem_block; ++k) {
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
-                    si += (rtgt_blk_dim << 1);
+                    si += (rtgt_blk_dim << act_bs);
                     ti += rtgt_blk_dim;
                 }
-
+        
                 // sendrecv
-                m->m_DC_sendrecv(t_send, t_recv, dim_work, pair_rank);
-
+                m->m_DC_sendrecv(t_send, t_recv, dim_work, peer_rank);
+        
                 // scatter
                 si = t_recv;
                 ti = si0;
                 for (ITYPE k = 0; k < num_elem_block; ++k) {
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
                     si += rtgt_blk_dim;
-                    ti += (rtgt_blk_dim << 1);
+                    ti += (rtgt_blk_dim << act_bs);
                 }
-                si0 += (dim_work << 1);
-            }
-
-        } else {  // rtgt_blk_dim >= dim_work
-            // printf("#SWAP rtgt_blk_dim >= dim_work, %lld, %lld, %d\n",
-            // tgt_rank_bit, rtgt_blk_dim, pair_rank);
-            const ITYPE num_rtgt_block = dim >> (right_qubit + 1);
-            const ITYPE num_work_block = rtgt_blk_dim / dim_work;
-
-            CTYPE* si = state + rtgt_offset;
-            for (ITYPE i = 0; i < num_rtgt_block; ++i) {
-                for (ITYPE j = 0; j < num_work_block; ++j) {
-                    m->m_DC_sendrecv(si, t, dim_work, pair_rank);
-#if defined(__ARM_FEATURE_SVE)
-                    memcpy_sve((double*)si, (double*)t, dim_work * 2);
-#else
-                    memcpy(si, t, dim_work * sizeof(CTYPE));
-#endif
-                    si += dim_work;
-                }
-                si += rtgt_blk_dim;
+                si0 += (dim_work << act_bs);
             }
         }
-    } else {  // both targets are outer
-        // printf("#SWAP both target is outer, %d, %d, %d\n", left_qubit,
-        // right_qubit, inner_qc);
-        const MPIutil m = get_mpiutil();
-        const UINT rank = m->get_rank();
-        ITYPE dim_work = dim;
-        ITYPE num_work = 0;
-        CTYPE* t = m->get_workarea(&dim_work, &num_work);
-        const UINT tgt0_rank_bit = 1 << (left_qubit - inner_qc);
-        const UINT tgt1_rank_bit = 1 << (right_qubit - inner_qc);
-        const UINT tgt_rank_bit = tgt0_rank_bit + tgt1_rank_bit;
-
-        const int pair_rank = rank ^ tgt_rank_bit;
-        const int not_zerozero = ((rank & tgt_rank_bit) != 0);
-        const int with_zero =
-            (((rank & tgt0_rank_bit) * (rank & tgt1_rank_bit)) == 0);
-
-        CTYPE* si = state;
-        for (ITYPE i = 0; i < num_work; ++i) {
-            if (not_zerozero && with_zero) {  // 01 or 10
-                m->m_DC_sendrecv(si, t, dim_work, pair_rank);
-#if defined(__ARM_FEATURE_SVE)
-                memcpy_sve((double*)si, (double*)t, dim_work * 2);
-#else
-                memcpy(si, t, dim_work * sizeof(CTYPE));
-#endif
-                si += dim_work;
-            } else {
-                m->get_tag();  // dummy to count up tag
-            }
-        }
+    } else {  // rtgt_blk_dim >= dim_work
+	printf("Not implmented yet.\n");
+	return;
     }
 #endif
 }
