@@ -103,3 +103,35 @@ public:
         this->_matrix_element << 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
     }
 };
+
+/**
+ * \~japanese-en BSWAPゲート
+ */
+class ClsBSWAPGate : public QuantumGate_NQubitpair {
+public:
+    /**
+     * \~japanese-en コンストラクタ
+     *
+     * @param target_qubit_index1 ターゲット量子ビットの添え字の先頭
+     * @param target_qubit_index2 もう一つのターゲット量子ビットの添え字の先頭
+     * @param num_qubits ターゲット量子ビット数
+     */
+    ClsBSWAPGate(UINT target_qubit_index1, UINT target_qubit_index2, UINT num_qubits) {
+        this->_update_func = BSWAP_gate;
+        //this->_update_func_dm = dm_SWAP_gate;
+#ifdef _USE_GPU
+        //this->_update_func_gpu = SWAP_gate_host;
+#endif
+#ifdef _USE_MPI
+        this->_update_func_mpi = BSWAP_gate_mpi;
+#endif
+        this->_name = "BSWAP";
+        this->_target_qubit_list.push_back(
+            TargetQubitInfo(target_qubit_index1, 0));
+        this->_target_qubit_list.push_back(
+            TargetQubitInfo(target_qubit_index2, 0));
+        this->_gate_property = FLAG_CLIFFORD;
+        this->_matrix_element = ComplexMatrix::Zero(4, 4);
+        this->_matrix_element << 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+    }
+};
