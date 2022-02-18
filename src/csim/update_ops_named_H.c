@@ -25,12 +25,16 @@
 
 void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#ifdef _OPENMP
     UINT threshold = 13;
     if (dim < (((ITYPE)1) << threshold)) {
         H_gate_single_sve(target_qubit_index, state, dim);
     } else {
         H_gate_parallel_sve(target_qubit_index, state, dim);
     }
+#else
+    H_gate_single_sve(target_qubit_index, state, dim);
+#endif
 #elif defined(_USE_SIMD)
 #ifdef _OPENMP
     UINT threshold = 13;
