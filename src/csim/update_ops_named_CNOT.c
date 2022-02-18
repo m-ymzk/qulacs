@@ -38,7 +38,23 @@ void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state,
 #else
     CNOT_gate_single_simd(control_qubit_index, target_qubit_index, state, dim);
 #endif
+
+#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#ifdef _OPENMP
+    UINT threshold = 13;
+    if (dim < (((ITYPE)1) << threshold)) {
+        CNOT_gate_single_sve(
+            control_qubit_index, target_qubit_index, state, dim);
+    } else {
+        CNOT_gate_parallel_sve(
+            control_qubit_index, target_qubit_index, state, dim);
+    }
 #else
+    CNOT_gate_single_sve(control_qubit_index, target_qubit_index, state, dim);
+#endif
+
+#else
+
 #ifdef _OPENMP
     UINT threshold = 13;
     if (dim < (((ITYPE)1) << threshold)) {
@@ -215,6 +231,152 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
     }
 }
 #endif
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void CNOT_gate_single_sve(UINT control_qubit_index, UINT target_qubit_index,
+    CTYPE* state, ITYPE dim) {
+    // printf("#enter CNOT_g_s_u, %lld, %d, %d\n", dim, control_qubit_index,
+    // target_qubit_index);
+    const ITYPE loop_dim = dim / 4;
+
+    const ITYPE target_mask = 1ULL << target_qubit_index;
+    const ITYPE control_mask = 1ULL << control_qubit_index;
+
+    const UINT min_qubit_index =
+        get_min_ui(control_qubit_index, target_qubit_index);
+    const UINT max_qubit_index =
+        get_max_ui(control_qubit_index, target_qubit_index);
+    const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+    const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+    const ITYPE low_mask = min_qubit_mask - 1;
+    const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+    const ITYPE high_mask = ~(max_qubit_mask - 1);
+
+    ITYPE state_index = 0;
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
+
+    if ((min_qubit_mask >= (vec_len >> 1))) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE vec_temp0, vec_temp1;
+
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            ITYPE basis_index_0 =
+                (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                ((state_index & high_mask) << 2) + control_mask;
+            ITYPE basis_index_1 = basis_index_0 + target_mask;
+
+            vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+            vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+
+            svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
+            svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
+        }
+
+    } else {
+        // a,a+1 is swapped to a^m, a^m+1, respectively
+        for (state_index = 0; state_index < loop_dim; state_index++) {
+            ITYPE basis_index_0 =
+                (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                ((state_index & high_mask) << 2) + control_mask;
+            ITYPE basis_index_1 = basis_index_0 + target_mask;
+            CTYPE temp0 = state[basis_index_0];
+            state[basis_index_0] = state[basis_index_1];
+            state[basis_index_1] = temp0;
+        }
+    }
+}
+#ifdef _OPENMP
+void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
+    CTYPE* state, ITYPE dim) {
+    // printf("#enter CNOT_g_s_u, %lld, %d, %d\n", dim, control_qubit_index,
+    // target_qubit_index);
+    const ITYPE loop_dim = dim / 4;
+
+    const ITYPE target_mask = 1ULL << target_qubit_index;
+    const ITYPE control_mask = 1ULL << control_qubit_index;
+
+    const UINT min_qubit_index =
+        get_min_ui(control_qubit_index, target_qubit_index);
+    const UINT max_qubit_index =
+        get_max_ui(control_qubit_index, target_qubit_index);
+    const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+    const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+    const ITYPE low_mask = min_qubit_mask - 1;
+    const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+    const ITYPE high_mask = ~(max_qubit_mask - 1);
+
+    ITYPE state_index = 0;
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
+
+    if ((min_qubit_mask >= (vec_len >> 1))) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE vec_temp0, vec_temp1;
+        if (((5 <= target_qubit_index) && (target_qubit_index <= 10)) ||
+            ((5 <= control_qubit_index) && (control_qubit_index <= 10))) {
+#pragma omp parallel for private(vec_temp0, vec_temp1) shared(pg)
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += (vec_len >> 1)) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+
+                vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+                vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+
+                {
+                    ITYPE base_0 = state_index + (control_mask);
+                    base_0 = (base_0 & low_mask) + ((base_0 & mid_mask) << 1) +
+                             ((base_0 & high_mask) << 2) + control_mask;
+                    ITYPE base_1 = state_index + (control_mask << 2);
+                    base_1 = (base_1 & low_mask) + ((base_1 & mid_mask) << 1) +
+                             ((base_1 & high_mask) << 2) + control_mask;
+                    // L1 prefetch
+                    __builtin_prefetch(&state[base_0], 1, 3);
+                    __builtin_prefetch(&state[base_0 + target_mask], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(&state[base_1], 1, 2);
+                    __builtin_prefetch(&state[base_1 + target_mask], 1, 2);
+                }
+                svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
+                svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
+            }
+        } else {
+#pragma omp parallel for private(vec_temp0, vec_temp1) shared(pg)
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += (vec_len >> 1)) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+
+                vec_temp0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+                vec_temp1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+
+                svst1(pg, (ETYPE*)&state[basis_index_0], vec_temp1);
+                svst1(pg, (ETYPE*)&state[basis_index_1], vec_temp0);
+            }
+        }
+    } else {
+        // a,a+1 is swapped to a^m, a^m+1, respectively
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim; state_index++) {
+            ITYPE basis_index_0 =
+                (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                ((state_index & high_mask) << 2) + control_mask;
+            ITYPE basis_index_1 = basis_index_0 + target_mask;
+            CTYPE temp0 = state[basis_index_0];
+            state[basis_index_0] = state[basis_index_1];
+            state[basis_index_1] = temp0;
+        }
+    }
+}
+
+#endif  // #ifdef _OPENMP
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
 void CNOT_gate_single_simd(UINT control_qubit_index, UINT target_qubit_index,
@@ -502,4 +664,3 @@ void CNOT_gate_single_unroll_cin_tout(
     }
 }
 #endif  //#ifdef _USE_MPI
-
