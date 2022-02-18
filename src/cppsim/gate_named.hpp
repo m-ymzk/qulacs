@@ -164,7 +164,7 @@ protected:
     T_GPU_UPDATE_FUNC* _update_func_gpu;
     T_UPDATE_FUNC_MPI* _update_func_mpi;
     ComplexMatrix _matrix_element;
-	UINT _num_qubits;
+    UINT _num_qubits;
 
     QuantumGate_NQubitpair(){};
 

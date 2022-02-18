@@ -130,6 +130,7 @@ public:
             TargetQubitInfo(target_qubit_index1, 0));
         this->_target_qubit_list.push_back(
             TargetQubitInfo(target_qubit_index2, 0));
+        this->_num_qubits = num_qubits;
         this->_gate_property = FLAG_CLIFFORD;
         this->_matrix_element = ComplexMatrix::Zero(4, 4);
         this->_matrix_element << 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
