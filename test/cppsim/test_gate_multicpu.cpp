@@ -367,7 +367,7 @@ void _ApplyBSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
         for (ITYPE i = 0; i < inner_dim; ++i)
             ASSERT_NEAR(abs(state.data_cpp()[i] -
                             state_ref.data_cpp()[(i + offs) % dim]),
-                0, eps);
+                        0, eps) << "[rank:" << m->get_rank() << "] BSWAP(" << control << "," << target << "," << block_size << ") diff at " << i;
     }
 }
 
