@@ -149,12 +149,33 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
                     si += rtgt_blk_dim;
                 }
-                //si0 += (dim_work << act_bs);
             }
         }
     } else {  // rtgt_blk_dim >= dim_work
-        printf("Not implmented yet.\n");
-        return;
+
+        UINT TotalSizePerPairComm = dim >> act_bs;
+
+        for (UINT step = 1; step < total_peer_procs; step++) { // pair communication
+            const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
+            UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
+						UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
+						rtgt_offset_index &= offset_mask;
+
+            // 
+            assert((rtgt_blk_dim % dim_work) == 0);
+            const ITYPE num_elem_block = TotalSizePerPairComm >> right_qubit;
+            const ITYPE num_loop_per_block = rtgt_blk_dim / dim_work;
+
+            for (ITYPE j = 0; j < num_elem_block; j++) {
+                CTYPE* si = state + (rtgt_offset_index^(j<<act_bs)) * rtgt_blk_dim ;
+                for(ITYPE k = 0; k < num_loop_per_block; k++){
+                    m->m_DC_sendrecv(si, t, dim_work, peer_rank);
+                    memcpy(si, t, dim_work* sizeof(CTYPE));
+                    si += dim_work;
+                }
+            }
+        }
+
     }
 #endif
 }
