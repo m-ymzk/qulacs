@@ -210,8 +210,8 @@ std::string QuantumCircuit::to_string() const {
     UINT max_block_size = 0;
 
     for (const auto gate : this->_gate_list) {
-        UINT whole_qubit_index_count = (UINT)(gate->target_qubit_list.size() +
-                                              gate->control_qubit_list.size());
+        UINT whole_qubit_index_count = (UINT)(
+            gate->target_qubit_list.size() + gate->control_qubit_list.size());
         if (whole_qubit_index_count == 0) continue;
         gate_size_count[whole_qubit_index_count - 1]++;
         max_block_size = std::max(max_block_size, whole_qubit_index_count);
@@ -292,7 +292,8 @@ void QuantumCircuit::add_CZ_gate(UINT control_index, UINT target_index) {
 void QuantumCircuit::add_SWAP_gate(UINT target_index1, UINT target_index2) {
     this->add_gate(gate::SWAP(target_index1, target_index2));
 }
-void QuantumCircuit::add_BSWAP_gate(UINT target_index1, UINT target_index2, UINT num_qubits) {
+void QuantumCircuit::add_BSWAP_gate(
+    UINT target_index1, UINT target_index2, UINT num_qubits) {
     this->add_gate(gate::BSWAP(target_index1, target_index2, num_qubits));
 }
 void QuantumCircuit::add_RX_gate(UINT target_index, double angle) {

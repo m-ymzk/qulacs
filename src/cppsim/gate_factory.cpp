@@ -123,11 +123,11 @@ QuantumGateBase* SWAP(UINT qubit_index1, UINT qubit_index2) {
     return new ClsSWAPGate(qubit_index1, qubit_index2);
 }
 QuantumGateBase* BSWAP(UINT qubit_index1, UINT qubit_index2, UINT num_qubits) {
-    //TODO
+    // TODO
     if (qubit_index1 == qubit_index2) {
-        std::cerr
-            << "Error: gate::BSWAP(UINT, UINT, UINT): two indices have the same value."
-            << std::endl;
+        std::cerr << "Error: gate::BSWAP(UINT, UINT, UINT): two indices have "
+                     "the same value."
+                  << std::endl;
         return NULL;
     }
     return new ClsBSWAPGate(qubit_index1, qubit_index2, num_qubits);

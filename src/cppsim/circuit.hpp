@@ -307,7 +307,8 @@ public:
      * @param[in] target_index1 作用するtarget qubitの添え字
      * @param[in] target_index2 作用するもう一方のtarget qubitの添え字
      */
-    virtual void add_BSWAP_gate(UINT target_index1, UINT target_index2, UINT num_qubits);
+    virtual void add_BSWAP_gate(
+        UINT target_index1, UINT target_index2, UINT num_qubits);
 
     /**
      * \~japanese-en X-rotation gateを追加する。

@@ -480,11 +480,12 @@ DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
  * @param[in,out] state 量子状態
  * @param[in] dim 次元
  */
-DllExport void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1, UINT num_qubits,
-    CTYPE *state, ITYPE dim);
+DllExport void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    UINT num_qubits, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void BSWAP_gate_mpi(UINT target_qubit_index_0,
-    UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim, UINT inner_qc);
+    UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim,
+    UINT inner_qc);
 #endif
 
 /**

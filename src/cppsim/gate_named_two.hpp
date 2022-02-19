@@ -116,11 +116,12 @@ public:
      * @param target_qubit_index2 もう一つのターゲット量子ビットの添え字の先頭
      * @param num_qubits ターゲット量子ビット数
      */
-    ClsBSWAPGate(UINT target_qubit_index1, UINT target_qubit_index2, UINT num_qubits) {
+    ClsBSWAPGate(
+        UINT target_qubit_index1, UINT target_qubit_index2, UINT num_qubits) {
         this->_update_func = BSWAP_gate;
-        //this->_update_func_dm = dm_SWAP_gate;
+        // this->_update_func_dm = dm_SWAP_gate;
 #ifdef _USE_GPU
-        //this->_update_func_gpu = SWAP_gate_host;
+        // this->_update_func_gpu = SWAP_gate_host;
 #endif
 #ifdef _USE_MPI
         this->_update_func_mpi = BSWAP_gate_mpi;

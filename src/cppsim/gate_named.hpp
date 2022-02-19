@@ -179,31 +179,32 @@ public:
 #ifdef _USE_GPU
             if (state->get_device_name() == "gpu") {
                 _update_func_gpu(this->_target_qubit_list[0].index(),
-                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data(),
-                    state->dim, state->get_cuda_stream(), state->device_number);
+                    this->_target_qubit_list[1].index(), this->_num_qubits,
+                    state->data(), state->dim, state->get_cuda_stream(),
+                    state->device_number);
             } else {
                 _update_func(this->_target_qubit_list[0].index(),
-                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
-                    state->dim);
+                    this->_target_qubit_list[1].index(), this->_num_qubits,
+                    state->data_c(), state->dim);
             }
 #else  //#ifdef _USE_GPU
 #ifdef _USE_MPI
             if (state->outer_qc == 0)
 #endif  //#ifdef _USE_MPI
                 _update_func(this->_target_qubit_list[0].index(),
-                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
-                    state->dim);
+                    this->_target_qubit_list[1].index(), this->_num_qubits,
+                    state->data_c(), state->dim);
 #ifdef _USE_MPI
             else
                 _update_func_mpi(this->_target_qubit_list[0].index(),
-                    this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
-                    state->dim, state->inner_qc);
+                    this->_target_qubit_list[1].index(), this->_num_qubits,
+                    state->data_c(), state->dim, state->inner_qc);
 #endif  //#ifdef _USE_MPI
 #endif  //#ifdef _USE_GPU
         } else {
             _update_func_dm(this->_target_qubit_list[0].index(),
-                this->_target_qubit_list[1].index(), this->_num_qubits, state->data_c(),
-                state->dim);
+                this->_target_qubit_list[1].index(), this->_num_qubits,
+                state->data_c(), state->dim);
         }
     };
     /**
