@@ -62,7 +62,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         return;
     }
 
-    if (right_qubit + num_qubit - 1 >= inner_qc) {  // all swaps are in inner
+    if (right_qubit >= inner_qc) {  // all swaps are in outer
         for (UINT i = 0; i < num_qubit; i++) {
             SWAP_gate_mpi(target_qubit_index_0 + i, target_qubit_index_1 + i,
                 state, dim, inner_qc);
