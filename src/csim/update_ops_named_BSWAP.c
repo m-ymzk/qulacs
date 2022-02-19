@@ -101,7 +101,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     if (rtgt_blk_dim < dim_work) {  // unit elems block smaller than worksize
         for (UINT step = 1; step < total_peer_procs; ++step) {
             const UINT peer_rank = rank ^ (step << tgt_outer_rank);
-            UINT rtgt_offset = rank ^ step * rtgt_blk_dim;
+            UINT rtgt_offset = (rank ^ step) * rtgt_blk_dim;
             dim_work >>= 1;  // 1/2: for send, 1/2: for recv
             CTYPE* t_send = t;
             CTYPE* t_recv = t + dim_work;
