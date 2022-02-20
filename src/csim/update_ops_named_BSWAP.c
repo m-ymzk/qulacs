@@ -130,24 +130,30 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 // gather
                 CTYPE* si;
                 CTYPE* ti;
-#pragma omp parallel for private(si, ti)
                 for (UINT k = 0; k < num_elem_block; ++k) {
                     UINT iter = i * num_elem_block + k;
                     si = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
                     ti = t_send + k * rtgt_blk_dim;
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
                 }
 
                 // sendrecv
                 m->m_DC_sendrecv(t_send, t_recv, dim_work, peer_rank);
 
                 // scatter
-#pragma omp parallel for private(si, ti)
                 for (UINT k = 0; k < num_elem_block; ++k) {
                     UINT iter = i * num_elem_block + k;
                     ti = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
                     si = t_recv + k * rtgt_blk_dim;
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
                 }
             }
         }
