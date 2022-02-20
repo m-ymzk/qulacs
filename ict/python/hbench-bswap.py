@@ -70,6 +70,7 @@ if __name__ == '__main__':
         #    print(circuit)
         constTimes[i] = time.perf_counter() - constStart
 
+        comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
         simTimes[i] = time.perf_counter() - simStart
