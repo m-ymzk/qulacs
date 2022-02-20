@@ -131,7 +131,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 CTYPE* si = si0;
                 CTYPE* ti = t_send;
                 for (UINT k = 0; k < num_elem_block; ++k) {
-		    UINT iter = i * num_elem_block + k;
+                    UINT iter = i * num_elem_block + k;
                     si = si0 + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
                     ti += rtgt_blk_dim;
@@ -144,7 +144,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 si = t_recv;
                 ti = si0;
                 for (UINT k = 0; k < num_elem_block; ++k) {
-		    UINT iter = i * num_elem_block + k;
+                    UINT iter = i * num_elem_block + k;
                     ti = si0 + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
                     si += rtgt_blk_dim;
@@ -170,7 +170,11 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 CTYPE* si = state + (rtgt_offset_index^(j<<act_bs)) * rtgt_blk_dim ;
                 for(ITYPE k = 0; k < num_loop_per_block; k++){
                     m->m_DC_sendrecv(si, t, dim_work, peer_rank);
-                    memcpy(si, t, dim_work* sizeof(CTYPE));
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)si, (double*)t, dim_work * 2);
+#else
+                    memcpy(si, t, dim_work * sizeof(CTYPE));
+#endif
                     si += dim_work;
                 }
             }
