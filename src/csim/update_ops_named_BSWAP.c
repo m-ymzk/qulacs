@@ -110,7 +110,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     const UINT tgt_outer_rank_gap = left_qubit - inner_qc;
     const UINT tgt_inner_rank_gap = inner_qc - right_qubit;
 
-    dim_work = get_min_ll(dim_work, dim >> (act_bs - 1));
+    dim_work = get_min_ll(dim_work, dim >> (act_bs - 1)) >> 1; // 1/2 for double buffering
 
     if (rtgt_blk_dim < dim_work) {  // unit elems block smaller than worksize
         dim_work >>= 1;  // 1/2: for send, 1/2: for recv
@@ -160,6 +160,9 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     } else {  // rtgt_blk_dim >= dim_work
         UINT TotalSizePerPairComm = dim >> act_bs;
 
+        dim_work >>= 1; // half for double buffering
+        CTYPE *(buf[2]) = {t, t + dim_work};
+
         for (UINT step = 1; step < total_peer_procs; step++) { // pair communication
             const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
             UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
@@ -172,14 +175,25 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
             for (ITYPE j = 0; j < num_elem_block; j++) {
                 CTYPE* si = state + (rtgt_offset_index^(j<<act_bs)) * rtgt_blk_dim ;
+                UINT buf_idx = 0;
+
+                { // first sendrecv
+                    m->m_DC_isendrecv(si + dim_work * 0, buf[buf_idx], dim_work, peer_rank);
+                }
                 for(ITYPE k = 0; k < num_loop_per_block; k++){
-                    m->m_DC_sendrecv(si, t, dim_work, peer_rank);
+                    if (k + 1 < num_loop_per_block) {
+                        CTYPE* si_next = si + dim_work * (k + 1);
+                        m->m_DC_isendrecv(si_next, buf[buf_idx^1], dim_work, peer_rank);
+                    }
+
+                    m->wait(2); //wait 2 async comm
+                    CTYPE* si_cur = si + dim_work * k;
 #if defined(__ARM_FEATURE_SVE)
-                    memcpy_sve((double*)si, (double*)t, dim_work * 2);
+                    memcpy_sve((double*)si_cur, (double*)(buf[buf_idx]), dim_work * 2);
 #else
-                    memcpy(si, t, dim_work * sizeof(CTYPE));
+                    memcpy(si_cur, buf[buf_idx], dim_work * sizeof(CTYPE));
 #endif
-                    si += dim_work;
+                    buf_idx ^= 1;
                 }
             }
         }
