@@ -31,21 +31,20 @@ def build_circuit(nqubits, depth, pairs):
 
     circuit = QuantumCircuit(nqubits)
     ### without BSWAP
-    for _ in range(depth):
-        for i in range(nqubits):
-            circuit.add_H_gate(i)
+    #for _ in range(depth):
+    #    for i in range(nqubits):
+    #        circuit.add_H_gate(i)
 
     ### with BSWAP
-    #for _ in range(depth):
-    #    for i in range(inner_qc):
-    #        circuit.add_H_gate(i)
-    #    if outer_qc != 0:
-    #        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-    #    for i in range(outer_qc):
-    #        circuit.add_H_gate((inner_qc + i) - outer_qc)
-    #    #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-    #    if (outer_qc != 0) & (depth % 2 == 1):
-    #        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+    for _ in range(depth):
+        for i in range(inner_qc):
+            circuit.add_H_gate(i)
+        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        for i in range(outer_qc):
+            circuit.add_H_gate((inner_qc + i) - outer_qc)
+        #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+    if (depth % 2 == 1):
+        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
 
     return circuit
 
@@ -57,7 +56,7 @@ if __name__ == '__main__':
     numRepeats = 1
 
     np.random.seed(seed=32)
-    mode = "hbench w/o BSWAP"
+    mode = "hbench with BSWAP"
 
     #if rank==0:
         #print('[ROI], mode, #qubits, avg of last 5 runs, std of last 5 runs, runtimes of 6 runs')
