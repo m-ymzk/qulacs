@@ -23,10 +23,10 @@
 #endif
 
 void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
-    UINT num_qubit, CTYPE* state, ITYPE dim) {
-   // printf("#call BSWAP_gate(%d, %d, %d)\n", target_qubit_index_0, target_qubit_index_1, num_qubit);
+    UINT blk_qubits, CTYPE* state, ITYPE dim) {
+   // printf("#call BSWAP_gate(%d, %d, %d)\n", target_qubit_index_0, target_qubit_index_1, blk_qubits);
     //fflush(stdout);
-    for (UINT i = 0; i < num_qubit; ++i) {
+    for (UINT i = 0; i < blk_qubits; ++i) {
         SWAP_gate(
             target_qubit_index_0 + i, target_qubit_index_1 + i, state, dim);
     }
@@ -35,11 +35,12 @@ void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 #ifdef _USE_MPI
 
 void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
-    UINT num_qubit, CTYPE* state, ITYPE dim, UINT inner_qc) {
-    //printf("#call BSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0, target_qubit_index_1, num_qubit);
+    UINT blk_qubits, CTYPE* state, ITYPE dim, UINT inner_qc) {
+    //printf("#call BSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0, target_qubit_index_1, blk_qubits);
     //fflush(stdout);
+    if (blk_qubits == 0) return;
 #if 0
-    for (UINT i = 0; i < num_qubit; i++){
+    for (UINT i = 0; i < blk_qubits; i++){
         SWAP_gate_mpi(target_qubit_index_0+i, target_qubit_index_1+i, state, dim, inner_qc);
     }
 #else
@@ -51,11 +52,11 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         left_qubit = target_qubit_index_1;
         right_qubit = target_qubit_index_0;
     }
-    assert(left_qubit > (right_qubit + num_qubit - 1));
+    assert(left_qubit > (right_qubit + blk_qubits - 1));
 
-    UINT act_bs = num_qubit;
-    if ((left_qubit + num_qubit - 1) < inner_qc) {  // all swaps are in inner
-        for (UINT i = 0; i < num_qubit; i++) {
+    UINT act_bs = blk_qubits;
+    if ((left_qubit + blk_qubits - 1) < inner_qc) {  // all swaps are in inner
+        for (UINT i = 0; i < blk_qubits; i++) {
             SWAP_gate(
                 target_qubit_index_0 + i, target_qubit_index_1 + i, state, dim);
         }
@@ -63,17 +64,17 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     }
 
     if (right_qubit >= inner_qc) {  // all swaps are in outer
-        for (UINT i = 0; i < num_qubit; i++) {
+        for (UINT i = 0; i < blk_qubits; i++) {
             SWAP_gate_mpi(target_qubit_index_0 + i, target_qubit_index_1 + i,
                 state, dim, inner_qc);
         }
         return;
     }
 
-    if ((right_qubit + num_qubit - 1) >=
+    if ((right_qubit + blk_qubits - 1) >=
         inner_qc) {  // part of right qubit is in outer
-        UINT num_outer_swap = right_qubit + num_qubit - inner_qc;
-        for (UINT i = num_qubit - 1; i > num_qubit - 1 - num_outer_swap; i--) {
+        UINT num_outer_swap = right_qubit + blk_qubits - inner_qc;
+        for (UINT i = blk_qubits - 1; i > blk_qubits - 1 - num_outer_swap; i--) {
             SWAP_gate_mpi(target_qubit_index_0 + i, target_qubit_index_1 + i,
                 state, dim, inner_qc);
         }
@@ -118,50 +119,47 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         for (UINT step = 1; step < total_peer_procs; ++step) {
             const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
             UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
-	    UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
-	    rtgt_offset_index &= offset_mask;
+            UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
+            rtgt_offset_index &= offset_mask;
             //UINT rtgt_offset_index = ((rank>>act_bs) ^step);
             const ITYPE num_rtgt_block = (dim / dim_work) >> act_bs;
             const ITYPE num_elem_block = dim_work / rtgt_blk_dim;
             //printf("step=%d, num_rtgt_block=%lld, num_elem_block=%lld\n", step, num_rtgt_block, num_elem_block);
             //printf("rtgt_offset_index=%d, myrank=%d, peer_rank=%d\n", rtgt_offset_index, rank, peer_rank);
-            CTYPE* si0 = state;
             for (UINT i = 0; i < num_rtgt_block; ++i) {
                 // gather
-                CTYPE* si = si0;
-                CTYPE* ti = t_send;
+                CTYPE* si;
+                CTYPE* ti;
+#pragma omp parallel for private(si, ti)
                 for (UINT k = 0; k < num_elem_block; ++k) {
                     UINT iter = i * num_elem_block + k;
-                    si = si0 + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+                    si = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+                    ti = t_send + k * rtgt_blk_dim;
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
-                    ti += rtgt_blk_dim;
                 }
 
                 // sendrecv
                 m->m_DC_sendrecv(t_send, t_recv, dim_work, peer_rank);
 
                 // scatter
-                si = t_recv;
-                ti = si0;
+#pragma omp parallel for private(si, ti)
                 for (UINT k = 0; k < num_elem_block; ++k) {
                     UINT iter = i * num_elem_block + k;
-                    ti = si0 + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+                    ti = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+                    si = t_recv + k * rtgt_blk_dim;
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
-                    si += rtgt_blk_dim;
                 }
             }
         }
     } else {  // rtgt_blk_dim >= dim_work
-
         UINT TotalSizePerPairComm = dim >> act_bs;
 
         for (UINT step = 1; step < total_peer_procs; step++) { // pair communication
             const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
             UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
-						UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
-						rtgt_offset_index &= offset_mask;
+            UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
+            rtgt_offset_index &= offset_mask;
 
-            // 
             assert((rtgt_blk_dim % dim_work) == 0);
             const ITYPE num_elem_block = TotalSizePerPairComm >> right_qubit;
             const ITYPE num_loop_per_block = rtgt_blk_dim / dim_work;
