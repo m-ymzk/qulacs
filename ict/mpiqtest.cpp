@@ -67,7 +67,11 @@ int main(int argc, char *argv[]) {
     QuantumCircuit circuit(nqubits);
 
     //circuit.add_X_gate(target);
-    circuit.add_RX_gate(target, 0.5);
+    //circuit.add_RX_gate(target, 0.5);
+    std::vector<UINT> pair;
+    pair.push_back(5);
+    pair.push_back(7);
+    circuit.add_random_unitary_gate(pair);
 
     tpre = get_realtime() - tstart;
 
