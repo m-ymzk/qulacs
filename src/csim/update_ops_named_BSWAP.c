@@ -146,8 +146,9 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
     if (rtgt_blk_dim < dim_work) {  // unit elems block smaller than worksize
         dim_work >>= 1;  // 1/2: for send, 1/2: for recv
-        CTYPE* t_send = t;
-        CTYPE* t_recv = t + dim_work;
+        CTYPE *(send_buf[2]) = {t + dim_work * 0, t + dim_work * 1};
+        CTYPE *(recv_buf[2]) = {t + dim_work * 2, t + dim_work * 3};
+
         for (UINT step = 1; step < total_peer_procs; ++step) {
             const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
             UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
@@ -158,15 +159,21 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
             const ITYPE num_elem_block = dim_work / rtgt_blk_dim;
             //printf("step=%d, num_rtgt_block=%lld, num_elem_block=%lld\n", step, num_rtgt_block, num_elem_block);
             //printf("rtgt_offset_index=%d, myrank=%d, peer_rank=%d\n", rtgt_offset_index, rank, peer_rank);
+
+            UINT buf_idx = 0;
+            if (0 < num_rtgt_block) {
+                _gather(send_buf[buf_idx], state, 0/*i*/, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                m->m_DC_isendrecv(send_buf[buf_idx], recv_buf[buf_idx], dim_work, peer_rank);
+            }
             for (UINT i = 0; i < num_rtgt_block; ++i) {
-                // gather
-                _gather(t_send, state, i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                if (i + 1 < num_rtgt_block) {
+                    _gather(send_buf[buf_idx ^ 1], state, i + 1, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                    m->m_DC_isendrecv(send_buf[buf_idx ^ 1], recv_buf[buf_idx ^ 1], dim_work, peer_rank);
+                }
 
-                // sendrecv
-                m->m_DC_sendrecv(t_send, t_recv, dim_work, peer_rank);
-
-                // scatter
-                _scatter(state, t_recv, i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                m->wait(2);
+                _scatter(state, recv_buf[buf_idx], i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                buf_idx ^= 1;
             }
         }
     } else {  // rtgt_blk_dim >= dim_work
