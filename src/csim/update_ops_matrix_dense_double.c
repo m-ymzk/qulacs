@@ -215,9 +215,11 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
 void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE mat[16], CTYPE* vec, ITYPE dim) {
     ITYPE vec_len = getVecLength();
+    ITYPE numComplex = vec_len >> 1;
+
     assert(target_qubit_index1 != target_qubit_index2);
-    if (target_qubit_index1 >= (vec_len >> 1) &&
-        target_qubit_index2 >= (vec_len >> 1)) {
+    if ((numComplex>=4) && (target_qubit_index1 >= numComplex) &&
+        (target_qubit_index2 >= numComplex)) {
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
     } else {
