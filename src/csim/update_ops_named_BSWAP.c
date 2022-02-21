@@ -34,6 +34,38 @@ void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
 #ifdef _USE_MPI
 
+static inline
+void _gather(CTYPE* t_send, const CTYPE* state, const UINT i, const ITYPE num_elem_block,
+             const UINT rtgt_offset_index, const ITYPE rtgt_blk_dim, const UINT act_bs)
+{
+    for (UINT k = 0; k < num_elem_block; ++k) {
+        UINT iter = i * num_elem_block + k;
+        const CTYPE* si = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+        CTYPE* ti = t_send + k * rtgt_blk_dim;
+#if defined(__ARM_FEATURE_SVE)
+        memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
+        memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
+    }
+}
+
+static inline
+void _scatter(CTYPE* state, const CTYPE* t_recv, const UINT i, const ITYPE num_elem_block,
+              const UINT rtgt_offset_index, const ITYPE rtgt_blk_dim, const UINT act_bs)
+{
+    for (UINT k = 0; k < num_elem_block; ++k) {
+        UINT iter = i * num_elem_block + k;
+        CTYPE* ti = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
+        const CTYPE* si = t_recv + k * rtgt_blk_dim;
+#if defined(__ARM_FEATURE_SVE)
+        memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
+        memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
+    }
+}
+
 void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT blk_qubits, CTYPE* state, ITYPE dim, UINT inner_qc) {
     //printf("#call BSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0, target_qubit_index_1, blk_qubits);
@@ -128,33 +160,13 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
             //printf("rtgt_offset_index=%d, myrank=%d, peer_rank=%d\n", rtgt_offset_index, rank, peer_rank);
             for (UINT i = 0; i < num_rtgt_block; ++i) {
                 // gather
-                CTYPE* si;
-                CTYPE* ti;
-                for (UINT k = 0; k < num_elem_block; ++k) {
-                    UINT iter = i * num_elem_block + k;
-                    si = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
-                    ti = t_send + k * rtgt_blk_dim;
-#if defined(__ARM_FEATURE_SVE)
-                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
-#else
-                    memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
-#endif
-                }
+                _gather(t_send, state, i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
 
                 // sendrecv
                 m->m_DC_sendrecv(t_send, t_recv, dim_work, peer_rank);
 
                 // scatter
-                for (UINT k = 0; k < num_elem_block; ++k) {
-                    UINT iter = i * num_elem_block + k;
-                    ti = state + (rtgt_offset_index^(iter<<act_bs)) * rtgt_blk_dim ;
-                    si = t_recv + k * rtgt_blk_dim;
-#if defined(__ARM_FEATURE_SVE)
-                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
-#else
-                    memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
-#endif
-                }
+                _scatter(state, t_recv, i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
             }
         }
     } else {  // rtgt_blk_dim >= dim_work
