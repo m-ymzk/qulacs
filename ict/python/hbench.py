@@ -1,11 +1,15 @@
 from argparse import ArgumentParser
-import pytest
+#import pytest
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
-from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix
-from qulacs.circuit import QuantumCircuitOptimizer as QCO
+#from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix
+#from qulacs.circuit import QuantumCircuitOptimizer as QCO
 import time
 from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 def get_option():
     argparser = ArgumentParser()
@@ -15,37 +19,37 @@ def get_option():
             default=-1, help='Enable QuantumCircuitOptimizer: 0 is light, 1-4 is opt, 5 is merge_full')
     return argparser.parse_args()
 
-def first_rotation(circuit, nqubits):
-    for k in range(nqubits):
-        circuit.add_RX_gate(k, np.random.rand())
-        circuit.add_RZ_gate(k, np.random.rand())
-def mid_rotation(circuit, nqubits):
-    for k in range(nqubits):
-        circuit.add_RZ_gate(k, np.random.rand())
-        circuit.add_RX_gate(k, np.random.rand())
-        circuit.add_RZ_gate(k, np.random.rand())
-def last_rotation(circuit, nqubits):
-    for k in range(nqubits):
-        circuit.add_RZ_gate(k, np.random.rand())
-        circuit.add_RX_gate(k, np.random.rand())
 def entangler(circuit, nqubits, pairs):
     for a, b in pairs:
         circuit.add_CNOT_gate(a, b)
 
 def build_circuit(nqubits, depth, pairs):
+    outer_qc=int(np.log2(size))
+    inner_qc=nqubits - outer_qc
+    if rank==0:
+        print("#inner, outer=", inner_qc, outer_qc)
+
     circuit = QuantumCircuit(nqubits)
-    first_rotation(circuit, nqubits)
-    entangler(circuit, nqubits, pairs)
-    for k in range(depth):
-        mid_rotation(circuit, nqubits)
-        entangler(circuit, nqubits, pairs)
-    last_rotation(circuit, nqubits)
+    ### without BSWAP
+    for _ in range(depth):
+        for i in range(nqubits):
+            circuit.add_H_gate(i)
+
+    ### with BSWAP
+    #for _ in range(depth):
+    #    for i in range(inner_qc):
+    #        circuit.add_H_gate(i)
+    #    if outer_qc != 0:
+    #        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+    #    for i in range(outer_qc):
+    #        circuit.add_H_gate((inner_qc + i) - outer_qc)
+    #    #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+    #    if (outer_qc != 0) & (depth % 2 == 1):
+    #        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+
     return circuit
 
 if __name__ == '__main__':
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
 
     args = get_option()
     n=args.nqubits
@@ -53,7 +57,7 @@ if __name__ == '__main__':
     numRepeats = 1
 
     np.random.seed(seed=32)
-    mode = "w/o opt"
+    mode = "hbench w/o BSWAP"
 
     #if rank==0:
         #print('[ROI], mode, #qubits, avg of last 5 runs, std of last 5 runs, runtimes of 6 runs')
@@ -62,7 +66,9 @@ if __name__ == '__main__':
     for i in range(numRepeats):
         constStart = time.perf_counter()
         st = QuantumState(n, use_multi_cpu=True)
-        circuit = build_circuit(n, 9, pairs)
+        circuit = build_circuit(n, 11, pairs)
+        #if rank==0:
+        #    print(circuit)
         constTimes[i] = time.perf_counter() - constStart
 
         simStart = time.perf_counter()
@@ -73,16 +79,10 @@ if __name__ == '__main__':
         del st
 
     if rank==0:
-        if numRepeats == 1:
-            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-                mode, n,
-                np.average(constTimes), np.std(constTimes),
-                np.average(simTimes), np.std(simTimes)))
-        else:
-            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-                mode, n,
-                np.average(constTimes[1:]), np.std(constTimes[1:]),
-                np.average(simTimes[1:]), np.std(simTimes[1:])))
+        print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+            mode, n,
+            np.average(constTimes), np.std(constTimes), 
+            np.average(simTimes), np.std(simTimes)))
 
     #print('[qulacs construction] {}, {} qubits, {}, {}, {}'.format(
     #    mode, n, np.average(constTimes[1:]), np.std(constTimes[1:]), constTimes))

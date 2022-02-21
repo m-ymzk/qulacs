@@ -11,6 +11,7 @@
 #include <cppsim/utility.hpp>
 #include <csim/update_ops.h>
 #include <functional>
+#include <algorithm>
 
 
 TEST(GateTest_multicpu, ApplySingleQubitGate) {
@@ -319,6 +320,67 @@ void _ApplyTwoQubitGate(UINT n, UINT control, UINT target,
             ASSERT_NEAR(abs(state.data_cpp()[i] -
                             state_ref.data_cpp()[(i + offs) % dim]),
                 0, eps);
+    }
+}
+
+
+void _ApplyBSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
+    const ITYPE dim = 1ULL << n;
+    double eps = _EPS;
+
+    QuantumState state_ref(n);
+    QuantumState state(n, 1);
+
+    MPIutil m = get_mpiutil();
+    const ITYPE inner_dim = dim >> state.outer_qc;
+    const UINT offs = inner_dim * m->get_rank();
+
+    {
+        if (target == control) target = (target + 1) % n;
+
+        state_ref.set_Haar_random_state(2022);
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            state.data_cpp()[i] = state_ref.data_cpp()[(i + offs) % dim];
+
+        // update state
+        //// SWAP
+        for (UINT i = 0; i < block_size; ++i) {
+            auto swap_gate = gate::SWAP(control+i, target+i);
+            swap_gate->update_quantum_state(&state_ref);
+        }
+        //// BSWAP
+        //printf("call gate::BSWAP(%d, %d, %d)\n", control, target, block_size);
+        auto bswap_gate = gate::BSWAP(control, target, block_size);
+        bswap_gate->update_quantum_state(&state);
+
+
+#if 0
+        // update dense state. is it need?
+        ComplexMatrix small_mat;
+        gate->set_matrix(small_mat);
+        auto gate_dense = new QuantumGateMatrix(
+            gate->target_qubit_list, small_mat, gate->control_qubit_list);
+
+        delete gate_dense;
+#endif
+
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(abs(state.data_cpp()[i] -
+                            state_ref.data_cpp()[(i + offs) % dim]),
+                        0, eps) << "[rank:" << m->get_rank() << "] BSWAP(" << control << "," << target << "," << block_size << ") diff at " << i;
+    }
+}
+
+TEST(GateTest_multicpu, ApplyBSWAPGate_10qubit_all) {
+    UINT n = 10;
+    for (UINT c = 0; c < n; ++c) {
+        for (UINT t = 0; t < n; ++t) {
+            if (c == t) continue;
+            UINT max_bs = std::min((c<t)?(t-c):(c-t), std::min(n - c, n - t));
+            for (UINT bs = 1; bs <= max_bs ; ++bs) {
+                _ApplyBSWAPGate(n, c, t, bs);
+            }
+        }
     }
 }
 

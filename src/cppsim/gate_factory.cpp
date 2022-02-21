@@ -122,6 +122,16 @@ QuantumGateBase* SWAP(UINT qubit_index1, UINT qubit_index2) {
     }
     return new ClsSWAPGate(qubit_index1, qubit_index2);
 }
+QuantumGateBase* BSWAP(UINT qubit_index1, UINT qubit_index2, UINT num_qubits) {
+    // TODO
+    if (qubit_index1 == qubit_index2) {
+        std::cerr << "Error: gate::BSWAP(UINT, UINT, UINT): two indices have "
+                     "the same value."
+                  << std::endl;
+        return NULL;
+    }
+    return new ClsBSWAPGate(qubit_index1, qubit_index2, num_qubits);
+}
 
 QuantumGateBase* Pauli(std::vector<UINT> target, std::vector<UINT> pauli_id) {
     if (!check_is_unique_index_list(target)) {
@@ -363,6 +373,11 @@ QuantumGateBase* create_quantum_gate_from_string(std::string gate_string) {
         unsigned int control = atoi(strtok(NULL, delim));
         unsigned int target = atoi(strtok(NULL, delim));
         gate = gate::CZ(control, target);
+    } else if (strcasecmp(sbuf, "BSWAP") == 0) {
+        unsigned int target1 = atoi(strtok(NULL, delim));
+        unsigned int target2 = atoi(strtok(NULL, delim));
+        unsigned int numqubits = atoi(strtok(NULL, delim));
+        gate = gate::BSWAP(target1, target2, numqubits);
     } else if (strcasecmp(sbuf, "SWAP") == 0) {
         unsigned int target1 = atoi(strtok(NULL, delim));
         unsigned int target2 = atoi(strtok(NULL, delim));
