@@ -179,7 +179,6 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     } else {  // rtgt_blk_dim >= dim_work
         UINT TotalSizePerPairComm = dim >> act_bs;
 
-        dim_work >>= 1; // half for double buffering
         CTYPE *(buf[2]) = {t, t + dim_work};
 
         for (UINT step = 1; step < total_peer_procs; step++) { // pair communication
