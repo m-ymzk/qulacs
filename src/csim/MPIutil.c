@@ -26,7 +26,7 @@ static int mpireq_idx = 0;
 static int mpireq_cnt = 0;
 
 static MPI_Request* get_request() {
-    assert(mpi_req_cnt < _MAX_REQUESTS);
+    assert(mpireq_cnt < _MAX_REQUESTS);
     mpireq_cnt++;
 
     //printf("get_request() -> %d\n", mpireq_idx);
@@ -36,7 +36,7 @@ static MPI_Request* get_request() {
 }
 
 static void wait(UINT count) {
-    assert(mpi_req_cnt >= count);
+    assert(mpireq_cnt >= count);
     for (UINT i = 0; i < count; i++) {
         UINT idx = (_MAX_REQUESTS + mpireq_idx - mpireq_cnt) % _MAX_REQUESTS;
         //printf("wait(%d)\n", idx);
