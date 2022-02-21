@@ -32,8 +32,8 @@ void double_qubit_dense_matrix_gate_simd_low(UINT target_qubit_index1,
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim);
-#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
- 
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 void double_qubit_dense_matrix_gate_c(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
 #ifdef _OPENMP
@@ -216,14 +216,14 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE mat[16], CTYPE* vec, ITYPE dim) {
     ITYPE vec_len = getVecLength();
     assert(target_qubit_index1 != target_qubit_index2);
-    if (target_qubit_index1 >= (vec_len>>1) && target_qubit_index2 >= (vec_len>>1)) {
+    if (target_qubit_index1 >= (vec_len >> 1) &&
+        target_qubit_index2 >= (vec_len >> 1)) {
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
-    }else{
+    } else {
         double_qubit_dense_matrix_gate_nosimd(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
     }
- 
 }
 
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
