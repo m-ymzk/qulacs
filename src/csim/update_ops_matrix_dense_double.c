@@ -32,6 +32,8 @@ void double_qubit_dense_matrix_gate_simd_low(UINT target_qubit_index1,
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim);
+void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 void double_qubit_dense_matrix_gate_c(UINT target_qubit_index1,
@@ -209,19 +211,150 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         svst1(pg, (ETYPE*)&state[basis_1], output1);
         svst1(pg, (ETYPE*)&state[basis_2], output2);
         svst1(pg, (ETYPE*)&state[basis_3], output3);
+
+        if ((4 <= min_qubit_index && min_qubit_index <= 9) ||
+            (4 <= max_qubit_index && max_qubit_index <= 9)) {
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask1 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_1 + target_mask1 * 8], 1, 2);
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_2 + target_mask2 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_3 + target_mask2 * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
+        }
+
+    }
+}
+
+void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
+    const UINT min_qubit_index =
+        get_min_ui(target_qubit_index1, target_qubit_index2);
+    const UINT max_qubit_index =
+        get_max_ui(target_qubit_index1, target_qubit_index2);
+    const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+    const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+    const ITYPE low_mask = min_qubit_mask - 1;
+    const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+    const ITYPE high_mask = ~(max_qubit_mask - 1);
+
+    const ITYPE target_mask1 = 1ULL << target_qubit_index1;
+    const ITYPE target_mask2 = 1ULL << target_qubit_index2;
+
+    // loop variables
+    const ITYPE loop_dim = dim / 4;
+    ITYPE state_index;
+    ITYPE vec_len = getVecLength();
+
+    SV_PRED pg = Svptrue();
+
+    SV_ITYPE vec_offset = svlsr_z(pg, SvindexI(0, 1), 1);
+    vec_offset = svlsl_z(pg, vec_offset, 3);
+    vec_offset = svadd_z(pg, vec_offset, svand_z(pg, SvindexI(0, 1), 1));
+ 
+    SV_FTYPE mat0, mat1, mat2, mat3;
+    SV_FTYPE input0, input1, input2, input3;
+    SV_FTYPE output0, output1, output2, output3;
+
+    mat0 = svld1(pg, (ETYPE*)&matrix[0]);
+    mat1 = svld1(pg, (ETYPE*)&matrix[4]);
+    mat2 = svld1(pg, (ETYPE*)&matrix[8]);
+    mat3 = svld1(pg, (ETYPE*)&matrix[12]);
+
+#ifdef _OPENMP
+#pragma omp parallel for private(input0, input1, input2, input3, output0, \
+    output1, output2, output3) shared(pg, mat0, mat1, mat2, mat3, vec_offset)
+#endif
+    for (state_index = 0; state_index < loop_dim;
+         state_index += (vec_len >> 1)) {
+        // create index
+        ITYPE basis_0 = (state_index & low_mask) +
+                        ((state_index & mid_mask) << 1) +
+                        ((state_index & high_mask) << 2);
+
+        // gather index
+        ITYPE basis_1 = basis_0 + target_mask1;
+        ITYPE basis_2 = basis_0 + target_mask2;
+        ITYPE basis_3 = basis_1 + target_mask2;
+
+        // fetch values
+        input0 = svld1_gather_index(pg, (ETYPE*)&state[basis_0], vec_offset);
+        input1 = svld1_gather_index(pg, (ETYPE*)&state[basis_1], vec_offset);
+        input2 = svld1_gather_index(pg, (ETYPE*)&state[basis_2], vec_offset);
+        input3 = svld1_gather_index(pg, (ETYPE*)&state[basis_3], vec_offset);
+
+        // zero clear
+        output0 = SvdupF(0.0);
+        output1 = SvdupF(0.0);
+        output2 = SvdupF(0.0);
+        output3 = SvdupF(0.0);
+
+        // perform matrix-vector product
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 0);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 90);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 0);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 90);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 0);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 90);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 0);
+        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 90);
+
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 0);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 90);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 0);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 90);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 0);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 90);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 0);
+        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 90);
+
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 0);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 90);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 0);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 90);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 0);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 90);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 0);
+        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 90);
+
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 0);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 90);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 0);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 90);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 0);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 90);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 0);
+        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 90);
+
+        // set values
+        svst1_scatter_index(pg, (ETYPE*)&state[basis_0], vec_offset, output0);
+        svst1_scatter_index(pg, (ETYPE*)&state[basis_1], vec_offset, output1);
+        svst1_scatter_index(pg, (ETYPE*)&state[basis_2], vec_offset, output2);
+        svst1_scatter_index(pg, (ETYPE*)&state[basis_3], vec_offset, output3);
     }
 }
 
 void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE mat[16], CTYPE* vec, ITYPE dim) {
     ITYPE vec_len = getVecLength();
-    ITYPE numComplex = vec_len >> 1;
+    ITYPE numComplexInVec = vec_len >> 1;
 
     assert(target_qubit_index1 != target_qubit_index2);
-    if ((numComplex>=4) && (target_qubit_index1 >= numComplex) &&
-        (target_qubit_index2 >= numComplex)) {
+    if ((numComplexInVec>=4) && (target_qubit_index1 >= 2) &&
+        (target_qubit_index2 >= 2)) {
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
+#if 0
+    } else if((dim>=(numComplexInVec<<2)) && (numComplexInVec==4) && 
+              (target_qubit_index1 < 2) && (target_qubit_index2 < 2)){
+        double_qubit_dense_matrix_gate_sve_low(
+            target_qubit_index1, target_qubit_index2, mat, vec, dim);
+#endif
     } else {
         double_qubit_dense_matrix_gate_nosimd(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
