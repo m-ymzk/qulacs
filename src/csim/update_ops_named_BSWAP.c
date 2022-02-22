@@ -146,34 +146,50 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
     if (rtgt_blk_dim < dim_work) {  // unit elems block smaller than worksize
         dim_work >>= 1;  // 1/2: for send, 1/2: for recv
+
+        const ITYPE num_rtgt_block = (dim / dim_work) >> act_bs;
+        const ITYPE num_elem_block = dim_work / rtgt_blk_dim;
+        const UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
+
         CTYPE *(send_buf[2]) = {t + dim_work * 0, t + dim_work * 1};
         CTYPE *(recv_buf[2]) = {t + dim_work * 2, t + dim_work * 3};
 
-        for (UINT step = 1; step < total_peer_procs; ++step) {
-            const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
-            UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step);
-            UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
-            rtgt_offset_index &= offset_mask;
-            //UINT rtgt_offset_index = ((rank>>act_bs) ^step);
-            const ITYPE num_rtgt_block = (dim / dim_work) >> act_bs;
-            const ITYPE num_elem_block = dim_work / rtgt_blk_dim;
-            //printf("step=%d, num_rtgt_block=%lld, num_elem_block=%lld\n", step, num_rtgt_block, num_elem_block);
-            //printf("rtgt_offset_index=%d, myrank=%d, peer_rank=%d\n", rtgt_offset_index, rank, peer_rank);
+        const ITYPE stepi_total = (total_peer_procs - 1) * num_rtgt_block;
+        ITYPE stepi = 0;
+        UINT buf_idx = 0;
 
-            UINT buf_idx = 0;
-            if (0 < num_rtgt_block) {
-                _gather(send_buf[buf_idx], state, 0/*i*/, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
-                m->m_DC_isendrecv(send_buf[buf_idx], recv_buf[buf_idx], dim_work, peer_rank);
-            }
+        if (0 < stepi_total) {
+            const UINT step = 1;
+            const UINT i = 0;
+            const UINT peer_rank = rank ^ (step << tgt_outer_rank_gap);
+            UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step) & offset_mask;
+            _gather(send_buf[buf_idx], state, i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+            m->m_DC_isendrecv(send_buf[buf_idx], recv_buf[buf_idx], dim_work, peer_rank);
+        }
+        for (UINT step = 1; step < total_peer_procs; ++step) {
             for (UINT i = 0; i < num_rtgt_block; ++i) {
-                if (i + 1 < num_rtgt_block) {
-                    _gather(send_buf[buf_idx ^ 1], state, i + 1, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
+                //printf("step=%d, num_rtgt_block=%lld, num_elem_block=%lld\n", step, num_rtgt_block, num_elem_block);
+                //printf("rtgt_offset_index=%d, myrank=%d, peer_rank=%d\n", rtgt_offset_index, rank, peer_rank);
+
+                if ((stepi + 1) < stepi_total) {
+                    UINT i_next = i + 1;
+                    UINT s_next = step;
+                    if (i_next >= num_rtgt_block) {
+                        i_next = 0;
+                        s_next++;
+                    }
+                    const UINT peer_rank = rank ^ (s_next << tgt_outer_rank_gap);
+                    const UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^s_next) & offset_mask;
+                    
+                    _gather(send_buf[buf_idx ^ 1], state, i_next, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
                     m->m_DC_isendrecv(send_buf[buf_idx ^ 1], recv_buf[buf_idx ^ 1], dim_work, peer_rank);
                 }
 
+                const UINT rtgt_offset_index = ((rank>>tgt_outer_rank_gap) ^step) & offset_mask;
                 m->wait(2);
                 _scatter(state, recv_buf[buf_idx], i, num_elem_block, rtgt_offset_index, rtgt_blk_dim, act_bs);
                 buf_idx ^= 1;
+                stepi++;
             }
         }
     } else {  // rtgt_blk_dim >= dim_work
