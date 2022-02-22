@@ -184,7 +184,6 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         UINT offset_mask = (1 << tgt_inner_rank_gap) - 1;
 
         CTYPE *(buf[2]) = {t, t + dim_work};
-        if (dim_work_org < dim_work * 2) {printf("error at w/o gather scatter\n");}
 
         const ITYPE sjk_total = (total_peer_procs - 1) * num_elem_block * num_loop_per_block;
         ITYPE sjk = 0;
