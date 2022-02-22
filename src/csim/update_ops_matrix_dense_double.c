@@ -221,7 +221,6 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
             __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
         }
-
     }
 }
 
@@ -231,9 +230,9 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
     ITYPE numComplexInVec = vec_len >> 1;
 
     assert(target_qubit_index1 != target_qubit_index2);
-    if ((numComplexInVec>=4) && (target_qubit_index1 >= 2) &&
+    if ((numComplexInVec >= 4) && (target_qubit_index1 >= 2) &&
         (target_qubit_index2 >= 2)) {
-        assert(sizeof(ETYPE)==sizeof(double));
+        assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
     } else {
