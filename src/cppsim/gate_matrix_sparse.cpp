@@ -72,8 +72,6 @@ QuantumGateSparseMatrix::QuantumGateSparseMatrix(
 }
 
 void QuantumGateSparseMatrix::update_quantum_state(QuantumStateBase* state) {
-    ITYPE dim = 1ULL << state->qubit_count;
-
     if (this->_control_qubit_list.size() > 0) {
         std::cerr << "Control qubit in sparse matrix gate is not supported"
                   << std::endl;
@@ -94,12 +92,12 @@ void QuantumGateSparseMatrix::update_quantum_state(QuantumStateBase* state) {
         } else {
             multi_qubit_sparse_matrix_gate_eigen(target_index.data(),
                 (UINT)(target_index.size()), this->_matrix_element,
-                state->data_c(), dim);
+                state->data_c(), state->dim);
         }
 #else
         multi_qubit_sparse_matrix_gate_eigen(target_index.data(),
             (UINT)(target_index.size()), this->_matrix_element, state->data_c(),
-            dim);
+            state->dim);
 #endif
     } else {
         std::cerr << "not implemented" << std::endl;
