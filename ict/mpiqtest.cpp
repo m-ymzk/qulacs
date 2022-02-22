@@ -55,8 +55,9 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     int nqubits = atoi(argv[2]);
-    int target = atoi(argv[3]);
-    int numLoops = argc != 5 ? 10 : atoi(argv[4]);
+    int target1 = atoi(argv[3]);
+    int target2 = atoi(argv[4]);
+    int numLoops = argc != 6 ? 10 : atoi(argv[5]);
 
     tstart = get_realtime();
 
@@ -66,11 +67,11 @@ int main(int argc, char *argv[]) {
     QuantumState state(nqubits, true); // # of qubits, distirbution flag
     QuantumCircuit circuit(nqubits);
 
-    //circuit.add_X_gate(target);
-    //circuit.add_RX_gate(target, 0.5);
+    //circuit.add_X_gate(target1);
+    //circuit.add_RX_gate(target1, 0.5);
     std::vector<UINT> pair;
-    pair.push_back(5);
-    pair.push_back(7);
+    pair.push_back(target1);
+    pair.push_back(target2);
     circuit.add_random_unitary_gate(pair);
 
     tpre = get_realtime() - tstart;
@@ -94,7 +95,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "#rank, " << rank
               << ", nqubits, " << nqubits
-              << ", target-bit, " << target
+              << ", target-bit, " << target1
+              << ", target-bit, " << target2
               << ", pre time[sec], " << tpre 
               << ", avg. sim time[sec], " << tsim/numLoops
               << std::endl << std::flush;
