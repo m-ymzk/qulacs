@@ -22,8 +22,8 @@ static CTYPE *workarea = NULL;
 
 #define _MAX_REQUESTS 4 // 2 (isend/irecv) * 2 (double buffering)
 static MPI_Request mpireq[_MAX_REQUESTS];
-static int mpireq_idx = 0;
-static int mpireq_cnt = 0;
+static UINT mpireq_idx = 0;
+static UINT mpireq_cnt = 0;
 
 static MPI_Request* get_request() {
     if (mpireq_cnt >= _MAX_REQUESTS) {
