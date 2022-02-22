@@ -31,7 +31,7 @@ TEST(GateTest_multicpu, ApplySingleQubitGate) {
     P0 << 1, 0, 0, 0;
     P1 << 0, 0, 0, 1;
 
-    const UINT n = 10;
+    const UINT n = 8;
     const ITYPE dim = 1ULL << n;
     double eps = _EPS;
 
@@ -116,7 +116,7 @@ TEST(GateTest_multicpu, ApplySingleQubitRotationGate) {
     Y << 0, -1.i, 1.i, 0;
     Z << 1, 0, 0, -1;
 
-    const UINT n = 10;
+    const UINT n = 8;
     const ITYPE dim = 1ULL << n;
     double eps = _EPS;
 
