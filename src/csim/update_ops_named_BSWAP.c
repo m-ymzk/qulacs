@@ -191,27 +191,37 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
             const ITYPE num_elem_block = TotalSizePerPairComm >> right_qubit;
             const ITYPE num_loop_per_block = rtgt_blk_dim / dim_work;
 
+            const ITYPE jk_total = num_elem_block * num_loop_per_block;
+            ITYPE jk = 0;
+            UINT buf_idx = 0;
+            if (0 < jk_total) { // first sendrecv
+                CTYPE* si = state + (rtgt_offset_index^(0 /*j*/<<act_bs)) * rtgt_blk_dim;
+                m->m_DC_isendrecv(si + dim_work * 0/*k*/, buf[buf_idx], dim_work, peer_rank);
+            }
             for (ITYPE j = 0; j < num_elem_block; j++) {
-                CTYPE* si = state + (rtgt_offset_index^(j<<act_bs)) * rtgt_blk_dim ;
-                UINT buf_idx = 0;
-
-                { // first sendrecv
-                    m->m_DC_isendrecv(si + dim_work * 0, buf[buf_idx], dim_work, peer_rank);
-                }
                 for(ITYPE k = 0; k < num_loop_per_block; k++){
-                    if (k + 1 < num_loop_per_block) {
-                        CTYPE* si_next = si + dim_work * (k + 1);
+                    if ((jk + 1) < jk_total) {
+                        ITYPE k_next = k + 1;
+                        ITYPE j_next = j;
+                        if (k_next >= num_loop_per_block) {
+                            k_next = 0;
+                            j_next++;
+                        }
+                        CTYPE* si_next = state + (rtgt_offset_index^(j_next<<act_bs)) * rtgt_blk_dim
+                            + dim_work * k_next;
                         m->m_DC_isendrecv(si_next, buf[buf_idx^1], dim_work, peer_rank);
                     }
 
                     m->wait(2); //wait 2 async comm
-                    CTYPE* si_cur = si + dim_work * k;
+                    CTYPE* si_cur = state + (rtgt_offset_index^(j<<act_bs)) * rtgt_blk_dim
+                        + dim_work * k;
 #if defined(__ARM_FEATURE_SVE)
                     memcpy_sve((double*)si_cur, (double*)(buf[buf_idx]), dim_work * 2);
 #else
                     memcpy(si_cur, buf[buf_idx], dim_work * sizeof(CTYPE));
 #endif
                     buf_idx ^= 1;
+                    jk++;
                 }
             }
         }
