@@ -26,20 +26,27 @@ static int mpireq_idx = 0;
 static int mpireq_cnt = 0;
 
 static MPI_Request* get_request() {
-    assert(mpireq_cnt < _MAX_REQUESTS);
-    mpireq_cnt++;
+    if (mpireq_cnt >= _MAX_REQUESTS) {
+        fprintf(stderr, "cannot get a request for communication, %s, %d\n", __FILE__,
+                __LINE__);
+        exit(1);
+    }
 
-    //printf("get_request() -> %d\n", mpireq_idx);
+    mpireq_cnt++;
     MPI_Request* ret = &(mpireq[mpireq_idx]);
     mpireq_idx = (mpireq_idx + 1) % _MAX_REQUESTS;
     return ret;
 }
 
 static void wait(UINT count) {
-    assert(mpireq_cnt >= count);
+    if (mpireq_cnt < count) {
+        fprintf(stderr, "wait count(=%d) is over incompleted requests(=%d), %s, %d\n", count, mpireq_cnt, __FILE__,
+                __LINE__);
+        exit(1);
+    }
+
     for (UINT i = 0; i < count; i++) {
         UINT idx = (_MAX_REQUESTS + mpireq_idx - mpireq_cnt) % _MAX_REQUESTS;
-        //printf("wait(%d)\n", idx);
         MPI_Wait(&(mpireq[idx]), &mpistat);
         mpireq_cnt--;
     }
