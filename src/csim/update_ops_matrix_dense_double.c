@@ -243,11 +243,12 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     SV_PRED pg = Svptrue();
     SV_ITYPE vec_shuffle_index = SvindexI(0, 1);
     vec_shuffle_index = svlsr_z(pg, vec_shuffle_index, 1);
-    vec_shuffle_index = svorr_z(pg,
-                          svlsl_z(pg,svand_z(pg, vec_shuffle_index, SvdupI(1)), 1),
-                          svlsr_z(pg, vec_shuffle_index, 1));
-    vec_shuffle_index = svorr_z(pg, svlsl_z(pg, vec_shuffle_index, 1), svand_z(pg, SvindexI(0, 1), 1));
-                          
+    vec_shuffle_index =
+        svorr_z(pg, svlsl_z(pg, svand_z(pg, vec_shuffle_index, SvdupI(1)), 1),
+            svlsr_z(pg, vec_shuffle_index, 1));
+    vec_shuffle_index = svorr_z(
+        pg, svlsl_z(pg, vec_shuffle_index, 1), svand_z(pg, SvindexI(0, 1), 1));
+
     SV_FTYPE mat0, mat1, mat2, mat3;
     SV_FTYPE input0;
     SV_FTYPE output0;
@@ -262,16 +263,15 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
 #pragma omp parallel for private(input0, output0, vec_tmp) \
     shared(pg, mat0, mat1, mat2, mat3)
 #endif
-    for (state_index = 0; state_index < loop_dim;
-         state_index++) {
+    for (state_index = 0; state_index < loop_dim; state_index++) {
         // create index
         ITYPE basis_0 = (state_index & low_mask) +
                         ((state_index & mid_mask) << 1) +
                         ((state_index & high_mask) << 2);
 
         // fetch values
-        input0 = svld1(pg, (ETYPE*)&state[basis_0]); 
-        if(target_qubit_index1 > target_qubit_index2)
+        input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+        if (target_qubit_index1 > target_qubit_index2)
             input0 = svtbl(input0, vec_shuffle_index);
 
         // perform matrix-vector product
@@ -298,11 +298,10 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
         vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 2));
         output0 = svext(output0, vec_tmp, 2);
 
-        if(target_qubit_index1 > target_qubit_index2)
+        if (target_qubit_index1 > target_qubit_index2)
             output0 = svtbl(output0, vec_shuffle_index);
 
         svst1(pg, (ETYPE*)&state[basis_0], output0);
-
     }
 }
 
@@ -317,8 +316,8 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
-    } else if((dim>=numComplexInVec) && (numComplexInVec==4) && 
-              (target_qubit_index1 < 2) && (target_qubit_index2 < 2)){
+    } else if ((dim >= numComplexInVec) && (numComplexInVec == 4) &&
+               (target_qubit_index1 < 2) && (target_qubit_index2 < 2)) {
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_low(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
