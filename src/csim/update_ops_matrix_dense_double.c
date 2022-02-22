@@ -32,6 +32,8 @@ void double_qubit_dense_matrix_gate_simd_low(UINT target_qubit_index1,
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim);
+void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 void double_qubit_dense_matrix_gate_c(UINT target_qubit_index1,
