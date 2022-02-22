@@ -163,47 +163,41 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         input2 = svld1(pg, (ETYPE*)&state[basis_2]);
         input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-        // zero clear
-        output0 = SvdupF(0.0);
-        output1 = SvdupF(0.0);
-        output2 = SvdupF(0.0);
-        output3 = SvdupF(0.0);
-
         // perform matrix-vector product
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 0);
+        output0 = svmul_z(pg, svdup_lane(mat0, 0), input0);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 2), input1);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 4), input2);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 6), input3);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 90);
 
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 0);
+        output1 = svmul_z(pg, svdup_lane(mat1, 0), input0);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 2), input1);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 4), input2);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 6), input3);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 90);
 
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 0);
+        output2 = svmul_z(pg, svdup_lane(mat2, 0), input0);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 2), input1);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 4), input2);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 6), input3);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 90);
 
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 0);
+        output3 = svmul_z(pg, svdup_lane(mat3, 0), input0);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 2), input1);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 4), input2);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 6), input3);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 90);
 
         // set values
@@ -287,47 +281,41 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
         input2 = svld1_gather_index(pg, (ETYPE*)&state[basis_2], vec_offset);
         input3 = svld1_gather_index(pg, (ETYPE*)&state[basis_3], vec_offset);
 
-        // zero clear
-        output0 = SvdupF(0.0);
-        output1 = SvdupF(0.0);
-        output2 = SvdupF(0.0);
-        output3 = SvdupF(0.0);
-
         // perform matrix-vector product
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 0);
+        output0 = svmul_z(pg, svdup_lane(mat0, 0), input0);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 0), input0, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 2), input1);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 1), input1, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 4), input2);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 2), input2, 90);
-        output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 0);
+        output0 = svmla_z(pg, output0, svdup_lane(mat0, 6), input3);
         output0 = svcmla_z(pg, output0, svdupq_lane(mat0, 3), input3, 90);
 
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 0);
+        output1 = svmul_z(pg, svdup_lane(mat1, 0), input0);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 0), input0, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 2), input1);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 1), input1, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 4), input2);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 2), input2, 90);
-        output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 0);
+        output1 = svmla_z(pg, output1, svdup_lane(mat1, 6), input3);
         output1 = svcmla_z(pg, output1, svdupq_lane(mat1, 3), input3, 90);
 
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 0);
+        output2 = svmul_z(pg, svdup_lane(mat2, 0), input0);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 0), input0, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 2), input1);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 1), input1, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 4), input2);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 2), input2, 90);
-        output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 0);
+        output2 = svmla_z(pg, output2, svdup_lane(mat2, 6), input3);
         output2 = svcmla_z(pg, output2, svdupq_lane(mat2, 3), input3, 90);
 
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 0);
+        output3 = svmul_z(pg, svdup_lane(mat3, 0), input0);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 0), input0, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 2), input1);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 1), input1, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 4), input2);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 2), input2, 90);
-        output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 0);
+        output3 = svmla_z(pg, output3, svdup_lane(mat3, 6), input3);
         output3 = svcmla_z(pg, output3, svdupq_lane(mat3, 3), input3, 90);
 
         // set values
@@ -352,6 +340,7 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
 #if 0
     } else if((dim>=(numComplexInVec<<2)) && (numComplexInVec==4) && 
               (target_qubit_index1 < 2) && (target_qubit_index2 < 2)){
+        assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_low(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
 #endif
