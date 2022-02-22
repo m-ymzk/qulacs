@@ -105,7 +105,7 @@ void X_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
         }
     }
 #ifdef __aarch64__
-    else if (6 <= target_qubit_index && target_qubit_index <= 8) {
+    else if (5 <= target_qubit_index && target_qubit_index <= 8) {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 4) {
             ITYPE basis_index_0 =
