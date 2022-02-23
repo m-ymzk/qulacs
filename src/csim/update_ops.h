@@ -382,6 +382,12 @@ void CNOT_gate_parallel_unroll(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_parallel_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void CNOT_gate_single_sve(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void CNOT_gate_parallel_sve(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE) 
 #ifdef _USE_MPI
 DllExport void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
     CTYPE *state, ITYPE dim, UINT inner_qc);
@@ -1169,7 +1175,10 @@ void double_qubit_dense_matrix_gate_nosimd(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
 void double_qubit_dense_matrix_gate_simd(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
-
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 /**
  * \~english
  * Apply a multi-qubit arbitrary gate.
