@@ -275,7 +275,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
     mat3 = svld1(pg, (ETYPE*)&matrix[12]);
 
     if (target_qubit_index2 > target_qubit_index1) {
-        // make element index for shuffling in a vector
+        // creat element index for shuffling in a vector
         vec_select = svcmpeq(pg,
             svand_z(pg, SvindexI(0, 1), SvdupI(target_mask1 << 1)), SvdupI(0));
 
@@ -382,7 +382,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         }
     } else {  // target_qubit_index1 > target_qubit_index2
 
-        // make element index for shuffling in a vector
+        // create element index for shuffling in a vector
         vec_select = svcmpeq(pg,
             svand_z(pg, SvindexI(0, 1), SvdupI(target_mask2 << 1)), SvdupI(0));
 
@@ -509,7 +509,11 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     ITYPE state_index;
 
     SV_PRED pg = Svptrue();
+    SV_PRED vec_select;
     SV_ITYPE vec_shuffle_index;
+
+    // make the following predicate register: (1,1,0,0,1,1,0,0)
+    vec_select = svcmpeq(pg, svand_z(pg, SvindexI(0,1), SvdupI(2)), SvdupI(0));
 
     // make the following vector: (0, 1, 4, 5, 2, 3, 6, 7)
     if (target_qubit_index1 > target_qubit_index2) {
@@ -523,18 +527,23 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     }
 
     SV_FTYPE mat0, mat1, mat2, mat3;
-    SV_FTYPE input0;
-    SV_FTYPE output0;
-    SV_FTYPE vec_tmp;
+    SV_FTYPE mat0r, mat1r, mat2r, mat3r;
+    SV_FTYPE input;
+    SV_FTYPE output;
+    SV_FTYPE vec_tmp1, vec_tmp2;
 
     mat0 = svld1(pg, (ETYPE*)&matrix[0]);
     mat1 = svld1(pg, (ETYPE*)&matrix[4]);
     mat2 = svld1(pg, (ETYPE*)&matrix[8]);
     mat3 = svld1(pg, (ETYPE*)&matrix[12]);
 
+    mat0r = svtrn1(mat0, mat0);
+    mat1r = svtrn1(mat1, mat1);
+    mat2r = svtrn1(mat2, mat2);
+    mat3r = svtrn1(mat3, mat3);
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, output0, vec_tmp) \
-    shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input, output, vec_tmp1, vec_tmp2) \
+    shared(pg, mat0, mat1, mat2, mat3, mat0r, mat1r, mat2r, mat3r)
 #endif
     for (state_index = 0; state_index < loop_dim; state_index++) {
         // create index
@@ -543,38 +552,40 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
                         ((state_index & high_mask) << 2);
 
         // fetch values
-        input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+        input = svld1(pg, (ETYPE*)&state[basis_0]);
         if (target_qubit_index1 > target_qubit_index2)
-            input0 = svtbl(input0, vec_shuffle_index);
+            input = svtbl(input, vec_shuffle_index);
 
         // perform matrix-vector product
-        output0 = svmul_z(pg, svtrn1(mat0, mat0), input0);
-        output0 = svcmla_z(pg, output0, mat0, input0, 90);
-        output0 = svadd_z(pg, output0, svext(output0, output0, 4));
-        output0 = svadd_z(pg, output0, svext(output0, output0, 2));
+        output = svmul_z(pg, mat0r, input);
+        output = svcmla_z(pg, output, mat0, input, 90);
+        output = svadd_z(pg, output, svext(output, output, 2));
 
-        vec_tmp = svmul_z(pg, svtrn1(mat1, mat1), input0);
-        vec_tmp = svcmla_z(pg, vec_tmp, mat1, input0, 90);
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 4));
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 2));
-        output0 = svext(output0, vec_tmp, 2);
+        vec_tmp1 = svmul_z(pg, mat1r, input);
+        vec_tmp1 = svcmla_z(pg, vec_tmp1, mat1, input, 90);
+        vec_tmp1 = svadd_z(pg, vec_tmp1, svext(vec_tmp1, vec_tmp1, 2));
 
-        vec_tmp = svmul_z(pg, svtrn1(mat2, mat2), input0);
-        vec_tmp = svcmla_z(pg, vec_tmp, mat2, input0, 90);
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 4));
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 2));
-        output0 = svext(output0, vec_tmp, 2);
+        output = svsel(vec_select, output, vec_tmp1);      
+        output = svadd_z(pg, svext(output, output, 4), output);
 
-        vec_tmp = svmul_z(pg, svtrn1(mat3, mat3), input0);
-        vec_tmp = svcmla_z(pg, vec_tmp, mat3, input0, 90);
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 4));
-        vec_tmp = svadd_z(pg, vec_tmp, svext(vec_tmp, vec_tmp, 2));
-        output0 = svext(output0, vec_tmp, 2);
+
+        vec_tmp1 = svmul_z(pg, mat2r, input);
+        vec_tmp1 = svcmla_z(pg, vec_tmp1, mat2, input, 90);
+        vec_tmp1 = svadd_z(pg, vec_tmp1, svext(vec_tmp1, vec_tmp1, 2));
+
+        vec_tmp2 = svmul_z(pg, mat3r, input);
+        vec_tmp2 = svcmla_z(pg, vec_tmp2, mat3, input, 90);
+        vec_tmp2 = svadd_z(pg, vec_tmp2, svext(vec_tmp2, vec_tmp2, 2));
+
+        vec_tmp1 = svsel(vec_select, vec_tmp1, vec_tmp2);      
+        vec_tmp1 = svadd_z(pg, svext(vec_tmp1, vec_tmp1, 4), vec_tmp1);
+
+        output = svext(output, vec_tmp1, 4);
 
         if (target_qubit_index1 > target_qubit_index2)
-            output0 = svtbl(output0, vec_shuffle_index);
+            output = svtbl(output, vec_shuffle_index);
 
-        svst1(pg, (ETYPE*)&state[basis_0], output0);
+        svst1(pg, (ETYPE*)&state[basis_0], output);
     }
 }
 
