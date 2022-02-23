@@ -2,14 +2,19 @@ from argparse import ArgumentParser
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
 import time
+from mpi4py import MPI
 
+#np.random.seed(seed=32)
 rng = np.random.default_rng(seed=2022)
-#np.random.seed(seed=2022)
 
 def get_option():
     argparser = ArgumentParser()
     argparser.add_argument('-n', '--nqubits', type=int,
-            default=4, help='Number of qbits')
+            default=4, help='Number of qubits')
+    argparser.add_argument('-d', '--depth', type=int,
+            default=10, help='Number of Depth')
+    argparser.add_argument('-r', '--repeats', type=int,
+            default=5, help='Repeat times to measure')
     argparser.add_argument('-v', '--verbose', type=int,
             default=0, help='Define Output level. 0: time only, 1: Circuit info and time, 2: All Gates')
     return argparser.parse_args()
@@ -35,11 +40,16 @@ def phys_idx(idx, qubit_table):
         if a < inner_qc:
             return a
 
-def build_circuit(nqubits, depth, vb):
-    ter_table = list(range(nqubits))
+def build_circuit(args, size):
+    depth = args.depth
+    vb = args.verbose
+    nqubits = args.nqubits
+    outer_qc = int(np.log2(size))
     inner_qc = nqubits - outer_qc
-    circuit = QuantumCircuit(nqubits)
+    ter_table = list(range(nqubits))
     perm_0 = list(range(nqubits))
+
+    circuit = QuantumCircuit(nqubits)
 
     for d in range(depth):
         qubit_table = list(range(nqubits))
@@ -88,28 +98,26 @@ def build_circuit(nqubits, depth, vb):
     return circuit
 
 if __name__ == '__main__':
-
     args = get_option()
-    n=args.nqubits
-    numRepeats = 3
+    n = args.nqubits
+    repeats = args.repeats
 
     mode = "QuantumVolume"
 
     from mpi4py import MPI
-    
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
-    outer_qc = int(np.log2(size))
 
-    constTimes = np.zeros(numRepeats)
-    simTimes = np.zeros(numRepeats)
+    constTimes = np.zeros(repeats)
+    simTimes = np.zeros(repeats)
     st = QuantumState(n, use_multi_cpu=True)
-    for i in range(numRepeats):
+    for i in range(repeats):
         constStart = time.perf_counter()
-        circuit = build_circuit(n, 10, args.verbose)
+        circuit = build_circuit(args, size)
         constTimes[i] = time.perf_counter() - constStart
 
+        comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
         simTimes[i] = time.perf_counter() - simStart
@@ -118,9 +126,18 @@ if __name__ == '__main__':
     del st
 
     if rank == 0:
+        if repeats > 1:
+            ctime_avg = np.average(constTimes[1:])
+            ctime_std = np.std(constTimes[1:]) 
+            stime_avg = np.average(simTimes[1:])
+            stime_std = np.std(simTimes[1:])
+        else:
+            ctime_avg = constTimes
+            ctime_std = 0.
+            stime_avg = simTimes
+            stime_std = 0.
+
         print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-            mode, n,
-            np.average(constTimes), np.std(constTimes), 
-            np.average(simTimes), np.std(simTimes)))
+            mode, n, ctime_avg, ctime_std, stime_avg, stime_std))
 
 #EOF
