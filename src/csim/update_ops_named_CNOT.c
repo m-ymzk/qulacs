@@ -256,7 +256,27 @@ void CNOT_gate_single_sve(UINT control_qubit_index, UINT target_qubit_index,
     ITYPE vec_len =
         getVecLength();  // length of SVE registers (# of 64-bit elements)
 
-    if ((min_qubit_mask >= (vec_len >> 1))) {
+    if (control_qubit_index == IS_OUTER_QB) {
+        if (target_qubit_index == 0) {
+            // swap neighboring two basi in ALL_AREAs
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index = (state_index << 1);
+                CTYPE temp = state[basis_index];
+                state[basis_index] = state[basis_index + 1];
+                state[basis_index + 1] = temp;
+            }
+        } else {
+            // a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index_0 = (state_index & low_mask) +
+                                      ((state_index & (~low_mask)) << 1);
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp = state[basis_index_0];
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_1] = temp;
+            }
+        }
+    } else if ((min_qubit_mask >= (vec_len >> 1))) {
         SV_PRED pg = Svptrue();
         SV_FTYPE vec_temp0, vec_temp1;
 
@@ -311,7 +331,29 @@ void CNOT_gate_parallel_sve(UINT control_qubit_index, UINT target_qubit_index,
     ITYPE vec_len =
         getVecLength();  // length of SVE registers (# of 64-bit elements)
 
-    if ((min_qubit_mask >= (vec_len >> 1))) {
+    if (control_qubit_index == IS_OUTER_QB) {
+        if (target_qubit_index == 0) {
+            // swap neighboring two basi in ALL_AREAs
+#pragma omp parallel for
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index = (state_index << 1);
+                CTYPE temp = state[basis_index];
+                state[basis_index] = state[basis_index + 1];
+                state[basis_index + 1] = temp;
+            }
+        } else {
+            // a,a+1 is swapped to a^m, a^m+1, respectively in ALL_AREA
+#pragma omp parallel for
+            for (state_index = 0; state_index < (dim / 2); ++state_index) {
+                ITYPE basis_index_0 = (state_index & low_mask) +
+                                      ((state_index & (~low_mask)) << 1);
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp = state[basis_index_0];
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_1] = temp;
+            }
+        }
+    } else if ((min_qubit_mask >= (vec_len >> 1))) {
         SV_PRED pg = Svptrue();
         SV_FTYPE vec_temp0, vec_temp1;
         if (((5 <= target_qubit_index) && (target_qubit_index <= 10)) ||
