@@ -13,7 +13,7 @@ cd ${QHOME}/ict/python
 #NP=$1; shift
 NP=${OMPI_COMM_WORLD_LOCAL_SIZE}
 
-COMM="python qulacsbench.py"
+COMM="python"
 
 if [ $NP -eq 1 ]; then
   export OMP_NUM_THREADS=48

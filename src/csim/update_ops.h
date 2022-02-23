@@ -1220,6 +1220,11 @@ void multi_qubit_dense_matrix_gate_single(const UINT *target_qubit_index_list,
 void multi_qubit_dense_matrix_gate_parallel(const UINT *target_qubit_index_list,
     UINT target_qubit_index_count, const CTYPE *matrix, CTYPE *state,
     ITYPE dim);
+#ifdef _USE_MPI
+DllExport void multi_qubit_dense_matrix_gate_mpi(
+    const UINT *target_qubit_index_list, UINT target_qubit_index_count,
+    const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT outer_qc);
+#endif
 
 /**
  * \~english
