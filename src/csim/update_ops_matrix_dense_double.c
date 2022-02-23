@@ -513,7 +513,7 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     SV_ITYPE vec_shuffle_index;
 
     // make the following predicate register: (1,1,0,0,1,1,0,0)
-    vec_select = svcmpeq(pg, svand_z(pg, SvindexI(0,1), SvdupI(2)), SvdupI(0));
+    vec_select = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(2)), SvdupI(0));
 
     // make the following vector: (0, 1, 4, 5, 2, 3, 6, 7)
     if (target_qubit_index1 > target_qubit_index2) {
@@ -565,9 +565,8 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
         vec_tmp1 = svcmla_z(pg, vec_tmp1, mat1, input, 90);
         vec_tmp1 = svadd_z(pg, vec_tmp1, svext(vec_tmp1, vec_tmp1, 2));
 
-        output = svsel(vec_select, output, vec_tmp1);      
+        output = svsel(vec_select, output, vec_tmp1);
         output = svadd_z(pg, svext(output, output, 4), output);
-
 
         vec_tmp1 = svmul_z(pg, mat2r, input);
         vec_tmp1 = svcmla_z(pg, vec_tmp1, mat2, input, 90);
@@ -577,7 +576,7 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
         vec_tmp2 = svcmla_z(pg, vec_tmp2, mat3, input, 90);
         vec_tmp2 = svadd_z(pg, vec_tmp2, svext(vec_tmp2, vec_tmp2, 2));
 
-        vec_tmp1 = svsel(vec_select, vec_tmp1, vec_tmp2);      
+        vec_tmp1 = svsel(vec_select, vec_tmp1, vec_tmp2);
         vec_tmp1 = svadd_z(pg, svext(vec_tmp1, vec_tmp1, 4), vec_tmp1);
 
         output = svext(output, vec_tmp1, 4);
