@@ -114,49 +114,51 @@ void double_qubit_dense_matrix_gate_nosimd(UINT target_qubit_index1,
 }
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0, SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3,
-  SV_FTYPE mat0, SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
+static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0,
+    SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3, SV_FTYPE mat0,
+    SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0,
+    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
 
-static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0, SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3,
-  SV_FTYPE mat0, SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3){
+static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0,
+    SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3, SV_FTYPE mat0,
+    SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0,
+    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3) {
+    // perform matrix-vector product
+    *output0 = svmul_z(pg, svdup_lane(mat0, 0), input0);
+    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 0), input0, 90);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 2), input1);
+    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 1), input1, 90);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 4), input2);
+    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 2), input2, 90);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 6), input3);
+    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 3), input3, 90);
 
-        // perform matrix-vector product
-        *output0 = svmul_z(pg, svdup_lane(mat0, 0), input0);
-        *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 0), input0, 90);
-        *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 2), input1);
-        *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 1), input1, 90);
-        *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 4), input2);
-        *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 2), input2, 90);
-        *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 6), input3);
-        *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 3), input3, 90);
+    *output1 = svmul_z(pg, svdup_lane(mat1, 0), input0);
+    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 0), input0, 90);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 2), input1);
+    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 1), input1, 90);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 4), input2);
+    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 2), input2, 90);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 6), input3);
+    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 3), input3, 90);
 
-        *output1 = svmul_z(pg, svdup_lane(mat1, 0), input0);
-        *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 0), input0, 90);
-        *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 2), input1);
-        *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 1), input1, 90);
-        *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 4), input2);
-        *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 2), input2, 90);
-        *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 6), input3);
-        *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 3), input3, 90);
+    *output2 = svmul_z(pg, svdup_lane(mat2, 0), input0);
+    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 0), input0, 90);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 2), input1);
+    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 1), input1, 90);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 4), input2);
+    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 2), input2, 90);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 6), input3);
+    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 3), input3, 90);
 
-        *output2 = svmul_z(pg, svdup_lane(mat2, 0), input0);
-        *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 0), input0, 90);
-        *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 2), input1);
-        *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 1), input1, 90);
-        *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 4), input2);
-        *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 2), input2, 90);
-        *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 6), input3);
-        *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 3), input3, 90);
-
-        *output3 = svmul_z(pg, svdup_lane(mat3, 0), input0);
-        *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 0), input0, 90);
-        *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 2), input1);
-        *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 1), input1, 90);
-        *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 4), input2);
-        *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 2), input2, 90);
-        *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 6), input3);
-        *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 3), input3, 90);
-
+    *output3 = svmul_z(pg, svdup_lane(mat3, 0), input0);
+    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 0), input0, 90);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 2), input1);
+    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 1), input1, 90);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 4), input2);
+    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 2), input2, 90);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 6), input3);
+    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 3), input3, 90);
 }
 
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
@@ -210,7 +212,8 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         input2 = svld1(pg, (ETYPE*)&state[basis_2]);
         input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-        MatrixVectorProduct4x4(pg, input0, input1, input2, input3, mat0, mat1, mat2, mat3, &output0, &output1, &output2, &output3);
+        MatrixVectorProduct4x4(pg, input0, input1, input2, input3, mat0, mat1,
+            mat2, mat3, &output0, &output1, &output2, &output3);
 
         // set values
         svst1(pg, (ETYPE*)&state[basis_0], output0);
@@ -254,7 +257,8 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
     // loop variables
     const ITYPE loop_dim = dim / 4;
     ITYPE state_index;
-    ITYPE vec_len = getVecLength();   // the number of double elements in a vector
+    ITYPE vec_len =
+        getVecLength();  // the number of double elements in a vector
     ITYPE numComplexInVec = vec_len >> 1;
 
     SV_PRED pg = Svptrue();
@@ -270,15 +274,16 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
     mat2 = svld1(pg, (ETYPE*)&matrix[8]);
     mat3 = svld1(pg, (ETYPE*)&matrix[12]);
 
-    if(target_qubit_index2 > target_qubit_index1){
-
+    if (target_qubit_index2 > target_qubit_index1) {
         // make element index for shuffling in a vector
-        vec_select = svcmpeq(pg, svand_z(pg, SvindexI(0,1), SvdupI(target_mask1<<1)), SvdupI(0));
+        vec_select = svcmpeq(pg,
+            svand_z(pg, SvindexI(0, 1), SvdupI(target_mask1 << 1)), SvdupI(0));
 
-        if(target_qubit_index1 == 0){
+        if (target_qubit_index1 == 0) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
             for (state_index = 0; state_index < loop_dim;
                  state_index += numComplexInVec) {
@@ -286,43 +291,49 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 ITYPE basis_0 = (state_index & low_mask) +
                                 ((state_index & mid_mask) << 1) +
                                 ((state_index & high_mask) << 2);
-                ITYPE basis_1 = state_index + (numComplexInVec>>1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask)<<1) + ((basis_1 & high_mask)<<2);
+                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
+                          ((basis_1 & high_mask) << 2);
                 ITYPE basis_2 = basis_0 + target_mask2;
                 ITYPE basis_3 = basis_1 + target_mask2;
-  
+
                 // fetch values
                 input0 = svld1(pg, (ETYPE*)&state[basis_0]);
                 input1 = svld1(pg, (ETYPE*)&state[basis_1]);
                 input2 = svld1(pg, (ETYPE*)&state[basis_2]);
                 input3 = svld1(pg, (ETYPE*)&state[basis_3]);
- 
+
                 // shuffle
                 cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
                 cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
                 cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
                 cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
-                
-                // perform matrix-vector product 
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0, mat1, mat2, mat3, &result0, &result1, &result2, &result3);
- 
+
+                // perform matrix-vector product
+                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+
                 // reshuffle
-                output0 = svsel(vec_select, result0, svext(result1, result1, 6));
-                output1 = svsel(vec_select, svext(result0, result0, 2), result1);
-                output2 = svsel(vec_select, result2, svext(result3, result3, 6));
-                output3 = svsel(vec_select, svext(result2, result2, 2), result3);
+                output0 =
+                    svsel(vec_select, result0, svext(result1, result1, 6));
+                output1 =
+                    svsel(vec_select, svext(result0, result0, 2), result1);
+                output2 =
+                    svsel(vec_select, result2, svext(result3, result3, 6));
+                output3 =
+                    svsel(vec_select, svext(result2, result2, 2), result3);
 
                 // set values
                 svst1(pg, (ETYPE*)&state[basis_0], output0);
                 svst1(pg, (ETYPE*)&state[basis_1], output1);
                 svst1(pg, (ETYPE*)&state[basis_2], output2);
                 svst1(pg, (ETYPE*)&state[basis_3], output3);
-  
             }
-        }else{ // target_qubit_index1 == 1
+        } else {  // target_qubit_index1 == 1
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
             for (state_index = 0; state_index < loop_dim;
                  state_index += numComplexInVec) {
@@ -330,50 +341,56 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 ITYPE basis_0 = (state_index & low_mask) +
                                 ((state_index & mid_mask) << 1) +
                                 ((state_index & high_mask) << 2);
-                ITYPE basis_1 = state_index + (numComplexInVec>>1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask)<<1) + ((basis_1 & high_mask)<<2);
+                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
+                          ((basis_1 & high_mask) << 2);
                 ITYPE basis_2 = basis_0 + target_mask2;
                 ITYPE basis_3 = basis_1 + target_mask2;
- 
+
                 // fetch values
                 input0 = svld1(pg, (ETYPE*)&state[basis_0]);
                 input1 = svld1(pg, (ETYPE*)&state[basis_1]);
                 input2 = svld1(pg, (ETYPE*)&state[basis_2]);
                 input3 = svld1(pg, (ETYPE*)&state[basis_3]);
- 
+
                 // shuffle
                 cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
                 cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
                 cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
                 cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
-                
-                // perform matrix-vector product 
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0, mat1, mat2, mat3, &result0, &result1, &result2, &result3);
- 
+
+                // perform matrix-vector product
+                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+
                 // reshuffle
-                output0 = svsel(vec_select, result0, svext(result1, result1, 4));
-                output1 = svsel(vec_select, svext(result0, result0, 4), result1);
-                output2 = svsel(vec_select, result2, svext(result3, result3, 4));
-                output3 = svsel(vec_select, svext(result2, result2, 4), result3);
+                output0 =
+                    svsel(vec_select, result0, svext(result1, result1, 4));
+                output1 =
+                    svsel(vec_select, svext(result0, result0, 4), result1);
+                output2 =
+                    svsel(vec_select, result2, svext(result3, result3, 4));
+                output3 =
+                    svsel(vec_select, svext(result2, result2, 4), result3);
 
                 // set values
                 svst1(pg, (ETYPE*)&state[basis_0], output0);
                 svst1(pg, (ETYPE*)&state[basis_1], output1);
                 svst1(pg, (ETYPE*)&state[basis_2], output2);
                 svst1(pg, (ETYPE*)&state[basis_3], output3);
-  
             }
-
         }
-    }else{ // target_qubit_index1 > target_qubit_index2
+    } else {  // target_qubit_index1 > target_qubit_index2
 
         // make element index for shuffling in a vector
-        vec_select = svcmpeq(pg, svand_z(pg, SvindexI(0,1), SvdupI(target_mask2<<1)), SvdupI(0));
+        vec_select = svcmpeq(pg,
+            svand_z(pg, SvindexI(0, 1), SvdupI(target_mask2 << 1)), SvdupI(0));
 
-        if(target_qubit_index2 == 0){ // target_qubit_index2 == 0
+        if (target_qubit_index2 == 0) {  // target_qubit_index2 == 0
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
             for (state_index = 0; state_index < loop_dim;
                  state_index += numComplexInVec) {
@@ -381,44 +398,50 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 ITYPE basis_0 = (state_index & low_mask) +
                                 ((state_index & mid_mask) << 1) +
                                 ((state_index & high_mask) << 2);
-  
-                ITYPE basis_1 = state_index + (numComplexInVec>>1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask)<<1) + ((basis_1 & high_mask)<<2);
+
+                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
+                          ((basis_1 & high_mask) << 2);
                 ITYPE basis_2 = basis_0 + target_mask1;
                 ITYPE basis_3 = basis_1 + target_mask1;
-  
+
                 // fetch values
                 input0 = svld1(pg, (ETYPE*)&state[basis_0]);
                 input1 = svld1(pg, (ETYPE*)&state[basis_1]);
                 input2 = svld1(pg, (ETYPE*)&state[basis_2]);
                 input3 = svld1(pg, (ETYPE*)&state[basis_3]);
- 
+
                 // shuffle
                 cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
                 cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
                 cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
                 cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
-                
-                // perform matrix-vector product 
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0, mat1, mat2, mat3, &result0, &result1, &result2, &result3);
- 
+
+                // perform matrix-vector product
+                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+
                 // reshuffle
-                output0 = svsel(vec_select, result0, svext(result2, result2, 6));
-                output1 = svsel(vec_select, svext(result0, result0, 2), result2);
-                output2 = svsel(vec_select, result1, svext(result3, result3, 6));
-                output3 = svsel(vec_select, svext(result1, result1, 2), result3);
+                output0 =
+                    svsel(vec_select, result0, svext(result2, result2, 6));
+                output1 =
+                    svsel(vec_select, svext(result0, result0, 2), result2);
+                output2 =
+                    svsel(vec_select, result1, svext(result3, result3, 6));
+                output3 =
+                    svsel(vec_select, svext(result1, result1, 2), result3);
 
                 // set values
                 svst1(pg, (ETYPE*)&state[basis_0], output0);
                 svst1(pg, (ETYPE*)&state[basis_1], output1);
                 svst1(pg, (ETYPE*)&state[basis_2], output2);
                 svst1(pg, (ETYPE*)&state[basis_3], output3);
-  
             }
-        }else{ // target_qubit_index2 == 1
+        } else {  // target_qubit_index2 == 1
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
             for (state_index = 0; state_index < loop_dim;
                  state_index += numComplexInVec) {
@@ -427,31 +450,37 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                                 ((state_index & mid_mask) << 1) +
                                 ((state_index & high_mask) << 2);
 
-                ITYPE basis_1 = state_index + (numComplexInVec>>1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask)<<1) + ((basis_1 & high_mask)<<2);
+                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
+                          ((basis_1 & high_mask) << 2);
                 ITYPE basis_2 = basis_0 + target_mask1;
                 ITYPE basis_3 = basis_1 + target_mask1;
-  
+
                 // fetch values
                 input0 = svld1(pg, (ETYPE*)&state[basis_0]);
                 input1 = svld1(pg, (ETYPE*)&state[basis_1]);
                 input2 = svld1(pg, (ETYPE*)&state[basis_2]);
                 input3 = svld1(pg, (ETYPE*)&state[basis_3]);
- 
+
                 // shuffle
                 cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
                 cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
                 cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
                 cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
-                
-                // perform matrix-vector product 
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0, mat1, mat2, mat3, &result0, &result1, &result2, &result3);
- 
+
+                // perform matrix-vector product
+                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+
                 // reshuffle
-                output0 = svsel(vec_select, result0, svext(result2, result2, 4));
-                output1 = svsel(vec_select, svext(result0, result0, 4), result2);
-                output2 = svsel(vec_select, result1, svext(result3, result3, 4));
-                output3 = svsel(vec_select, svext(result1, result1, 4), result3);
+                output0 =
+                    svsel(vec_select, result0, svext(result2, result2, 4));
+                output1 =
+                    svsel(vec_select, svext(result0, result0, 4), result2);
+                output2 =
+                    svsel(vec_select, result1, svext(result3, result3, 4));
+                output3 =
+                    svsel(vec_select, svext(result1, result1, 4), result3);
 
                 // set values
                 svst1(pg, (ETYPE*)&state[basis_0], output0);
@@ -462,8 +491,6 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         }
     }
 }
-
-
 
 void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
@@ -485,14 +512,14 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     SV_ITYPE vec_shuffle_index;
 
     // make the following vector: (0, 1, 4, 5, 2, 3, 6, 7)
-    if (target_qubit_index1 > target_qubit_index2){
+    if (target_qubit_index1 > target_qubit_index2) {
         vec_shuffle_index = SvindexI(0, 1);
         vec_shuffle_index = svlsr_z(pg, vec_shuffle_index, 1);
-        vec_shuffle_index =
-            svorr_z(pg, svlsl_z(pg, svand_z(pg, vec_shuffle_index, SvdupI(1)), 1),
-                svlsr_z(pg, vec_shuffle_index, 1));
-        vec_shuffle_index = svorr_z(
-            pg, svlsl_z(pg, vec_shuffle_index, 1), svand_z(pg, SvindexI(0, 1), 1));
+        vec_shuffle_index = svorr_z(pg,
+            svlsl_z(pg, svand_z(pg, vec_shuffle_index, SvdupI(1)), 1),
+            svlsr_z(pg, vec_shuffle_index, 1));
+        vec_shuffle_index = svorr_z(pg, svlsl_z(pg, vec_shuffle_index, 1),
+            svand_z(pg, SvindexI(0, 1), 1));
     }
 
     SV_FTYPE mat0, mat1, mat2, mat3;
@@ -558,18 +585,18 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
 
     assert(target_qubit_index1 != target_qubit_index2);
     if ((dim >= numComplexInVec) && (numComplexInVec == 4) &&
-               (target_qubit_index1 < 2) && (target_qubit_index2 < 2)) {
+        (target_qubit_index1 < 2) && (target_qubit_index2 < 2)) {
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_low(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
-    } else if ((dim >= (numComplexInVec<<1)) && (numComplexInVec == 4) &&
+    } else if ((dim >= (numComplexInVec << 1)) && (numComplexInVec == 4) &&
                ((target_qubit_index1 < 2) || (target_qubit_index2 < 2))) {
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_middle(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
 
     } else if ((numComplexInVec >= 4) && (target_qubit_index1 >= 2) &&
-        (target_qubit_index2 >= 2)) {
+               (target_qubit_index2 >= 2)) {
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_high(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
