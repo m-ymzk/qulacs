@@ -221,7 +221,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         svst1(pg, (ETYPE*)&state[basis_2], output2);
         svst1(pg, (ETYPE*)&state[basis_3], output3);
 
-        if ((4 <= min_qubit_index && min_qubit_index <= 9) ||
+        if ((4 <= min_qubit_index && min_qubit_index <= 9) &&
             (4 <= max_qubit_index && max_qubit_index <= 9)) {
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
