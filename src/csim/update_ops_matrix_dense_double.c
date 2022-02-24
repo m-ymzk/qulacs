@@ -221,7 +221,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         svst1(pg, (ETYPE*)&state[basis_2], output2);
         svst1(pg, (ETYPE*)&state[basis_3], output3);
 
-        if ((5 <= target_qubit_index1 && target_qubit_index1 <= 8)) {
+        if ((5 <= target_qubit_index1) && (target_qubit_index1 <= 8)) {
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
             __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
@@ -233,7 +233,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_2 + target_mask1 * 8], 1, 2);
             __builtin_prefetch(&state[basis_3 + target_mask1 * 8], 1, 2);
         }
-        if ((5 <= target_qubit_index2 && target_qubit_index2 <= 8)) {
+        if ((5 <= target_qubit_index2) && (target_qubit_index2 <= 8)) {
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask2 * 4], 1, 3);
             __builtin_prefetch(&state[basis_1 + target_mask2 * 4], 1, 3);
@@ -284,218 +284,526 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
     mat3 = svld1(pg, (ETYPE*)&matrix[12]);
 
     if (target_qubit_index2 > target_qubit_index1) {
+        ITYPE prefetch_flag =
+            (5 <= target_qubit_index2) && (target_qubit_index2 <= 8);
         // creat element index for shuffling in a vector
         vec_select = svcmpeq(pg,
             svand_z(pg, SvindexI(0, 1), SvdupI(target_mask1 << 1)), SvdupI(0));
 
         if (target_qubit_index1 == 0) {
+            if (prefetch_flag) {
 #ifdef _OPENMP
 #pragma omp parallel for private(input0, input1, input2, input3, output0,    \
     cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
     result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
-            for (state_index = 0; state_index < loop_dim;
-                 state_index += numComplexInVec) {
-                // create index
-                ITYPE basis_0 = (state_index & low_mask) +
-                                ((state_index & mid_mask) << 1) +
-                                ((state_index & high_mask) << 2);
-                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
-                          ((basis_1 & high_mask) << 2);
-                ITYPE basis_2 = basis_0 + target_mask2;
-                ITYPE basis_3 = basis_1 + target_mask2;
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask2;
+                    ITYPE basis_3 = basis_1 + target_mask2;
 
-                // fetch values
-                input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-                // shuffle
-                cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
-                cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
-                cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
 
-                // perform matrix-vector product
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
 
-                // reshuffle
-                output0 =
-                    svsel(vec_select, result0, svext(result1, result1, 6));
-                output1 =
-                    svsel(vec_select, svext(result0, result0, 2), result1);
-                output2 =
-                    svsel(vec_select, result2, svext(result3, result3, 6));
-                output3 =
-                    svsel(vec_select, svext(result2, result2, 2), result3);
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result1, result1, 6));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 2), result1);
+                    output2 =
+                        svsel(vec_select, result2, svext(result3, result3, 6));
+                    output3 =
+                        svsel(vec_select, svext(result2, result2, 2), result3);
 
-                // set values
-                svst1(pg, (ETYPE*)&state[basis_0], output0);
-                svst1(pg, (ETYPE*)&state[basis_1], output1);
-                svst1(pg, (ETYPE*)&state[basis_2], output2);
-                svst1(pg, (ETYPE*)&state[basis_3], output3);
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+
+                    // L1 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask2 * 4], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask2 * 8], 1, 2);
+                }
+            } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#endif
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask2;
+                    ITYPE basis_3 = basis_1 + target_mask2;
+
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
+
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result1, result1, 6));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 2), result1);
+                    output2 =
+                        svsel(vec_select, result2, svext(result3, result3, 6));
+                    output3 =
+                        svsel(vec_select, svext(result2, result2, 2), result3);
+
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+                }
             }
         } else {  // target_qubit_index1 == 1
+            if (prefetch_flag) {
 #ifdef _OPENMP
 #pragma omp parallel for private(input0, input1, input2, input3, output0,    \
     cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
     result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
-            for (state_index = 0; state_index < loop_dim;
-                 state_index += numComplexInVec) {
-                // create index
-                ITYPE basis_0 = (state_index & low_mask) +
-                                ((state_index & mid_mask) << 1) +
-                                ((state_index & high_mask) << 2);
-                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
-                          ((basis_1 & high_mask) << 2);
-                ITYPE basis_2 = basis_0 + target_mask2;
-                ITYPE basis_3 = basis_1 + target_mask2;
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask2;
+                    ITYPE basis_3 = basis_1 + target_mask2;
 
-                // fetch values
-                input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-                // shuffle
-                cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
-                cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
-                cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
 
-                // perform matrix-vector product
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
 
-                // reshuffle
-                output0 =
-                    svsel(vec_select, result0, svext(result1, result1, 4));
-                output1 =
-                    svsel(vec_select, svext(result0, result0, 4), result1);
-                output2 =
-                    svsel(vec_select, result2, svext(result3, result3, 4));
-                output3 =
-                    svsel(vec_select, svext(result2, result2, 4), result3);
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result1, result1, 4));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 4), result1);
+                    output2 =
+                        svsel(vec_select, result2, svext(result3, result3, 4));
+                    output3 =
+                        svsel(vec_select, svext(result2, result2, 4), result3);
 
-                // set values
-                svst1(pg, (ETYPE*)&state[basis_0], output0);
-                svst1(pg, (ETYPE*)&state[basis_1], output1);
-                svst1(pg, (ETYPE*)&state[basis_2], output2);
-                svst1(pg, (ETYPE*)&state[basis_3], output3);
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+
+                    // L1 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask2 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask2 * 4], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask2 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask2 * 8], 1, 2);
+                }
+            } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#endif
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask2;
+                    ITYPE basis_3 = basis_1 + target_mask2;
+
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
+
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result1, result1, 4));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 4), result1);
+                    output2 =
+                        svsel(vec_select, result2, svext(result3, result3, 4));
+                    output3 =
+                        svsel(vec_select, svext(result2, result2, 4), result3);
+
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+                }
             }
         }
     } else {  // target_qubit_index1 > target_qubit_index2
+
+        ITYPE prefetch_flag =
+            (5 <= target_qubit_index1) && (target_qubit_index1 <= 8);
 
         // create element index for shuffling in a vector
         vec_select = svcmpeq(pg,
             svand_z(pg, SvindexI(0, 1), SvdupI(target_mask2 << 1)), SvdupI(0));
 
         if (target_qubit_index2 == 0) {  // target_qubit_index2 == 0
+            if (prefetch_flag) {
 #ifdef _OPENMP
 #pragma omp parallel for private(input0, input1, input2, input3, output0,    \
     cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
     result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
-            for (state_index = 0; state_index < loop_dim;
-                 state_index += numComplexInVec) {
-                // create index
-                ITYPE basis_0 = (state_index & low_mask) +
-                                ((state_index & mid_mask) << 1) +
-                                ((state_index & high_mask) << 2);
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
 
-                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
-                          ((basis_1 & high_mask) << 2);
-                ITYPE basis_2 = basis_0 + target_mask1;
-                ITYPE basis_3 = basis_1 + target_mask1;
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask1;
+                    ITYPE basis_3 = basis_1 + target_mask1;
 
-                // fetch values
-                input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-                // shuffle
-                cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
-                cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
-                cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
 
-                // perform matrix-vector product
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
 
-                // reshuffle
-                output0 =
-                    svsel(vec_select, result0, svext(result2, result2, 6));
-                output1 =
-                    svsel(vec_select, svext(result0, result0, 2), result2);
-                output2 =
-                    svsel(vec_select, result1, svext(result3, result3, 6));
-                output3 =
-                    svsel(vec_select, svext(result1, result1, 2), result3);
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result2, result2, 6));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 2), result2);
+                    output2 =
+                        svsel(vec_select, result1, svext(result3, result3, 6));
+                    output3 =
+                        svsel(vec_select, svext(result1, result1, 2), result3);
 
-                // set values
-                svst1(pg, (ETYPE*)&state[basis_0], output0);
-                svst1(pg, (ETYPE*)&state[basis_1], output1);
-                svst1(pg, (ETYPE*)&state[basis_2], output2);
-                svst1(pg, (ETYPE*)&state[basis_3], output3);
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+
+                    // L1 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask1 * 4], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask1 * 8], 1, 2);
+                }
+            } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#endif
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask1;
+                    ITYPE basis_3 = basis_1 + target_mask1;
+
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
+
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result2, result2, 6));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 2), result2);
+                    output2 =
+                        svsel(vec_select, result1, svext(result3, result3, 6));
+                    output3 =
+                        svsel(vec_select, svext(result1, result1, 2), result3);
+
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+                }
             }
+
         } else {  // target_qubit_index2 == 1
+            if (prefetch_flag) {
 #ifdef _OPENMP
 #pragma omp parallel for private(input0, input1, input2, input3, output0,    \
     cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
     result2, result3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
-            for (state_index = 0; state_index < loop_dim;
-                 state_index += numComplexInVec) {
-                // create index
-                ITYPE basis_0 = (state_index & low_mask) +
-                                ((state_index & mid_mask) << 1) +
-                                ((state_index & high_mask) << 2);
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
 
-                ITYPE basis_1 = state_index + (numComplexInVec >> 1);
-                basis_1 = (basis_1 & low_mask) + ((basis_1 & mid_mask) << 1) +
-                          ((basis_1 & high_mask) << 2);
-                ITYPE basis_2 = basis_0 + target_mask1;
-                ITYPE basis_3 = basis_1 + target_mask1;
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask1;
+                    ITYPE basis_3 = basis_1 + target_mask1;
 
-                // fetch values
-                input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-                // shuffle
-                cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
-                cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
-                cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
 
-                // perform matrix-vector product
-                MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                    mat1, mat2, mat3, &result0, &result1, &result2, &result3);
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
 
-                // reshuffle
-                output0 =
-                    svsel(vec_select, result0, svext(result2, result2, 4));
-                output1 =
-                    svsel(vec_select, svext(result0, result0, 4), result2);
-                output2 =
-                    svsel(vec_select, result1, svext(result3, result3, 4));
-                output3 =
-                    svsel(vec_select, svext(result1, result1, 4), result3);
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result2, result2, 4));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 4), result2);
+                    output2 =
+                        svsel(vec_select, result1, svext(result3, result3, 4));
+                    output3 =
+                        svsel(vec_select, svext(result1, result1, 4), result3);
 
-                // set values
-                svst1(pg, (ETYPE*)&state[basis_0], output0);
-                svst1(pg, (ETYPE*)&state[basis_1], output1);
-                svst1(pg, (ETYPE*)&state[basis_2], output2);
-                svst1(pg, (ETYPE*)&state[basis_3], output3);
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+
+                    // L1 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask1 * 4], 1, 3);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask1 * 4], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(
+                        &state[basis_0 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_1 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_2 + target_mask1 * 8], 1, 2);
+                    __builtin_prefetch(
+                        &state[basis_3 + target_mask1 * 8], 1, 2);
+                }
+            } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
+    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
+    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#endif
+                for (state_index = 0; state_index < loop_dim;
+                     state_index += numComplexInVec) {
+                    // create index
+                    ITYPE basis_0 = (state_index & low_mask) +
+                                    ((state_index & mid_mask) << 1) +
+                                    ((state_index & high_mask) << 2);
+
+                    ITYPE basis_1 = state_index + (numComplexInVec >> 1);
+                    basis_1 = (basis_1 & low_mask) +
+                              ((basis_1 & mid_mask) << 1) +
+                              ((basis_1 & high_mask) << 2);
+                    ITYPE basis_2 = basis_0 + target_mask1;
+                    ITYPE basis_3 = basis_1 + target_mask1;
+
+                    // fetch values
+                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+
+                    // shuffle
+                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+
+                    // perform matrix-vector product
+                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
+                        mat1, mat2, mat3, &result0, &result1, &result2,
+                        &result3);
+
+                    // reshuffle
+                    output0 =
+                        svsel(vec_select, result0, svext(result2, result2, 4));
+                    output1 =
+                        svsel(vec_select, svext(result0, result0, 4), result2);
+                    output2 =
+                        svsel(vec_select, result1, svext(result3, result3, 4));
+                    output3 =
+                        svsel(vec_select, svext(result1, result1, 4), result3);
+
+                    // set values
+                    svst1(pg, (ETYPE*)&state[basis_0], output0);
+                    svst1(pg, (ETYPE*)&state[basis_1], output1);
+                    svst1(pg, (ETYPE*)&state[basis_2], output2);
+                    svst1(pg, (ETYPE*)&state[basis_3], output3);
+                }
             }
         }
     }
