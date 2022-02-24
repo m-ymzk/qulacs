@@ -2,7 +2,6 @@ from argparse import ArgumentParser
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
 import time
-from mpi4py import MPI
 
 #np.random.seed(seed=32)
 rng = np.random.default_rng(seed=2022)
@@ -132,12 +131,12 @@ if __name__ == '__main__':
             stime_avg = np.average(simTimes[1:])
             stime_std = np.std(simTimes[1:])
         else:
-            ctime_avg = constTimes
+            ctime_avg = constTimes[0]
             ctime_std = 0.
-            stime_avg = simTimes
+            stime_avg = simTimes[0]
             stime_std = 0.
 
-        print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-            mode, n, ctime_avg, ctime_std, stime_avg, stime_std))
+        print('[qulacs] {}, size {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+            mode, size, n, ctime_avg, ctime_std, stime_avg, stime_std))
 
 #EOF

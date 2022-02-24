@@ -2,28 +2,28 @@ from argparse import ArgumentParser
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
 import time
-from mpi4py import MPI
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+np.random.seed(seed=32)
 
 def get_option():
     argparser = ArgumentParser()
     argparser.add_argument('-n', '--nqubits', type=int,
             default=4, help='Number of qbits')
-    argparser.add_argument('-o', '--opt', type=int,
-            default=-1, help='Enable QuantumCircuitOptimizer: 0 is light, 1-4 is opt, 5 is merge_full')
+    argparser.add_argument('-d', '--depth', type=int,
+            default=10, help='Number of Depth')
+    argparser.add_argument('-r', '--repeats', type=int,
+            default=5, help='Repeat times to measure')
+    argparser.add_argument('-v', '--verbose', type=int,
+            default=0, help='Define Output level. 0: time only, 1: Circuit info and time,2: All Gates') 
     return argparser.parse_args()
 
-def entangler(circuit, nqubits, pairs):
-    for a, b in pairs:
-        circuit.add_CNOT_gate(a, b)
-
-def build_circuit(nqubits, depth, pairs):
-    outer_qc=int(np.log2(size))
-    inner_qc=nqubits - outer_qc
-    #if rank==0: print("#inner, outer=", inner_qc, outer_qc)
+def build_circuit(args, mpisize, pairs):
+    depth = args.depth
+    vb = args.verbose
+    nqubits = args.nqubits
+    outer_qc = int(np.log2(mpisize))
+    inner_qc = nqubits - outer_qc
+    #if rank==0: print("#inner, outer, depth=", inner_qc, outer_qc, depth)
 
     circuit = QuantumCircuit(nqubits)
     USE_BSWAP=True
@@ -35,9 +35,10 @@ def build_circuit(nqubits, depth, pairs):
                 circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
             for i in range(outer_qc):
                 circuit.add_H_gate((inner_qc + i) - outer_qc)
+            #if (outer_qc!=0):
             #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-            if (outer_qc != 0) & (depth % 2 == 1):
-                circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        if (outer_qc != 0) & (depth % 2 == 1):
+            circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
 
     else:
         for _ in range(depth):
@@ -47,38 +48,48 @@ def build_circuit(nqubits, depth, pairs):
     return circuit
 
 if __name__ == '__main__':
-
     args = get_option()
-    n=args.nqubits
+    n = args.nqubits
     pairs = [(i, (i + 1) % n) for i in range(n)]
-    numRepeats = 3
+    repeats = args.repeats
 
-    np.random.seed(seed=32)
     mode = "hbench"
+
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    mpisize = comm.Get_size()
 
     #if rank==0:
         #print('[ROI], mode, #qubits, avg of last 5 runs, std of last 5 runs, runtimes of 6 runs')
-    constTimes = np.zeros(numRepeats)
-    simTimes = np.zeros(numRepeats)
+    constTimes = np.zeros(repeats)
+    simTimes = np.zeros(repeats)
     st = QuantumState(n, use_multi_cpu=True)
-    for i in range(numRepeats):
+    for i in range(repeats):
         constStart = time.perf_counter()
-        circuit = build_circuit(n, 11, pairs)
-        #if rank==0:
-        #    print(circuit)
+        circuit = build_circuit(args, mpisize, pairs)
         constTimes[i] = time.perf_counter() - constStart
 
+        comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
         simTimes[i] = time.perf_counter() - simStart
-
         del circuit
-    #del st
+    del st
 
     if rank==0:
-        print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-            mode, n,
-            np.average(constTimes), np.std(constTimes), 
-            np.average(simTimes), np.std(simTimes)))
+        if repeats > 1:
+            ctime_avg = np.average(constTimes[1:])
+            ctime_std = np.std(constTimes[1:])
+            stime_avg = np.average(simTimes[1:])
+            stime_std = np.std(simTimes[1:])
+        else:
+            ctime_avg = constTimes[0]
+            ctime_std = 0.
+            stime_avg = simTimes[0]
+            stime_std = 0.
+
+        print('[qulacs] {}, mpisize {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+            mode, mpisize, n, ctime_avg, ctime_std, stime_avg, stime_std))
 
 #EOF
