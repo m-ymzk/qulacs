@@ -85,6 +85,11 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
 
 static void barrier() { MPI_Barrier(mpicomm); }
 
+static void m_DC_allgather( void *sendbuf, void *recvbuf, int count) {
+    MPI_Allgather(sendbuf, count, MPI_DOUBLE_COMPLEX,
+            recvbuf, count, MPI_DOUBLE_COMPLEX, mpicomm);
+}
+
 static void m_DC_sendrecv(
     void *sendbuf, void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
@@ -183,6 +188,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(wait)
+    REGISTER_METHOD_POINTER(m_DC_allgather)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
     REGISTER_METHOD_POINTER(m_DC_sendrecv_replace)
     REGISTER_METHOD_POINTER(m_DC_isendrecv)
