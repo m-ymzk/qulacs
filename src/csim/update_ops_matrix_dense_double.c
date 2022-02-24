@@ -161,57 +161,6 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0,
     *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 3), input3, 90);
 }
 
-static inline void MatrixVectorProduct4x4woCMFLA(SV_PRED pg, SV_FTYPE input0ir,
-    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
-    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
-    SV_FTYPE mat23rr, SV_FTYPE mat0ii, SV_FTYPE mat1ii, SV_FTYPE mat2ii,
-    SV_FTYPE mat3ii, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2,
-    SV_FTYPE* output3);
-
-static inline void MatrixVectorProduct4x4woCMFLA(SV_PRED pg, SV_FTYPE input0ir,
-    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
-    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
-    SV_FTYPE mat23rr, SV_FTYPE mat0ii, SV_FTYPE mat1ii, SV_FTYPE mat2ii,
-    SV_FTYPE mat3ii, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2,
-    SV_FTYPE* output3) {
-    // perform matrix-vector product
-    *output0 = svmul_z(pg, svdup_lane(mat01rr, 0), input0ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 0), input0ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 2), input1ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 1), input1ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 4), input2ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 2), input2ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 6), input3ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 3), input3ri);
-
-    *output1 = svmul_z(pg, svdup_lane(mat01rr, 1), input0ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 0), input0ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 3), input1ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 1), input1ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 5), input2ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 2), input2ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 7), input3ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 3), input3ri);
-
-    *output2 = svmul_z(pg, svdup_lane(mat23rr, 0), input0ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 0), input0ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 2), input1ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 1), input1ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 4), input2ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 2), input2ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 6), input3ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 3), input3ri);
-
-    *output3 = svmul_z(pg, svdup_lane(mat23rr, 1), input0ir);
-    *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 0), input0ri);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 3), input1ir);
-    *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 1), input1ri);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 5), input2ir);
-    *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 2), input2ri);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 7), input3ir);
-    *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 3), input3ri);
-}
-
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
     const UINT min_qubit_index =
@@ -233,45 +182,17 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     ITYPE vec_len = getVecLength();
 
     SV_PRED pg = Svptrue();
-    SV_PRED pred_01;
-
-    SV_ITYPE vec_tbl;
-
-    SV_FTYPE mat01rr, mat23rr;
-    SV_FTYPE mat0ii, mat1ii, mat2ii, mat3ii;
-    SV_FTYPE input0ir, input1ir, input2ir, input3ir;
-    SV_FTYPE input0ri, input1ri, input2ri, input3ri;
+    SV_FTYPE mat0, mat1, mat2, mat3;
+    SV_FTYPE input0, input1, input2, input3;
     SV_FTYPE output0, output1, output2, output3;
 
-    mat0ii = svld1(pg, (ETYPE*)&matrix[0]);
-    mat1ii = svld1(pg, (ETYPE*)&matrix[4]);
-    mat2ii = svld1(pg, (ETYPE*)&matrix[8]);
-    mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
-
-    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
-
-    mat01rr = svsel(pred_01, mat0ii, svext(mat1ii, mat1ii, 7));
-    mat23rr = svsel(pred_01, mat2ii, svext(mat3ii, mat3ii, 7));
-
-    vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
-    mat0ii = svtbl(mat0ii, vec_tbl);
-    mat1ii = svtbl(mat1ii, vec_tbl);
-    mat2ii = svtbl(mat2ii, vec_tbl);
-    mat3ii = svtbl(mat3ii, vec_tbl);
-
-    mat0ii = svneg_m(mat0ii, pred_01, mat0ii);
-    mat1ii = svneg_m(mat1ii, pred_01, mat1ii);
-    mat2ii = svneg_m(mat2ii, pred_01, mat2ii);
-    mat3ii = svneg_m(mat3ii, pred_01, mat3ii);
-
-    // create a table for swap
-    vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
-
+    mat0 = svld1(pg, (ETYPE*)&matrix[0]);
+    mat1 = svld1(pg, (ETYPE*)&matrix[4]);
+    mat2 = svld1(pg, (ETYPE*)&matrix[8]);
+    mat3 = svld1(pg, (ETYPE*)&matrix[12]);
 #ifdef _OPENMP
-#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
-    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
-    output3)                                                             \
-    shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
+#pragma omp parallel for private(input0, input1, input2, input3, output0, \
+    output1, output2, output3) shared(pg, mat0, mat1, mat2, mat3)
 #endif
     for (state_index = 0; state_index < loop_dim;
          state_index += (vec_len >> 1)) {
@@ -286,21 +207,13 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         ITYPE basis_3 = basis_1 + target_mask2;
 
         // fetch values
-        input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-        input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-        input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-        input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+        input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+        input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+        input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+        input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
-        // swap
-        input0ri = svtbl(input0ir, vec_tbl);
-        input1ri = svtbl(input1ir, vec_tbl);
-        input2ri = svtbl(input2ir, vec_tbl);
-        input3ri = svtbl(input3ir, vec_tbl);
-
-        MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
-            input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
-            mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
-            &output3);
+        MatrixVectorProduct4x4(pg, input0, input1, input2, input3, mat0, mat1,
+            mat2, mat3, &output0, &output1, &output2, &output3);
 
         // set values
         svst1(pg, (ETYPE*)&state[basis_0], output0);
