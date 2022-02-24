@@ -218,8 +218,10 @@ TEST(GateTest_multicpu, SingleQubitUnitaryGate) {
         gate->update_quantum_state(&state);
         gate->update_quantum_state(&state_ref);
 
-        for (ITYPE i = 0; i < inner_dim; ++i)
-            ASSERT_NEAR(abs(state.data_cpp()[i] - state_ref.data_cpp()[(i + offs) % dim]), 0, eps);
+        for (ITYPE i = 0; i < inner_dim; ++i) {
+            ASSERT_NEAR(real(state.data_cpp()[i]), real(state_ref.data_cpp()[(i + offs) % dim]), eps);
+            ASSERT_NEAR(imag(state.data_cpp()[i]), imag(state_ref.data_cpp()[(i + offs) % dim]), eps);
+        }
     }
 
     for (UINT target=0; target < n; ++target) {
@@ -233,8 +235,10 @@ TEST(GateTest_multicpu, SingleQubitUnitaryGate) {
         gate->update_quantum_state(&state);
         gate->update_quantum_state(&state_ref);
 
-        for (ITYPE i = 0; i < inner_dim; ++i)
-            ASSERT_NEAR(abs(state.data_cpp()[i] - state_ref.data_cpp()[(i + offs) % dim]), 0, eps);
+        for (ITYPE i = 0; i < inner_dim; ++i) {
+            ASSERT_NEAR(real(state.data_cpp()[i]), real(state_ref.data_cpp()[(i + offs) % dim]), eps);
+            ASSERT_NEAR(imag(state.data_cpp()[i]), imag(state_ref.data_cpp()[(i + offs) % dim]), eps);
+        }
     }
 
     for (UINT target=0; target < n; ++target) {
@@ -249,8 +253,10 @@ TEST(GateTest_multicpu, SingleQubitUnitaryGate) {
         gate->update_quantum_state(&state);
         gate->update_quantum_state(&state_ref);
 
-        for (ITYPE i = 0; i < inner_dim; ++i)
-            ASSERT_NEAR(abs(state.data_cpp()[i] - state_ref.data_cpp()[(i + offs) % dim]), 0, eps);
+        for (ITYPE i = 0; i < inner_dim; ++i) {
+            ASSERT_NEAR(real(state.data_cpp()[i]), real(state_ref.data_cpp()[(i + offs) % dim]), eps);
+            ASSERT_NEAR(imag(state.data_cpp()[i]), imag(state_ref.data_cpp()[(i + offs) % dim]), eps);
+        }
     }
 }
 
