@@ -76,8 +76,6 @@ QuantumGateMatrix::QuantumGateMatrix(
 }
 
 void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
-    ITYPE dim = 1ULL << state->qubit_count;
-
     // Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic,
     // Eigen::RowMajor> row_matrix(this->_matrix_element); const CTYPE*
     // matrix_ptr = reinterpret_cast<const CTYPE*>(row_matrix.data()); const
@@ -117,20 +115,20 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
 #ifdef _USE_GPU
                 if (state->get_device_name() == "gpu") {
                     single_qubit_dense_matrix_gate_host(target_index[0],
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
 
                 } else {
                     single_qubit_dense_matrix_gate(
-                        target_index[0], matrix_ptr, state->data_c(), dim);
+                        target_index[0], matrix_ptr, state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
                     single_qubit_dense_matrix_gate(
-                        target_index[0], matrix_ptr, state->data_c(), dim);
+                        target_index[0], matrix_ptr, state->data_c(), state->dim);
                 else  // for distributed-state vector
                     single_qubit_dense_matrix_gate_mpi(target_index[0],
-                        matrix_ptr, state->data_c(), dim, state->inner_qc);
+                        matrix_ptr, state->data_c(), state->dim, state->inner_qc);
 #endif
             }
             // single control qubit
@@ -139,18 +137,18 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                 if (state->get_device_name() == "gpu") {
                     single_qubit_control_single_qubit_dense_matrix_gate_host(
                         control_index[0], control_value[0], target_index[0],
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
                 } else {
                     single_qubit_control_single_qubit_dense_matrix_gate(
                         control_index[0], control_value[0], target_index[0],
-                        matrix_ptr, state->data_c(), dim);
+                        matrix_ptr, state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
                     single_qubit_control_single_qubit_dense_matrix_gate(
                         control_index[0], control_value[0], target_index[0],
-                        matrix_ptr, state->data_c(), dim);
+                        matrix_ptr, state->data_c(), state->dim);
                 else  // for distributed-state vector
                     std::cerr << "not implemented:" << __FILE__ << ":"
                               << __LINE__ << std::endl;
@@ -167,27 +165,27 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index.data(),
                         (UINT)(target_index.size()),
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
                     // exit(0);
                     /*
                     multi_qubit_control_single_qubit_dense_matrix_gate_host(
                             control_index.data(), control_value.data(),
                     (UINT)(control_index.size()), target_index[0], matrix_ptr,
-                    state->data(), dim );
+                    state->data(), state->dim );
                             */
                 } else {
                     multi_qubit_control_single_qubit_dense_matrix_gate(
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index[0],
-                        matrix_ptr, state->data_c(), dim);
+                        matrix_ptr, state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
                     multi_qubit_control_single_qubit_dense_matrix_gate(
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index[0],
-                        matrix_ptr, state->data_c(), dim);
+                        matrix_ptr, state->data_c(), state->dim);
                 else  // for distributed-state vector
                     std::cerr << "not implemented:" << __FILE__ << ":"
                               << __LINE__ << std::endl;
@@ -203,21 +201,22 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                 if (state->get_device_name() == "gpu") {
                     multi_qubit_dense_matrix_gate_host(target_index.data(),
                         (UINT)(target_index.size()),
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
                 } else {
                     multi_qubit_dense_matrix_gate(target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
                     multi_qubit_dense_matrix_gate(target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 else  // for distributed-state vector
-                    std::cerr << "not implemented:" << __FILE__ << ":"
-                              << __LINE__ << std::endl;
+                    multi_qubit_dense_matrix_gate_mpi(target_index.data(),
+                        (UINT)(target_index.size()), matrix_ptr,
+                        state->data_c(), state->dim, state->inner_qc);
 #endif
             }
             // single control qubit
@@ -227,20 +226,20 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                     single_qubit_control_multi_qubit_dense_matrix_gate_host(
                         control_index[0], control_value[0], target_index.data(),
                         (UINT)(target_index.size()),
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
                 } else {
                     single_qubit_control_multi_qubit_dense_matrix_gate(
                         control_index[0], control_value[0], target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
                     single_qubit_control_multi_qubit_dense_matrix_gate(
                         control_index[0], control_value[0], target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 else  // for distributed-state vector
                     std::cerr << "not implemented:" << __FILE__ << ":"
                               << __LINE__ << std::endl;
@@ -254,14 +253,14 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index.data(),
                         (UINT)(target_index.size()),
-                        (const CPPCTYPE*)matrix_ptr, state->data(), dim,
+                        (const CPPCTYPE*)matrix_ptr, state->data(), state->dim,
                         state->get_cuda_stream(), state->device_number);
                 } else {
                     multi_qubit_control_multi_qubit_dense_matrix_gate(
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
@@ -269,7 +268,7 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                         control_index.data(), control_value.data(),
                         (UINT)(control_index.size()), target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
-                        state->data_c(), dim);
+                        state->data_c(), state->dim);
                 else  // for distributed-state vector
                     std::cerr << "not implemented:" << __FILE__ << ":"
                               << __LINE__ << std::endl;
@@ -280,24 +279,24 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
         if (this->_control_qubit_list.size() == 0) {
             if (this->_target_qubit_list.size() == 1) {
                 dm_single_qubit_dense_matrix_gate(
-                    target_index[0], matrix_ptr, state->data_c(), dim);
+                    target_index[0], matrix_ptr, state->data_c(), state->dim);
             } else {
                 dm_multi_qubit_dense_matrix_gate(target_index.data(),
                     (UINT)target_index.size(), matrix_ptr, state->data_c(),
-                    dim);
+                    state->dim);
             }
         } else {
             if (this->_target_qubit_list.size() == 1) {
                 dm_multi_qubit_control_single_qubit_dense_matrix_gate(
                     control_index.data(), control_value.data(),
                     (UINT)control_index.size(), target_index[0], matrix_ptr,
-                    state->data_c(), dim);
+                    state->data_c(), state->dim);
             } else {
                 dm_multi_qubit_control_multi_qubit_dense_matrix_gate(
                     control_index.data(), control_value.data(),
                     (UINT)control_index.size(), target_index.data(),
                     (UINT)target_index.size(), matrix_ptr, state->data_c(),
-                    dim);
+                    state->dim);
             }
         }
     }

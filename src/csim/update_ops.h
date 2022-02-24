@@ -382,6 +382,12 @@ void CNOT_gate_parallel_unroll(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_parallel_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void CNOT_gate_single_sve(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void CNOT_gate_parallel_sve(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE) 
 #ifdef _USE_MPI
 DllExport void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
     CTYPE *state, ITYPE dim, UINT inner_qc);
@@ -457,6 +463,35 @@ void SWAP_gate_parallel_simd(UINT target_qubit_index_0,
 #ifdef _USE_MPI
 DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
     UINT target_qubit_index_1, CTYPE *state, ITYPE dim, UINT inner_qc);
+#endif
+
+/**
+ * \~english
+ * Apply the BlockSWAP to the quantum state.
+ *
+ * Apply the BlockSWAP to the quantum state.
+ * @param[in] control_qubit_index index of start target-0 qubit
+ * @param[in] target_qubit_index index of start target-1 qubit
+ * @param[in] number_qubits number of target qubits
+ * @param[in,out] state quantum state
+ * @param[in] dim dimension
+ *
+ * \~japanese-en
+ * BlockSWAP演算を作用させて状態を更新。
+ *
+ * (2xn)量子ビット演算、BSWAP演算を作用させて状態を更新。num_qubits個の２つの量子ビットに対して対称に作用する（インデックスを入れ替えても同じ作用）。
+ * @param[in] target_qubit_index_0 作用する量子ビットの最初のインデックス
+ * @param[in] target_qubit_index_1 作用する量子ビットの最初のインデックス
+ * @param[in] num_qubits 作用する量子ビット数
+ * @param[in,out] state 量子状態
+ * @param[in] dim 次元
+ */
+DllExport void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    UINT num_qubits, CTYPE *state, ITYPE dim);
+#ifdef _USE_MPI
+DllExport void BSWAP_gate_mpi(UINT target_qubit_index_0,
+    UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim,
+    UINT inner_qc);
 #endif
 
 /**
@@ -1140,7 +1175,10 @@ void double_qubit_dense_matrix_gate_nosimd(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
 void double_qubit_dense_matrix_gate_simd(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
-
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
+#endif // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 /**
  * \~english
  * Apply a multi-qubit arbitrary gate.
@@ -1191,6 +1229,11 @@ void multi_qubit_dense_matrix_gate_single(const UINT *target_qubit_index_list,
 void multi_qubit_dense_matrix_gate_parallel(const UINT *target_qubit_index_list,
     UINT target_qubit_index_count, const CTYPE *matrix, CTYPE *state,
     ITYPE dim);
+#ifdef _USE_MPI
+DllExport void multi_qubit_dense_matrix_gate_mpi(
+    const UINT *target_qubit_index_list, UINT target_qubit_index_count,
+    const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT outer_qc);
+#endif
 
 /**
  * \~english

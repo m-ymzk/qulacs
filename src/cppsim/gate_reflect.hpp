@@ -27,6 +27,7 @@ private:
 public:
     ClsStateReflectionGate(const QuantumStateBase* _reflection_state) {
         reflection_state = _reflection_state->copy();
+        // TODO: check qubit_count or inner_qubit?
         UINT qubit_count = _reflection_state->qubit_count;
         for (UINT qubit_index = 0; qubit_index < qubit_count; ++qubit_index) {
             this->_target_qubit_list.push_back(TargetQubitInfo(qubit_index, 0));
