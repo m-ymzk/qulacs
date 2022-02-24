@@ -221,18 +221,27 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         svst1(pg, (ETYPE*)&state[basis_2], output2);
         svst1(pg, (ETYPE*)&state[basis_3], output3);
 
-        if ((4 <= min_qubit_index && min_qubit_index <= 9) &&
-            (4 <= max_qubit_index && max_qubit_index <= 9)) {
+        if ((5 <= target_qubit_index1 && target_qubit_index1 <= 8)) {
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
             __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_2 + target_mask1 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_3 + target_mask1 * 4], 1, 3);
             // L2 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask1 * 8], 1, 2);
             __builtin_prefetch(&state[basis_1 + target_mask1 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_2 + target_mask1 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_3 + target_mask1 * 8], 1, 2);
+        }
+        if ((5 <= target_qubit_index2 && target_qubit_index2 <= 8)) {
             // L1 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask2 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_1 + target_mask2 * 4], 1, 3);
             __builtin_prefetch(&state[basis_2 + target_mask2 * 4], 1, 3);
             __builtin_prefetch(&state[basis_3 + target_mask2 * 4], 1, 3);
             // L2 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask2 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_1 + target_mask2 * 8], 1, 2);
             __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
             __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
         }
