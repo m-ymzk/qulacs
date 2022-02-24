@@ -7,9 +7,12 @@ from qulacs.circuit import QuantumCircuitOptimizer as QCO
 import time
 from mpi4py import MPI
 
-use_bswap=True
+use_bswap = True
+debug = False
 rank = MPI.COMM_WORLD.Get_rank()
 
+# mutable
+swapped = False
 
 def get_option():
     argparser = ArgumentParser()
@@ -18,8 +21,6 @@ def get_option():
     argparser.add_argument('-o', '--opt', type=int,
             default=-1, help='Enable QuantumCircuitOptimizer: 0 is light, 1-4 is opt, 5 is merge_full')
     return argparser.parse_args()
-
-swapped = False
 
 def get_act_idx(i, inner_qc, outer_qc):
     if swapped:
@@ -35,44 +36,47 @@ def get_act_idx(i, inner_qc, outer_qc):
 def first_rotation(circuit, nqubits, inner_qc, outer_qc):
     global swapped
 
-    assert swapped is False
-    for k in range(inner_qc):
+    inner_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) <  inner_qc, range(nqubits)))
+    outer_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) >= inner_qc, range(nqubits)))
+
+    for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RX/RZ {}'.format(k_phy))
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
         circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
-    for k in range(inner_qc, nqubits):
+    for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RX/RZ {}'.format(k_phy))
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
 def mid_rotation(circuit, nqubits, inner_qc, outer_qc):
     global swapped
 
-    assert swapped is False
+    inner_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) <  inner_qc, range(nqubits)))
+    outer_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) >= inner_qc, range(nqubits)))
 
-    for k in range(inner_qc):
+    for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
         circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
-    for k in range(inner_qc, nqubits):
+    for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
@@ -80,42 +84,41 @@ def mid_rotation(circuit, nqubits, inner_qc, outer_qc):
 def last_rotation(circuit, nqubits, inner_qc, outer_qc):
     global swapped
 
-    assert swapped is False
+    inner_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) <  inner_qc, range(nqubits)))
+    outer_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) >= inner_qc, range(nqubits)))
 
-    for k in range(inner_qc):
+    for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RZ/RX {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX {}'.format(k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
         circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
-    for k in range(inner_qc, nqubits):
+    for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if rank == 0: print('RZ/RX {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX {}'.format(k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
 
 def entangler(circuit, nqubits, pairs, inner_qc, outer_qc):
     global swapped
 
-    if swapped:
-        outer_qubits = list(range(inner_qc - outer_qc, inner_qc))
-    else:
-        outer_qubits = list(range(inner_qc, nqubits))
+    inner_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) <  inner_qc, range(nqubits)))
+    outer_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) >= inner_qc, range(nqubits)))
 
     for a, b in pairs:
-        if b not in outer_qubits:
+        if b in inner_qubits:
             a_phy = get_act_idx(a, inner_qc, outer_qc)
             b_phy = get_act_idx(b, inner_qc, outer_qc)
-            if rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
+            if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
             circuit.add_CNOT_gate(a_phy, b_phy)
 
     if use_bswap and outer_qc > 0:
-        if rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
         circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
@@ -123,10 +126,14 @@ def entangler(circuit, nqubits, pairs, inner_qc, outer_qc):
         if b in outer_qubits:
             a_phy = get_act_idx(a, inner_qc, outer_qc)
             b_phy = get_act_idx(b, inner_qc, outer_qc)
-            if rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
+            if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
             circuit.add_CNOT_gate(a_phy, b_phy)
 
 def build_circuit(nqubits, depth, pairs, commsize):
+    global swapped
+
+    swapped = False
+
     outer_qc = int(np.log2(commsize))
     inner_qc = nqubits - outer_qc
 
@@ -137,6 +144,15 @@ def build_circuit(nqubits, depth, pairs, commsize):
         mid_rotation(circuit, nqubits, inner_qc, outer_qc)
         entangler(circuit, nqubits, pairs, inner_qc, outer_qc)
     last_rotation(circuit, nqubits, inner_qc, outer_qc)
+
+    # recover if swapped
+    if use_bswap and outer_qc > 0:
+        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        swapped = not swapped
+
+    assert swapped is False
+
     return circuit
 
 if __name__ == '__main__':
