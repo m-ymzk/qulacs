@@ -73,6 +73,42 @@ void X_gate_single_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
+#ifdef __aarch64__
+    } else if (5 <= target_qubit_index && target_qubit_index <= 8) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+            __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+            __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+    } else if (target_qubit_index >= 2) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+#endif
     } else {
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index_0 =
@@ -103,9 +139,8 @@ void X_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
-    }
 #ifdef __aarch64__
-    else if (5 <= target_qubit_index && target_qubit_index <= 8) {
+    } else if (5 <= target_qubit_index && target_qubit_index <= 8) {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 4) {
             ITYPE basis_index_0 =
@@ -141,9 +176,8 @@ void X_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
                 state1[i] = temp;
             }
         }
-    }
 #endif
-    else {
+    } else {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index_0 =
