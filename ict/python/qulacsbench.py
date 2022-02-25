@@ -41,7 +41,7 @@ def first_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RX/RZ {} ({})'.format(k, k_phy))
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
@@ -52,7 +52,7 @@ def first_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RX/RZ {} ({})'.format(k, k_phy))
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
@@ -64,7 +64,7 @@ def mid_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX/RZ {} ({})'.format(k, k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
@@ -76,7 +76,7 @@ def mid_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RZ/RX/RZ {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX/RZ {} ({})'.format(k, k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
         circuit.add_RZ_gate(k_phy, np.random.rand())
@@ -89,7 +89,7 @@ def last_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in inner_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RZ/RX {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX {} ({})'.format(k, k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
 
@@ -100,7 +100,7 @@ def last_rotation(circuit, nqubits, inner_qc, outer_qc):
 
     for k in outer_qubits:
         k_phy = get_act_idx(k, inner_qc, outer_qc)
-        if debug and rank == 0: print('RZ/RX {}'.format(k_phy))
+        if debug and rank == 0: print('RZ/RX {} ({})'.format(k, k_phy))
         circuit.add_RZ_gate(k_phy, np.random.rand())
         circuit.add_RX_gate(k_phy, np.random.rand())
 
@@ -115,7 +115,7 @@ def entangler(circuit, nqubits, pairs, inner_qc, outer_qc):
 
         a_phy = get_act_idx(a, inner_qc, outer_qc)
         b_phy = get_act_idx(b, inner_qc, outer_qc)
-        if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
+        if debug and rank == 0: print('CNOT {} {} ({} {})'.format(a, b, a_phy, b_phy))
         circuit.add_CNOT_gate(a_phy, b_phy)
 
 def build_circuit(nqubits, depth, pairs, commsize):
