@@ -8,6 +8,8 @@ export PATH="/usr/mpi/gcc/openmpi-4.1.0rc5/bin":$PATH
 #OMP_PATH=${HOME}/opt/ompi4.1.2
 #export PATH=${OMP_PATH}/bin:${PATH}
 #export LD_LIBRARY_PATH=${OMP_PATH}/lib:${LD_LIBRARY_PATH}
+export UCX_IB_MLX5_DEVX=no
+export OMP_PROC_BIND=TRUE
 
 ### activate qenv
 . ${HOME}/mpi-qulacs/qenv/bin/activate

@@ -36,7 +36,6 @@ typedef unsigned long long ITYPE;
 
 //! complex value
 
-
 #if defined(_SINGLE_PRECISION)
 
 #ifdef _MSC_VER
@@ -83,9 +82,11 @@ inline static ITYPE getVecLength(void) { return svcntw(); }
 inline static SV_PRED Svptrue(void) { return svptrue_b32(); }
 inline static SV_FTYPE SvdupF(double val) { return svdup_f32(val); }
 inline static SV_ITYPE SvdupI(UINT val) { return svdup_u32(val); }
-inline static SV_ITYPE SvindexI(UINT base, UINT step) { return svindex_u32(base, step); }
+inline static SV_ITYPE SvindexI(UINT base, UINT step) {
+    return svindex_u32(base, step);
+}
 
-#else // #if defined(_SINGLE_PRECISION)
+#else  // #if defined(_SINGLE_PRECISION)
 
 typedef double ETYPE;
 typedef svfloat64_t SV_FTYPE
@@ -99,9 +100,11 @@ inline static ITYPE getVecLength(void) { return svcntd(); }
 inline static SV_PRED Svptrue(void) { return svptrue_b64(); }
 inline static SV_FTYPE SvdupF(double val) { return svdup_f64(val); }
 inline static SV_ITYPE SvdupI(UINT val) { return svdup_u64(val); }
-inline static SV_ITYPE SvindexI(UINT base, UINT step) { return svindex_u64(base, step); }
+inline static SV_ITYPE SvindexI(UINT base, UINT step) {
+    return svindex_u64(base, step);
+}
 
-#endif // #if defined(_SINGLE_PRECISION)
+#endif  // #if defined(_SINGLE_PRECISION)
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 //! check AVX2 support
@@ -122,4 +125,4 @@ inline static SV_ITYPE SvindexI(UINT base, UINT step) { return svindex_u64(base,
 #define DllExport __attribute__((visibility("default")))
 #endif
 
-#endif // #ifndef TYPE_H_
+#endif  // #ifndef TYPE_H_

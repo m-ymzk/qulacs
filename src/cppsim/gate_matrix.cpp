@@ -119,16 +119,17 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                         state->get_cuda_stream(), state->device_number);
 
                 } else {
-                    single_qubit_dense_matrix_gate(
-                        target_index[0], matrix_ptr, state->data_c(), state->dim);
+                    single_qubit_dense_matrix_gate(target_index[0], matrix_ptr,
+                        state->data_c(), state->dim);
                 }
 #else
                 if (state->outer_qc == 0)
-                    single_qubit_dense_matrix_gate(
-                        target_index[0], matrix_ptr, state->data_c(), state->dim);
+                    single_qubit_dense_matrix_gate(target_index[0], matrix_ptr,
+                        state->data_c(), state->dim);
                 else  // for distributed-state vector
                     single_qubit_dense_matrix_gate_mpi(target_index[0],
-                        matrix_ptr, state->data_c(), state->dim, state->inner_qc);
+                        matrix_ptr, state->data_c(), state->dim,
+                        state->inner_qc);
 #endif
             }
             // single control qubit

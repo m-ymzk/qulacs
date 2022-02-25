@@ -20,28 +20,29 @@ static MPI_Status mpistat;
 // static pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 static CTYPE *workarea = NULL;
 
-#define _MAX_REQUESTS 4 // 2 (isend/irecv) * 2 (double buffering)
+#define _MAX_REQUESTS 4  // 2 (isend/irecv) * 2 (double buffering)
 static MPI_Request mpireq[_MAX_REQUESTS];
 static UINT mpireq_idx = 0;
 static UINT mpireq_cnt = 0;
 
-static MPI_Request* get_request() {
+static MPI_Request *get_request() {
     if (mpireq_cnt >= _MAX_REQUESTS) {
-        fprintf(stderr, "cannot get a request for communication, %s, %d\n", __FILE__,
-                __LINE__);
+        fprintf(stderr, "cannot get a request for communication, %s, %d\n",
+            __FILE__, __LINE__);
         exit(1);
     }
 
     mpireq_cnt++;
-    MPI_Request* ret = &(mpireq[mpireq_idx]);
+    MPI_Request *ret = &(mpireq[mpireq_idx]);
     mpireq_idx = (mpireq_idx + 1) % _MAX_REQUESTS;
     return ret;
 }
 
 static void wait(UINT count) {
     if (mpireq_cnt < count) {
-        fprintf(stderr, "wait count(=%d) is over incompleted requests(=%d), %s, %d\n", count, mpireq_cnt, __FILE__,
-                __LINE__);
+        fprintf(stderr,
+            "wait count(=%d) is over incompleted requests(=%d), %s, %d\n",
+            count, mpireq_cnt, __FILE__, __LINE__);
         exit(1);
     }
 
@@ -85,6 +86,11 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
 
 static void barrier() { MPI_Barrier(mpicomm); }
 
+static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
+    MPI_Allgather(sendbuf, count, MPI_DOUBLE_COMPLEX, recvbuf, count,
+        MPI_DOUBLE_COMPLEX, mpicomm);
+}
+
 static void m_DC_sendrecv(
     void *sendbuf, void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
@@ -115,10 +121,10 @@ static void m_DC_isendrecv(
     MPI_Request *send_request = get_request();
     MPI_Request *recv_request = get_request();
 
-    MPI_Isend(sendbuf, count, MPI_DOUBLE_COMPLEX,
-              pair_rank, mpi_tag1, mpicomm, send_request);
-    MPI_Irecv(recvbuf, count, MPI_DOUBLE_COMPLEX,
-              pair_rank, mpi_tag2, mpicomm, recv_request);
+    MPI_Isend(sendbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1, mpicomm,
+        send_request);
+    MPI_Irecv(recvbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
+        recv_request);
 }
 
 static void m_I_allreduce(void *buf, UINT count) {
@@ -183,6 +189,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(wait)
+    REGISTER_METHOD_POINTER(m_DC_allgather)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
     REGISTER_METHOD_POINTER(m_DC_sendrecv_replace)
     REGISTER_METHOD_POINTER(m_DC_isendrecv)

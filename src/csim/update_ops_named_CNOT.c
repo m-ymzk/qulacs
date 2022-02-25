@@ -602,7 +602,7 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
             CNOT_gate_single_unroll_cin_tout(
                 control_qubit_index, pair_rank, state, dim);
         }
-    } else { // (control_qubit_index >= inner_qc)
+    } else {  // (control_qubit_index >= inner_qc)
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int control_rank_bit = 1 << (control_qubit_index - inner_qc);
@@ -636,8 +636,8 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
                     m->get_tag();  // dummy to count up tag
                 }
             }
-        } // (target_qubit_index < inner_qc)
-    } // (control_qubit_index >= inner_qc)
+        }  // (target_qubit_index < inner_qc)
+    }      // (control_qubit_index >= inner_qc)
 }
 
 // CNOT_gate_mpi, control_qubit_index is inner, target_qubit_index is outer.
@@ -653,7 +653,7 @@ void CNOT_gate_single_unroll_cin_tout(
     const ITYPE control_isone_offset = 1ULL << control_qubit_index;
 
     if (control_isone_offset < dim_work) {
-        dim_work >>= 1;                     // 1/2: for send, 1/2: for recv
+        dim_work >>= 1;  // 1/2: for send, 1/2: for recv
         CTYPE* t_send = t;
         CTYPE* t_recv = t + dim_work;
         const ITYPE num_control_block = (dim / dim_work) >> 1;
