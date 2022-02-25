@@ -114,53 +114,6 @@ void double_qubit_dense_matrix_gate_nosimd(UINT target_qubit_index1,
 }
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0,
-    SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3, SV_FTYPE mat0,
-    SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0,
-    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
-
-static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0,
-    SV_FTYPE input1, SV_FTYPE input2, SV_FTYPE input3, SV_FTYPE mat0,
-    SV_FTYPE mat1, SV_FTYPE mat2, SV_FTYPE mat3, SV_FTYPE* output0,
-    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3) {
-    // perform matrix-vector product
-    *output0 = svmul_z(pg, svdup_lane(mat0, 0), input0);
-    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 0), input0, 90);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 2), input1);
-    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 1), input1, 90);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 4), input2);
-    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 2), input2, 90);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat0, 6), input3);
-    *output0 = svcmla_z(pg, *output0, svdupq_lane(mat0, 3), input3, 90);
-
-    *output1 = svmul_z(pg, svdup_lane(mat1, 0), input0);
-    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 0), input0, 90);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 2), input1);
-    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 1), input1, 90);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 4), input2);
-    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 2), input2, 90);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat1, 6), input3);
-    *output1 = svcmla_z(pg, *output1, svdupq_lane(mat1, 3), input3, 90);
-
-    *output2 = svmul_z(pg, svdup_lane(mat2, 0), input0);
-    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 0), input0, 90);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 2), input1);
-    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 1), input1, 90);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 4), input2);
-    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 2), input2, 90);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat2, 6), input3);
-    *output2 = svcmla_z(pg, *output2, svdupq_lane(mat2, 3), input3, 90);
-
-    *output3 = svmul_z(pg, svdup_lane(mat3, 0), input0);
-    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 0), input0, 90);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 2), input1);
-    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 1), input1, 90);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 4), input2);
-    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 2), input2, 90);
-    *output3 = svmla_z(pg, *output3, svdup_lane(mat3, 6), input3);
-    *output3 = svcmla_z(pg, *output3, svdupq_lane(mat3, 3), input3, 90);
-}
-
 static inline void MatrixVectorProduct4x4woCMFLA(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
     SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
