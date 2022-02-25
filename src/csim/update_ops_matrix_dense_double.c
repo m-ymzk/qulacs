@@ -359,16 +359,41 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
     SV_PRED pg = Svptrue();
     SV_PRED vec_select;
-    SV_FTYPE mat0, mat1, mat2, mat3;
+    SV_PRED pred_01;
+
+    SV_ITYPE vec_tbl;
+
+    SV_FTYPE mat0ii, mat1ii, mat2ii, mat3ii;
+    SV_FTYPE mat01rr, mat23rr;
     SV_FTYPE input0, input1, input2, input3;
-    SV_FTYPE cval0, cval1, cval2, cval3;
+    SV_FTYPE cval0ir, cval1ir, cval2ir, cval3ir;
+    SV_FTYPE cval0ri, cval1ri, cval2ri, cval3ri;
     SV_FTYPE result0, result1, result2, result3;
     SV_FTYPE output0, output1, output2, output3;
 
-    mat0 = svld1(pg, (ETYPE*)&matrix[0]);
-    mat1 = svld1(pg, (ETYPE*)&matrix[4]);
-    mat2 = svld1(pg, (ETYPE*)&matrix[8]);
-    mat3 = svld1(pg, (ETYPE*)&matrix[12]);
+    mat0ii = svld1(pg, (ETYPE*)&matrix[0]);
+    mat1ii = svld1(pg, (ETYPE*)&matrix[4]);
+    mat2ii = svld1(pg, (ETYPE*)&matrix[8]);
+    mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
+
+    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
+
+    mat01rr = svsel(pred_01, mat0ii, svext(mat1ii, mat1ii, 7));
+    mat23rr = svsel(pred_01, mat2ii, svext(mat3ii, mat3ii, 7));
+
+    vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
+    mat0ii = svtbl(mat0ii, vec_tbl);
+    mat1ii = svtbl(mat1ii, vec_tbl);
+    mat2ii = svtbl(mat2ii, vec_tbl);
+    mat3ii = svtbl(mat3ii, vec_tbl);
+
+    mat0ii = svneg_m(mat0ii, pred_01, mat0ii);
+    mat1ii = svneg_m(mat1ii, pred_01, mat1ii);
+    mat2ii = svneg_m(mat2ii, pred_01, mat2ii);
+    mat3ii = svneg_m(mat3ii, pred_01, mat3ii);
+
+    // create a table for swap
+    vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
 
     if (target_qubit_index2 > target_qubit_index1) {
         ITYPE prefetch_flag =
@@ -380,9 +405,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         if (target_qubit_index1 == 0) {
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -404,15 +430,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                    cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
-                    cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
-                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval1ir =
+                        svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval2ir =
+                        svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 2), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -451,9 +487,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -475,15 +512,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                    cval1 = svsel(vec_select, svext(input0, input0, 2), input1);
-                    cval2 = svsel(vec_select, input2, svext(input3, input3, 6));
-                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval1ir =
+                        svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval2ir =
+                        svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 2), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -505,9 +552,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         } else {  // target_qubit_index1 == 1
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -529,15 +577,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                    cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
-                    cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
-                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval1ir =
+                        svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval2ir =
+                        svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 4), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -576,9 +634,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -600,15 +659,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                    cval1 = svsel(vec_select, svext(input0, input0, 4), input1);
-                    cval2 = svsel(vec_select, input2, svext(input3, input3, 4));
-                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval1ir =
+                        svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval2ir =
+                        svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 4), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -640,9 +709,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         if (target_qubit_index2 == 0) {  // target_qubit_index2 == 0
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -665,15 +735,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                    cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
-                    cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
-                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval2ir =
+                        svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval1ir =
+                        svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 2), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -712,9 +792,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -737,15 +818,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 6));
-                    cval2 = svsel(vec_select, svext(input0, input0, 2), input1);
-                    cval1 = svsel(vec_select, input2, svext(input3, input3, 6));
-                    cval3 = svsel(vec_select, svext(input2, input2, 2), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 6));
+                    cval2ir =
+                        svsel(vec_select, svext(input0, input0, 2), input1);
+                    cval1ir =
+                        svsel(vec_select, input2, svext(input3, input3, 6));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 2), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -764,13 +855,13 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     svst1(pg, (ETYPE*)&state[basis_3], output3);
                 }
             }
-
         } else {  // target_qubit_index2 == 1
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -793,15 +884,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                    cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
-                    cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
-                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval2ir =
+                        svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval1ir =
+                        svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 4), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
@@ -840,9 +941,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, output0,    \
-    cval0, cval1, cval2, cval3, output1, output2, output3, result0, result1, \
-    result2, result3) shared(pg, mat0, mat1, mat2, mat3)
+#pragma omp parallel for private(input0, input1, input2, input3, output0,     \
+    cval0ir, cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri,   \
+    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+    vec_tbl, vec_select, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
                      state_index += numComplexInVec) {
@@ -865,15 +967,25 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0 = svsel(vec_select, input0, svext(input1, input1, 4));
-                    cval2 = svsel(vec_select, svext(input0, input0, 4), input1);
-                    cval1 = svsel(vec_select, input2, svext(input3, input3, 4));
-                    cval3 = svsel(vec_select, svext(input2, input2, 4), input3);
+                    cval0ir =
+                        svsel(vec_select, input0, svext(input1, input1, 4));
+                    cval2ir =
+                        svsel(vec_select, svext(input0, input0, 4), input1);
+                    cval1ir =
+                        svsel(vec_select, input2, svext(input3, input3, 4));
+                    cval3ir =
+                        svsel(vec_select, svext(input2, input2, 4), input3);
+                    // swap
+                    cval0ri = svtbl(cval0ir, vec_tbl);
+                    cval1ri = svtbl(cval1ir, vec_tbl);
+                    cval2ri = svtbl(cval2ir, vec_tbl);
+                    cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4(pg, cval0, cval1, cval2, cval3, mat0,
-                        mat1, mat2, mat3, &result0, &result1, &result2,
-                        &result3);
+                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
+                        &result1, &result2, &result3);
 
                     // reshuffle
                     output0 =
