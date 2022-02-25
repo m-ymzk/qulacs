@@ -107,27 +107,16 @@ def last_rotation(circuit, nqubits, inner_qc, outer_qc):
 def entangler(circuit, nqubits, pairs, inner_qc, outer_qc):
     global swapped
 
-    inner_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) <  inner_qc, range(nqubits)))
-    outer_qubits = list(filter(lambda i: get_act_idx(i, inner_qc, outer_qc) >= inner_qc, range(nqubits)))
-
     for a, b in pairs:
-        if b in inner_qubits:
-            a_phy = get_act_idx(a, inner_qc, outer_qc)
-            b_phy = get_act_idx(b, inner_qc, outer_qc)
-            if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
-            circuit.add_CNOT_gate(a_phy, b_phy)
+        if use_bswap and get_act_idx(b, inner_qc, outer_qc) >= inner_qc:
+            if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+            circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+            swapped = not swapped
 
-    if use_bswap and outer_qc > 0:
-        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-        swapped = not swapped
-
-    for a, b in pairs:
-        if b in outer_qubits:
-            a_phy = get_act_idx(a, inner_qc, outer_qc)
-            b_phy = get_act_idx(b, inner_qc, outer_qc)
-            if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
-            circuit.add_CNOT_gate(a_phy, b_phy)
+        a_phy = get_act_idx(a, inner_qc, outer_qc)
+        b_phy = get_act_idx(b, inner_qc, outer_qc)
+        if debug and rank == 0: print('CNOT {} {}'.format(a_phy, b_phy))
+        circuit.add_CNOT_gate(a_phy, b_phy)
 
 def build_circuit(nqubits, depth, pairs, commsize):
     global swapped
@@ -146,7 +135,7 @@ def build_circuit(nqubits, depth, pairs, commsize):
     last_rotation(circuit, nqubits, inner_qc, outer_qc)
 
     # recover if swapped
-    if use_bswap and outer_qc > 0:
+    if use_bswap and outer_qc > 0 and swapped:
         if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
         circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
