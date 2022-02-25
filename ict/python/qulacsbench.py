@@ -178,8 +178,10 @@ if __name__ == '__main__':
         circuit = build_circuit(n, 9, pairs, size)
         constTimes[i] = time.perf_counter() - constStart
 
+        comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
+        comm.Barrier()
         simTimes[i] = time.perf_counter() - simStart
 
         del circuit
