@@ -81,7 +81,9 @@ def build_circuit(args, size):
                         break
 
         if vb > 1 and rank == 0: print("#3 block_swap(", work_qubit,", ", inner_qc,", ", outer_qc, ")")
-        block_swap(work_qubit, inner_qc, outer_qc, done_ug, qubit_table)
+        if outer_qc > 0:
+            block_swap(work_qubit, inner_qc, outer_qc, done_ug, qubit_table)
+            circuit.add_BSWAP_gate(work_qubit, inner_qc, outer_qc)
         if vb > 1 and rank == 0: print("#: qubit_table=", qubit_table)
 
         # add random_unitary_gate for qubits that were originally outside.
@@ -119,6 +121,7 @@ if __name__ == '__main__':
         comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
+        comm.Barrier()
         simTimes[i] = time.perf_counter() - simStart
 
         del circuit
