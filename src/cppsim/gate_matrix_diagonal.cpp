@@ -99,8 +99,8 @@ void QuantumGateDiagonalMatrix::update_quantum_state(QuantumStateBase* state) {
         } else {
             if (control_index.size() == 0) {
                 if (target_index.size() == 1) {
-                    single_qubit_diagonal_matrix_gate(
-                        target_index[0], diagonal_ptr, state->data_c(), state->dim);
+                    single_qubit_diagonal_matrix_gate(target_index[0],
+                        diagonal_ptr, state->data_c(), state->dim);
                 } else {
                     multi_qubit_diagonal_matrix_gate(target_index.data(),
                         (UINT)(target_index.size()), diagonal_ptr,
@@ -118,11 +118,12 @@ void QuantumGateDiagonalMatrix::update_quantum_state(QuantumStateBase* state) {
         if (control_index.size() == 0) {
             if (target_index.size() == 1) {
                 if (state->outer_qc == 0)
-                    single_qubit_diagonal_matrix_gate(
-                        target_index[0], diagonal_ptr, state->data_c(), state->dim);
+                    single_qubit_diagonal_matrix_gate(target_index[0],
+                        diagonal_ptr, state->data_c(), state->dim);
                 else
                     single_qubit_diagonal_matrix_gate_mpi(target_index[0],
-                        diagonal_ptr, state->data_c(), state->dim, state->inner_qc);
+                        diagonal_ptr, state->data_c(), state->dim,
+                        state->inner_qc);
             } else {
                 if (state->outer_qc == 0)
                     multi_qubit_diagonal_matrix_gate(target_index.data(),

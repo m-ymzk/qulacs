@@ -31,7 +31,8 @@ void create_shift_mask_list_from_list_buf(
 void multi_qubit_dense_matrix_gate(const UINT* target_qubit_index_list,
     UINT target_qubit_index_count, const CTYPE* matrix, CTYPE* state,
     ITYPE dim) {
-    //printf("#enter multi_qubit_dense_matrix_gate, %d\n", target_qubit_index_count);
+    // printf("#enter multi_qubit_dense_matrix_gate, %d\n",
+    // target_qubit_index_count);
     if (target_qubit_index_count == 1) {
         single_qubit_dense_matrix_gate(
             target_qubit_index_list[0], matrix, state, dim);
@@ -177,19 +178,24 @@ void multi_qubit_dense_matrix_gate_parallel(const UINT* target_qubit_index_list,
 #endif
 
 void multi_qubit_dense_matrix_gate_mpi(const UINT* target_qubit_index_list,
-    UINT target_qubit_index_count, const CTYPE* matrix, CTYPE* state,
-    ITYPE dim, UINT inner_qc) {
-    //printf("#enter multi_qubit_dense_matrix_gate_mpi, %d, %d, %d, %lld, %d\n",
-    //        target_qubit_index_list[0], target_qubit_index_list[1], target_qubit_index_count, dim, inner_qc);
+    UINT target_qubit_index_count, const CTYPE* matrix, CTYPE* state, ITYPE dim,
+    UINT inner_qc) {
+    // printf("#enter multi_qubit_dense_matrix_gate_mpi, %d, %d, %d, %lld,
+    // %d\n",
+    //        target_qubit_index_list[0], target_qubit_index_list[1],
+    //        target_qubit_index_count, dim, inner_qc);
 
     UINT all_inner = 1;
-    for (UINT i=0; i < target_qubit_index_count; ++i)
+    for (UINT i = 0; i < target_qubit_index_count; ++i)
         if (target_qubit_index_list[i] >= inner_qc) all_inner = 0;
 
     if (all_inner)
-        multi_qubit_dense_matrix_gate(target_qubit_index_list, target_qubit_index_count, matrix, state, dim);
+        multi_qubit_dense_matrix_gate(target_qubit_index_list,
+            target_qubit_index_count, matrix, state, dim);
     else
-        printf("#ERROR: not implemented multi_qubit_dense_matrix_gate for a outer qubit.\n");
+        printf(
+            "#ERROR: not implemented multi_qubit_dense_matrix_gate for a outer "
+            "qubit.\n");
 }
 
 /*

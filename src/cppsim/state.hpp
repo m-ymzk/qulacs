@@ -601,9 +601,11 @@ public:
     QuantumStateBase* copy_cpu() const {
         QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 0);
         if (this->_outer_qc > 0) {  // copy multicpu -> (single)cpu
-            std::cerr << "#debug: QuantumStateCpu::copy_cpu(): is just implemented!!, now testing"
+            std::cerr << "#debug: QuantumStateCpu::copy_cpu(): is just "
+                         "implemented!!, now testing"
                       << __FILE__ << ":" << __LINE__ << std::endl;
-            mpiutil->m_DC_allgather(this->data_cpp(), new_state->data_cpp(), _dim);
+            mpiutil->m_DC_allgather(
+                this->data_cpp(), new_state->data_cpp(), _dim);
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
             return new_state;
@@ -665,9 +667,11 @@ public:
                     (size_t)(sizeof(CPPCTYPE) * _dim));
             } else {
                 // load multicpu to cpu
-                std::cerr << "#debug: QuantumStateCpu::load multicpu to cpu is just implemented!!, now testing"
+                std::cerr << "#debug: QuantumStateCpu::load multicpu to cpu is "
+                             "just implemented!!, now testing"
                           << __FILE__ << ":" << __LINE__ << std::endl;
-                mpiutil->m_DC_allgather(_state->data_cpp(), this->data_cpp(), _dim);
+                mpiutil->m_DC_allgather(
+                    _state->data_cpp(), this->data_cpp(), _dim);
             }
         } else {
             if (this->get_device_name() == "multi-cpu") {
