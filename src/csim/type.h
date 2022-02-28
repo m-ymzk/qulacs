@@ -66,11 +66,16 @@ typedef double _Complex CTYPE;
 
 #endif
 
+#if defined(_SINGLE_PRECISION)
+typedef float ETYPE;
+#else  // #if defined(_SINGLE_PRECISION)
+typedef double ETYPE;
+#endif
+
 //! complex value (SVE)
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #if defined(_SINGLE_PRECISION)
-typedef float ETYPE;
 typedef svfloat32_t SV_FTYPE
     __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
 typedef svuint32_t SV_ITYPE
@@ -88,7 +93,6 @@ inline static SV_ITYPE SvindexI(UINT base, UINT step) {
 
 #else  // #if defined(_SINGLE_PRECISION)
 
-typedef double ETYPE;
 typedef svfloat64_t SV_FTYPE
     __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
 typedef svuint64_t SV_ITYPE
