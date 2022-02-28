@@ -167,6 +167,10 @@ $ python setup_mpi.py install (*1)
 *2 fccを使う場合(参考)
    $ MPICC=mpifcc pip install mpi4py
 ```
+### test
+```
+$ pytest
+```
 
 ## c++/c library build
 ### GCC
