@@ -569,20 +569,12 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     __builtin_prefetch(
                         &state[basis_0 + target_mask2 * 4], 1, 3);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask2 * 4], 1, 3);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask2 * 4], 1, 3);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask2 * 4], 1, 3);
                     // L2 prefetch
                     __builtin_prefetch(
                         &state[basis_0 + target_mask2 * 8], 1, 2);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask2 * 8], 1, 2);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask2 * 8], 1, 2);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask2 * 8], 1, 2);
                 }
             } else {
 #ifdef _OPENMP
@@ -716,20 +708,12 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     __builtin_prefetch(
                         &state[basis_0 + target_mask2 * 4], 1, 3);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask2 * 4], 1, 3);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask2 * 4], 1, 3);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask2 * 4], 1, 3);
                     // L2 prefetch
                     __builtin_prefetch(
                         &state[basis_0 + target_mask2 * 8], 1, 2);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask2 * 8], 1, 2);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask2 * 8], 1, 2);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask2 * 8], 1, 2);
                 }
             } else {
 #ifdef _OPENMP
@@ -874,20 +858,12 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     __builtin_prefetch(
                         &state[basis_0 + target_mask1 * 4], 1, 3);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask1 * 4], 1, 3);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask1 * 4], 1, 3);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask1 * 4], 1, 3);
                     // L2 prefetch
                     __builtin_prefetch(
                         &state[basis_0 + target_mask1 * 8], 1, 2);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask1 * 8], 1, 2);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask1 * 8], 1, 2);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask1 * 8], 1, 2);
                 }
             } else {
 #ifdef _OPENMP
@@ -1023,20 +999,12 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     __builtin_prefetch(
                         &state[basis_0 + target_mask1 * 4], 1, 3);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask1 * 4], 1, 3);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask1 * 4], 1, 3);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask1 * 4], 1, 3);
                     // L2 prefetch
                     __builtin_prefetch(
                         &state[basis_0 + target_mask1 * 8], 1, 2);
                     __builtin_prefetch(
-                        &state[basis_1 + target_mask1 * 8], 1, 2);
-                    __builtin_prefetch(
                         &state[basis_2 + target_mask1 * 8], 1, 2);
-                    __builtin_prefetch(
-                        &state[basis_3 + target_mask1 * 8], 1, 2);
                 }
             } else {
 #ifdef _OPENMP
