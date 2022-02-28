@@ -73,6 +73,42 @@ void X_gate_single_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
+#ifdef __aarch64__
+    } else if (5 <= target_qubit_index && target_qubit_index <= 8) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+            __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+            __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+    } else if (target_qubit_index >= 2) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+#endif
     } else {
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index_0 =
@@ -103,59 +139,45 @@ void X_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
-    }
 #ifdef __aarch64__
-    else if (6 <= target_qubit_index && target_qubit_index <= 8) {
+    } else if (5 <= target_qubit_index && target_qubit_index <= 8) {
 #pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; state_index += 8) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
             ITYPE basis_index_0 =
                 (state_index & mask_low) + ((state_index & mask_high) << 1);
             ITYPE basis_index_1 = basis_index_0 + mask;
-            ITYPE basis_index_2 = ((state_index + 2) & mask_low) +
-                                  (((state_index + 2) & mask_high) << 1);
-            ITYPE basis_index_3 = basis_index_2 + mask;
-            ITYPE basis_index_4 = ((state_index + 4) & mask_low) +
-                                  (((state_index + 4) & mask_high) << 1);
-            ITYPE basis_index_5 = basis_index_4 + mask;
-            ITYPE basis_index_6 = ((state_index + 6) & mask_low) +
-                                  (((state_index + 6) & mask_high) << 1);
-            ITYPE basis_index_7 = basis_index_6 + mask;
-            CTYPE temp0 = state[basis_index_0];
-            CTYPE temp1 = state[basis_index_0 + 1];
-            CTYPE temp2 = state[basis_index_2];
-            CTYPE temp3 = state[basis_index_2 + 1];
-            CTYPE temp4 = state[basis_index_4];
-            CTYPE temp5 = state[basis_index_4 + 1];
-            CTYPE temp6 = state[basis_index_6];
-            CTYPE temp7 = state[basis_index_6 + 1];
-
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
             // L1 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
-            __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
+            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+            __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
             // L2 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
-            __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
-
-            state[basis_index_0] = state[basis_index_1];
-            state[basis_index_0 + 1] = state[basis_index_1 + 1];
-            state[basis_index_2] = state[basis_index_3];
-            state[basis_index_2 + 1] = state[basis_index_3 + 1];
-            state[basis_index_4] = state[basis_index_5];
-            state[basis_index_4 + 1] = state[basis_index_5 + 1];
-            state[basis_index_6] = state[basis_index_7];
-            state[basis_index_6 + 1] = state[basis_index_7 + 1];
-            state[basis_index_1] = temp0;
-            state[basis_index_1 + 1] = temp1;
-            state[basis_index_3] = temp2;
-            state[basis_index_3 + 1] = temp3;
-            state[basis_index_5] = temp4;
-            state[basis_index_5 + 1] = temp5;
-            state[basis_index_7] = temp6;
-            state[basis_index_7 + 1] = temp7;
+            __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+            __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
         }
-    }
+    } else if (target_qubit_index >= 2) {
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
 #endif
-    else {
+    } else {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index_0 =

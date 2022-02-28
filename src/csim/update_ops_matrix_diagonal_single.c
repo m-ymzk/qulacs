@@ -210,8 +210,7 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
                     svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
-                vec_bitval =
-                    svadd_z(pg, vec_index_diff, SvdupI(state_index));
+                vec_bitval = svadd_z(pg, vec_index_diff, SvdupI(state_index));
                 vec_bitval = svand_z(pg, vec_bitval, SvdupI(mask));
                 select_flag = svcmpne(pg, vec_bitval, SvdupI(0));
 
@@ -235,8 +234,8 @@ void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
 
                 // set values
                 svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
+                svst1(
+                    pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
             }
         } else {
             for (state_index = 0; state_index < loop_dim; state_index++) {
@@ -334,8 +333,7 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
                     svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
                 // select matrix elements
-                vec_bitval =
-                    svadd_z(pg, vec_index_diff, SvdupI(state_index));
+                vec_bitval = svadd_z(pg, vec_index_diff, SvdupI(state_index));
                 vec_bitval = svand_z(pg, vec_bitval, SvdupI(mask));
                 select_flag = svcmpne(pg, vec_bitval, SvdupI(0));
 
@@ -359,8 +357,8 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
 
                 // set values
                 svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
+                svst1(
+                    pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
             }
         } else {
 #pragma omp parallel for

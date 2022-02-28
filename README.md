@@ -34,16 +34,17 @@
       - RX / RY / RZ
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
+      - U1 / U2 / U3
       - DenseMatrix(single target)
+      - DiagonalMatrix(single target)
 
 - 3月末版対応予定の関数・機能
   - gate
-      - U1 / U2 / U3
       - Measurement
       - Pauli
       - PauliRotation
-      - DiagonalMatrix
       - DenseMatrix(single control, single target)
+      - DiagonalMatrix(with control)
       - to_matrix_gate
   - Observable
   - QuantumCircuit
@@ -62,6 +63,7 @@
       - FREDKIN
       - DenseMatrix(double target)
       - DenseMatrix(multi control, single target)
+      - DiagonalMatrix(multi target)
       - merge
       - CPTP
       - Instrument
@@ -164,6 +166,10 @@ $ python setup_mpi.py install (*1)
 *1 要internet接続
 *2 fccを使う場合(参考)
    $ MPICC=mpifcc pip install mpi4py
+```
+### test
+```
+$ pytest
 ```
 
 ## c++/c library build
