@@ -114,14 +114,14 @@ void double_qubit_dense_matrix_gate_nosimd(UINT target_qubit_index1,
 }
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-static inline void MatrixVectorProduct4x4woCMFLA(SV_PRED pg, SV_FTYPE input0ir,
+static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
     SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
     SV_FTYPE mat23rr, SV_FTYPE mat0ii, SV_FTYPE mat1ii, SV_FTYPE mat2ii,
     SV_FTYPE mat3ii, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2,
     SV_FTYPE* output3);
 
-static inline void MatrixVectorProduct4x4woCMFLA(SV_PRED pg, SV_FTYPE input0ir,
+static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
     SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
     SV_FTYPE mat23rr, SV_FTYPE mat0ii, SV_FTYPE mat1ii, SV_FTYPE mat2ii,
@@ -257,7 +257,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
                 input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
                 mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
                 &output2, &output3);
@@ -313,7 +313,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
                 input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
                 mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
                 &output2, &output3);
@@ -366,7 +366,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
                 input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
                 mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
                 &output2, &output3);
@@ -420,7 +420,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
                 input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
                 mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
                 &output2, &output3);
@@ -544,7 +544,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -626,7 +626,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -691,7 +691,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -773,7 +773,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -849,7 +849,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -932,7 +932,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -998,7 +998,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
@@ -1081,7 +1081,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
-                    MatrixVectorProduct4x4woCMFLA(pg, cval0ir, cval1ir, cval2ir,
+                    MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
                         &result1, &result2, &result3);
