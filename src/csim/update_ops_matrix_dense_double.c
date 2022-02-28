@@ -184,6 +184,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     const ITYPE loop_dim = dim / 4;
     ITYPE state_index;
     ITYPE vec_len = getVecLength();
+    ITYPE prefetch_taget1, prefetch_taget2;
 
     SV_PRED pg = Svptrue();
     SV_PRED pred_01;
@@ -220,48 +221,109 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     // create a table for swap
     vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
 
+    prefetch_taget1 =
+        ((5 <= target_qubit_index1) && (target_qubit_index1 <= 9));
+    prefetch_taget2 =
+        ((5 <= target_qubit_index2) && (target_qubit_index2 <= 9));
+
+    if (prefetch_taget1 && prefetch_taget2) {
 #ifdef _OPENMP
 #pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
     input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
     output3)                                                             \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
-    for (state_index = 0; state_index < loop_dim;
-         state_index += (vec_len >> 1)) {
-        // create index
-        ITYPE basis_0 = (state_index & low_mask) +
-                        ((state_index & mid_mask) << 1) +
-                        ((state_index & high_mask) << 2);
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            // create index
+            ITYPE basis_0 = (state_index & low_mask) +
+                            ((state_index & mid_mask) << 1) +
+                            ((state_index & high_mask) << 2);
 
-        // gather index
-        ITYPE basis_1 = basis_0 + target_mask1;
-        ITYPE basis_2 = basis_0 + target_mask2;
-        ITYPE basis_3 = basis_1 + target_mask2;
+            // gather index
+            ITYPE basis_1 = basis_0 + target_mask1;
+            ITYPE basis_2 = basis_0 + target_mask2;
+            ITYPE basis_3 = basis_1 + target_mask2;
 
-        // fetch values
-        input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-        input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-        input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-        input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+            // fetch values
+            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
 
-        // swap
-        input0ri = svtbl(input0ir, vec_tbl);
-        input1ri = svtbl(input1ir, vec_tbl);
-        input2ri = svtbl(input2ir, vec_tbl);
-        input3ri = svtbl(input3ir, vec_tbl);
+            // swap
+            input0ri = svtbl(input0ir, vec_tbl);
+            input1ri = svtbl(input1ir, vec_tbl);
+            input2ri = svtbl(input2ir, vec_tbl);
+            input3ri = svtbl(input3ir, vec_tbl);
 
-        MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
-            input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
-            mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
-            &output3);
+            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
+                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
+                &output2, &output3);
 
-        // set values
-        svst1(pg, (ETYPE*)&state[basis_0], output0);
-        svst1(pg, (ETYPE*)&state[basis_1], output1);
-        svst1(pg, (ETYPE*)&state[basis_2], output2);
-        svst1(pg, (ETYPE*)&state[basis_3], output3);
+            // set values
+            svst1(pg, (ETYPE*)&state[basis_0], output0);
+            svst1(pg, (ETYPE*)&state[basis_1], output1);
+            svst1(pg, (ETYPE*)&state[basis_2], output2);
+            svst1(pg, (ETYPE*)&state[basis_3], output3);
 
-        if ((5 <= target_qubit_index1) && (target_qubit_index1 <= 8)) {
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_0 + target_mask1 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_1 + target_mask1 * 8], 1, 2);
+            // L1 prefetch
+            __builtin_prefetch(&state[basis_2 + target_mask2 * 4], 1, 3);
+            __builtin_prefetch(&state[basis_3 + target_mask2 * 4], 1, 3);
+            // L2 prefetch
+            __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
+            __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
+        }
+
+    } else if (prefetch_taget1) {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
+    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
+    output3)                                                             \
+    shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
+#endif
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            // create index
+            ITYPE basis_0 = (state_index & low_mask) +
+                            ((state_index & mid_mask) << 1) +
+                            ((state_index & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_1 = basis_0 + target_mask1;
+            ITYPE basis_2 = basis_0 + target_mask2;
+            ITYPE basis_3 = basis_1 + target_mask2;
+
+            // fetch values
+            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+
+            // swap
+            input0ri = svtbl(input0ir, vec_tbl);
+            input1ri = svtbl(input1ir, vec_tbl);
+            input2ri = svtbl(input2ir, vec_tbl);
+            input3ri = svtbl(input3ir, vec_tbl);
+
+            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
+                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
+                &output2, &output3);
+
+            // set values
+            svst1(pg, (ETYPE*)&state[basis_0], output0);
+            svst1(pg, (ETYPE*)&state[basis_1], output1);
+            svst1(pg, (ETYPE*)&state[basis_2], output2);
+            svst1(pg, (ETYPE*)&state[basis_3], output3);
+
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
             __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
@@ -273,7 +335,48 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_2 + target_mask1 * 8], 1, 2);
             __builtin_prefetch(&state[basis_3 + target_mask1 * 8], 1, 2);
         }
-        if ((5 <= target_qubit_index2) && (target_qubit_index2 <= 8)) {
+    } else if (prefetch_taget2) {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
+    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
+    output3)                                                             \
+    shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
+#endif
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            // create index
+            ITYPE basis_0 = (state_index & low_mask) +
+                            ((state_index & mid_mask) << 1) +
+                            ((state_index & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_1 = basis_0 + target_mask1;
+            ITYPE basis_2 = basis_0 + target_mask2;
+            ITYPE basis_3 = basis_1 + target_mask2;
+
+            // fetch values
+            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+
+            // swap
+            input0ri = svtbl(input0ir, vec_tbl);
+            input1ri = svtbl(input1ir, vec_tbl);
+            input2ri = svtbl(input2ir, vec_tbl);
+            input3ri = svtbl(input3ir, vec_tbl);
+
+            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
+                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
+                &output2, &output3);
+
+            // set values
+            svst1(pg, (ETYPE*)&state[basis_0], output0);
+            svst1(pg, (ETYPE*)&state[basis_1], output1);
+            svst1(pg, (ETYPE*)&state[basis_2], output2);
+            svst1(pg, (ETYPE*)&state[basis_3], output3);
+
             // L1 prefetch
             __builtin_prefetch(&state[basis_0 + target_mask2 * 4], 1, 3);
             __builtin_prefetch(&state[basis_1 + target_mask2 * 4], 1, 3);
@@ -284,6 +387,49 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_1 + target_mask2 * 8], 1, 2);
             __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
             __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
+        }
+
+    } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
+    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
+    output3)                                                             \
+    shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
+#endif
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            // create index
+            ITYPE basis_0 = (state_index & low_mask) +
+                            ((state_index & mid_mask) << 1) +
+                            ((state_index & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_1 = basis_0 + target_mask1;
+            ITYPE basis_2 = basis_0 + target_mask2;
+            ITYPE basis_3 = basis_1 + target_mask2;
+
+            // fetch values
+            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+
+            // swap
+            input0ri = svtbl(input0ir, vec_tbl);
+            input1ri = svtbl(input1ir, vec_tbl);
+            input2ri = svtbl(input2ir, vec_tbl);
+            input3ri = svtbl(input3ir, vec_tbl);
+
+            MatrixVectorProduct4x4woCMFLA(pg, input0ir, input1ir, input2ir,
+                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
+                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
+                &output2, &output3);
+
+            // set values
+            svst1(pg, (ETYPE*)&state[basis_0], output0);
+            svst1(pg, (ETYPE*)&state[basis_1], output1);
+            svst1(pg, (ETYPE*)&state[basis_2], output2);
+            svst1(pg, (ETYPE*)&state[basis_3], output3);
         }
     }
 }
