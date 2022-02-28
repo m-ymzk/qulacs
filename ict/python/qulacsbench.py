@@ -152,18 +152,18 @@ if __name__ == '__main__':
     args = get_option()
     n=args.nqubits
     pairs = [(i, (i + 1) % n) for i in range(n)]
-    numRepeats = 1
+    numRepeats = 5
 
     np.random.seed(seed=32)
-    mode = "w/o opt"
+    mode = "qulacsbench"
 
     #if rank==0:
         #print('[ROI], mode, #qubits, avg of last 5 runs, std of last 5 runs, runtimes of 6 runs')
     constTimes = np.zeros(numRepeats)
     simTimes = np.zeros(numRepeats)
+    st = QuantumState(n, use_multi_cpu=True)
     for i in range(numRepeats):
         constStart = time.perf_counter()
-        st = QuantumState(n, use_multi_cpu=True)
         circuit = build_circuit(n, 9, pairs, size)
         constTimes[i] = time.perf_counter() - constStart
 
@@ -174,19 +174,19 @@ if __name__ == '__main__':
         simTimes[i] = time.perf_counter() - simStart
 
         del circuit
-        del st
+    del st
 
     if rank==0:
         if numRepeats == 1:
-            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-                mode, n,
+            print('[qulacs] {}, size {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+                mode, size, n,
                 np.average(constTimes), np.std(constTimes),
                 np.average(simTimes), np.std(simTimes)))
         else:
-            print('[qulacs] {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-                mode, n,
+            print('[qulacs] {}, size {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
+                mode, size, n,
                 np.average(constTimes[1:]), np.std(constTimes[1:]),
-                np.average(simTimes[1:]), np.std(simTimes[1:])))
+                np.average(simTimes[1:]), np.std(simTimes[1:])), simTimes)
 
     #print('[qulacs construction] {}, {} qubits, {}, {}, {}'.format(
     #    mode, n, np.average(constTimes[1:]), np.std(constTimes[1:]), constTimes))

@@ -34,7 +34,7 @@ def build_circuit(args, mpisize, pairs):
             if outer_qc != 0:
                 circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
             for i in range(outer_qc):
-                circuit.add_H_gate((inner_qc + i) - outer_qc)
+                circuit.add_H_gate(inner_qc - outer_qc + i)
             #if (outer_qc!=0):
             #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         if (outer_qc != 0) & (depth % 2 == 1):
@@ -73,6 +73,7 @@ if __name__ == '__main__':
         comm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
+        comm.Barrier()
         simTimes[i] = time.perf_counter() - simStart
         del circuit
     del st
