@@ -209,6 +209,41 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 3), input3ri);
 }
 
+static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
+    SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
+    SV_FTYPE* mat2ii, SV_FTYPE* mat3ii);
+
+static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
+    SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
+    SV_FTYPE* mat2ii, SV_FTYPE* mat3ii) {
+    SV_PRED pred_01;
+    SV_ITYPE vec_tbl;
+
+    // load each row
+    *mat0ii = svld1(pg, (ETYPE*)&matrix[0]);
+    *mat1ii = svld1(pg, (ETYPE*)&matrix[4]);
+    *mat2ii = svld1(pg, (ETYPE*)&matrix[8]);
+    *mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
+
+    // gather the real parts of every two rows
+    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
+    *mat01rr = svsel(pred_01, *mat0ii, svext(*mat1ii, *mat1ii, 7));
+    *mat23rr = svsel(pred_01, *mat2ii, svext(*mat3ii, *mat3ii, 7));
+
+    // gather the imag. parts in each row
+    vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
+    *mat0ii = svtbl(*mat0ii, vec_tbl);
+    *mat1ii = svtbl(*mat1ii, vec_tbl);
+    *mat2ii = svtbl(*mat2ii, vec_tbl);
+    *mat3ii = svtbl(*mat3ii, vec_tbl);
+
+    // even elements are sign-reversed
+    *mat0ii = svneg_m(*mat0ii, pred_01, *mat0ii);
+    *mat1ii = svneg_m(*mat1ii, pred_01, *mat1ii);
+    *mat2ii = svneg_m(*mat2ii, pred_01, *mat2ii);
+    *mat3ii = svneg_m(*mat3ii, pred_01, *mat3ii);
+}
+
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
     const UINT min_qubit_index =
@@ -231,7 +266,6 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     ITYPE prefetch_taget1, prefetch_taget2;
 
     SV_PRED pg = Svptrue();
-    SV_PRED pred_01;
 
     SV_ITYPE vec_tbl;
 
@@ -241,26 +275,9 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     SV_FTYPE input0ri, input1ri, input2ri, input3ri;
     SV_FTYPE output0, output1, output2, output3;
 
-    mat0ii = svld1(pg, (ETYPE*)&matrix[0]);
-    mat1ii = svld1(pg, (ETYPE*)&matrix[4]);
-    mat2ii = svld1(pg, (ETYPE*)&matrix[8]);
-    mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
-
-    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
-
-    mat01rr = svsel(pred_01, mat0ii, svext(mat1ii, mat1ii, 7));
-    mat23rr = svsel(pred_01, mat2ii, svext(mat3ii, mat3ii, 7));
-
-    vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
-    mat0ii = svtbl(mat0ii, vec_tbl);
-    mat1ii = svtbl(mat1ii, vec_tbl);
-    mat2ii = svtbl(mat2ii, vec_tbl);
-    mat3ii = svtbl(mat3ii, vec_tbl);
-
-    mat0ii = svneg_m(mat0ii, pred_01, mat0ii);
-    mat1ii = svneg_m(mat1ii, pred_01, mat1ii);
-    mat2ii = svneg_m(mat2ii, pred_01, mat2ii);
-    mat3ii = svneg_m(mat3ii, pred_01, mat3ii);
+    // load each row of the matrix
+    PrepareMatrixElements(
+        pg, matrix, &mat01rr, &mat23rr, &mat0ii, &mat1ii, &mat2ii, &mat3ii);
 
     // create a table for swap
     vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
@@ -502,7 +519,6 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
     SV_PRED pg = Svptrue();
     SV_PRED vec_select;
-    SV_PRED pred_01;
 
     SV_ITYPE vec_tbl;
 
@@ -514,26 +530,9 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
     SV_FTYPE result0, result1, result2, result3;
     SV_FTYPE output0, output1, output2, output3;
 
-    mat0ii = svld1(pg, (ETYPE*)&matrix[0]);
-    mat1ii = svld1(pg, (ETYPE*)&matrix[4]);
-    mat2ii = svld1(pg, (ETYPE*)&matrix[8]);
-    mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
-
-    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
-
-    mat01rr = svsel(pred_01, mat0ii, svext(mat1ii, mat1ii, 7));
-    mat23rr = svsel(pred_01, mat2ii, svext(mat3ii, mat3ii, 7));
-
-    vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
-    mat0ii = svtbl(mat0ii, vec_tbl);
-    mat1ii = svtbl(mat1ii, vec_tbl);
-    mat2ii = svtbl(mat2ii, vec_tbl);
-    mat3ii = svtbl(mat3ii, vec_tbl);
-
-    mat0ii = svneg_m(mat0ii, pred_01, mat0ii);
-    mat1ii = svneg_m(mat1ii, pred_01, mat1ii);
-    mat2ii = svneg_m(mat2ii, pred_01, mat2ii);
-    mat3ii = svneg_m(mat3ii, pred_01, mat3ii);
+    // load each row of the matrix
+    PrepareMatrixElements(
+        pg, matrix, &mat01rr, &mat23rr, &mat0ii, &mat1ii, &mat2ii, &mat3ii);
 
     // create a table for swap
     vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
