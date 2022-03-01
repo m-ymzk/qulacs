@@ -301,10 +301,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
-                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
-                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
-                &output2, &output3);
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
+                input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
+                mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
+                &output3);
 
             // set values
             svst1(pg, (ETYPE*)&state[basis_0], output0);
@@ -357,10 +357,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
-                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
-                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
-                &output2, &output3);
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
+                input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
+                mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
+                &output3);
 
             // set values
             svst1(pg, (ETYPE*)&state[basis_0], output0);
@@ -410,10 +410,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
-                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
-                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
-                &output2, &output3);
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
+                input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
+                mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
+                &output3);
 
             // set values
             svst1(pg, (ETYPE*)&state[basis_0], output0);
@@ -464,10 +464,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             input2ri = svtbl(input2ir, vec_tbl);
             input3ri = svtbl(input3ir, vec_tbl);
 
-            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir,
-                input3ir, input0ri, input1ri, input2ri, input3ri, mat01rr,
-                mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1,
-                &output2, &output3);
+            MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
+                input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
+                mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
+                &output3);
 
             // set values
             svst1(pg, (ETYPE*)&state[basis_0], output0);
