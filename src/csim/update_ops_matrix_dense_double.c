@@ -121,6 +121,50 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE mat3ii, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2,
     SV_FTYPE* output3);
 
+// clang-format off
+/*
+ * This function performs multiplication of a 4x4 matrix and four vectors
+ *
+ *            4x4 matrix                              four vectors
+ * [ x_00 + iy_00 ... x_03+iy_03]   [ a_0+ib_0 ][ c_0+id_0 ][ e_0+if_0 ][ g_0+ih_0 ]
+ * [              ...           ] * [    ...   ][    ...   ][    ...   ][    ...   ]
+ * [ x_30 + iy_30 ... x_33+iy_33]   [ a_3+ib_3 ][ c_3+id_3 ][ e_3+if_3 ][ g_3+ih_3 ]
+ *
+ * params
+ * - pg: All 1's predecate register 
+ * - input0ir: An SVE register has the first component of the four vectors
+ *   - e.g.) 512-bit SVE & FP64: [ a_0, b_0, c_0, d_0, e_0, f_0, g_0, h_0]
+ * - input1ir: An SVE register has the second component of the four vectors
+ *   - e.g.) 512-bit SVE & FP64: [ a_1, b_1, c_1, d_1, e_1, f_1, g_1, h_1]
+ * - input2ir: An SVE register has the third component of the four vectors
+ *   - e.g.) 512-bit SVE & FP64: [ a_2, b_2, c_2, d_2, e_2, f_2, g_2, h_2]
+ * - input3ir: An SVE register has the fourth component of the four vectors
+ *   - e.g.) 512-bit SVE & FP64: [ a_3, b_3, c_3, d_3, e_3, f_3, g_3, h_3]
+ * - input0ri: An SVE register in which the order of real and imag. numbers is reversed.
+ *   - e.g.) 512-bit SVE & FP64: [ b_0, a_0, d_0, c_0, f_0, e_0, h_0, g_0]
+ * - input1ri: An SVE register in which the order of real and imag. numbers is reversed.
+ *   - e.g.) 512-bit SVE & FP64: [ b_1, a_1, d_1, c_1, f_1, e_1, h_1, g_1]
+ * - input2ri: An SVE register in which the order of real and imag. numbers is reversed.
+ *   - e.g.) 512-bit SVE & FP64: [ b_2, a_2, d_2, c_2, f_2, e_2, h_2, g_2]
+ * - input3ri: An SVE register in which the order of real and imag. numbers is reversed.
+ *   - e.g.) 512-bit SVE & FP64: [ b_3, a_3, d_3, c_3, f_3, e_3, h_3, g_3]
+ * - mat01rr: An SVE register has the real part of the first and second rows of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_00, x_01, x_02, x_03, x_10, x_11, x_12, x_13]
+ * - mat23rr: An SVE register has the real part of the third and fourth rows of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_20, x_21, x_22, x_23, x_20, x_21, x_22, x_23]
+ * - mat0ii: An SVE register has the imag. part of the first row of the matrix
+ *   - Even elements are sign-reversed
+ *   - e.g.) 512-bit SVE & FP64: [ y_00, -y_00, y_01, -y_01, y_02, -y_02, y_03, -y_03]
+ * - mat1ii: An SVE register has the imag. part of the second row of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_10, -y_10, y_11, -y_11, y_12, -y_12, y_13, -y_13]
+ * - mat2ii: An SVE register has the imag. part of the third row of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_20, -y_20, y_21, -y_21, y_22, -y_22, y_23, -y_23]
+ * - mat3ii: An SVE register has the imag. part of the fourth row of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_30, -y_30, y_31, -y_31, y_32, -y_32, y_33, -y_33]
+ * - output*: SVE register store results of matrix-vector products
+ *
+ */
+// clang-format on
 static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
     SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
