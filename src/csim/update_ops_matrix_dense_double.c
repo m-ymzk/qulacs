@@ -213,6 +213,13 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
     SV_FTYPE* mat2ii, SV_FTYPE* mat3ii);
 
+// clang-format off
+/*
+ * This function prepare SVE registers mat01rr, mat23rr, mat0ii, mat1ii,
+ * mat2ii, and mat3ii for the MatrixVectorProduct4x4 function.
+ *
+ */
+// clang-format on
 static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
     SV_FTYPE* mat2ii, SV_FTYPE* mat3ii) {
