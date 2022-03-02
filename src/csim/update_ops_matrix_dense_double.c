@@ -223,6 +223,7 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
 static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
     SV_FTYPE* mat2ii, SV_FTYPE* mat3ii) {
+
     SV_PRED pred_01;
     SV_ITYPE vec_tbl;
 
@@ -233,9 +234,8 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     *mat3ii = svld1(pg, (ETYPE*)&matrix[12]);
 
     // gather the real parts of every two rows
-    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
-    *mat01rr = svsel(pred_01, *mat0ii, svext(*mat1ii, *mat1ii, 7));
-    *mat23rr = svsel(pred_01, *mat2ii, svext(*mat3ii, *mat3ii, 7));
+    *mat01rr = svtrn1(*mat0ii, *mat1ii);
+    *mat23rr = svtrn1(*mat2ii, *mat3ii);
 
     // gather the imag. parts in each row
     vec_tbl = svorr_z(pg, SvindexI(0, 1), SvdupI(1));
@@ -245,6 +245,7 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     *mat3ii = svtbl(*mat3ii, vec_tbl);
 
     // even elements are sign-reversed
+    pred_01 = svcmpeq(pg, svand_z(pg, SvindexI(0, 1), SvdupI(1)), SvdupI(0));
     *mat0ii = svneg_m(*mat0ii, pred_01, *mat0ii);
     *mat1ii = svneg_m(*mat1ii, pred_01, *mat1ii);
     *mat2ii = svneg_m(*mat2ii, pred_01, *mat2ii);
