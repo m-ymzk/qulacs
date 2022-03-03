@@ -140,13 +140,13 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
  *   - e.g.) 512-bit SVE & FP64: [ a_2, b_2, c_2, d_2, e_2, f_2, g_2, h_2]
  * - input3ir: An SVE register has the fourth component of the four vectors
  *   - e.g.) 512-bit SVE & FP64: [ a_3, b_3, c_3, d_3, e_3, f_3, g_3, h_3]
- * - input0ri: An SVE register in which the order of real and imag. numbers is reversed.
+ * - input0ri: An SVE register in which the order of real and imag. numbers is reversed
  *   - e.g.) 512-bit SVE & FP64: [ b_0, a_0, d_0, c_0, f_0, e_0, h_0, g_0]
- * - input1ri: An SVE register in which the order of real and imag. numbers is reversed.
+ * - input1ri: An SVE register in which the order of real and imag. numbers is reversed
  *   - e.g.) 512-bit SVE & FP64: [ b_1, a_1, d_1, c_1, f_1, e_1, h_1, g_1]
- * - input2ri: An SVE register in which the order of real and imag. numbers is reversed.
+ * - input2ri: An SVE register in which the order of real and imag. numbers is reversed
  *   - e.g.) 512-bit SVE & FP64: [ b_2, a_2, d_2, c_2, f_2, e_2, h_2, g_2]
- * - input3ri: An SVE register in which the order of real and imag. numbers is reversed.
+ * - input3ri: An SVE register in which the order of real and imag. numbers is reversed
  *   - e.g.) 512-bit SVE & FP64: [ b_3, a_3, d_3, c_3, f_3, e_3, h_3, g_3]
  * - mat01rr: An SVE register has the real part of the first and second rows of the matrix
  *   - e.g.) 512-bit SVE & FP64: [ x_00, x_01, x_02, x_03, x_10, x_11, x_12, x_13]
@@ -257,6 +257,18 @@ static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE mat23rr, SV_FTYPE mat01ii, SV_FTYPE mat23ii, SV_FTYPE* output0,
     SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
 
+// clang-format off
+/*
+ * This function performs multiplication of a 4x4 matrix and four vectors
+ *  - called when either of two targets is one and the other is greater than one
+ *
+ *            4x4 matrix                              four vectors
+ * [ x_00 + iy_00 ... x_03+iy_03]   [ a_0+ib_0 ][ c_0+id_0 ][ e_0+if_0 ][ g_0+ih_0 ]
+ * [              ...           ] * [    ...   ][    ...   ][    ...   ][    ...   ]
+ * [ x_30 + iy_30 ... x_33+iy_33]   [ a_3+ib_3 ][ c_3+id_3 ][ e_3+if_3 ][ g_3+ih_3 ]
+ *
+ */
+// clang-format off
 static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
     SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
