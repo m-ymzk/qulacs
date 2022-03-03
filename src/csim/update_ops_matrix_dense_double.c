@@ -251,6 +251,55 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     *mat3ii = svneg_m(*mat3ii, pred_01, *mat3ii);
 }
 
+static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
+    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
+    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
+    SV_FTYPE mat23rr, SV_FTYPE mat01ii, SV_FTYPE mat23ii, SV_FTYPE* output0,
+    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
+
+static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
+    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
+    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
+    SV_FTYPE mat23rr, SV_FTYPE mat01ii, SV_FTYPE mat23ii, SV_FTYPE* output0,
+    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3) {
+    // perform matrix-vector product
+    *output0 = svmul_z(pg, svdup_lane(mat01rr, 0), input0ir);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01ii, 0), input0ri);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 2), input1ir);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01ii, 2), input1ri);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 4), input2ir);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01ii, 4), input2ri);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 6), input3ir);
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01ii, 6), input3ri);
+
+    *output1 = svmul_z(pg, svdup_lane(mat01rr, 1), input0ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01ii, 1), input0ri);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 3), input1ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01ii, 3), input1ri);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 5), input2ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01ii, 5), input2ri);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 7), input3ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01ii, 7), input3ri);
+
+    *output2 = svmul_z(pg, svdup_lane(mat23rr, 0), input0ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23ii, 0), input0ri);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 2), input1ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23ii, 2), input1ri);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 4), input2ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23ii, 4), input2ri);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 6), input3ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23ii, 6), input3ri);
+
+    *output3 = svmul_z(pg, svdup_lane(mat23rr, 1), input0ir);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23ii, 1), input0ri);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 3), input1ir);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23ii, 3), input1ri);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 5), input2ir);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23ii, 5), input2ri);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 7), input3ir);
+    *output3 = svmla_z(pg, *output3, svdup_lane(mat23ii, 7), input3ri);
+}
+
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
     const UINT min_qubit_index =
@@ -607,69 +656,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, vec_select, cval3ri);
 
                     // perform matrix-vector product
-                    result0 = svmul_z(pg, svdup_lane(mat01rr, 0), cval0ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 0), cval0ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 2), cval1ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 2), cval1ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 4), cval2ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 4), cval2ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 6), cval3ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 6), cval3ri);
-
-                    result1 = svmul_z(pg, svdup_lane(mat01rr, 1), cval0ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 1), cval0ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 3), cval1ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 3), cval1ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 5), cval2ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 5), cval2ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 7), cval3ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 7), cval3ri);
-
-                    result2 = svmul_z(pg, svdup_lane(mat23rr, 0), cval0ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 0), cval0ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 2), cval1ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 2), cval1ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 4), cval2ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 4), cval2ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 6), cval3ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 6), cval3ri);
-
-                    result3 = svmul_z(pg, svdup_lane(mat23rr, 1), cval0ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 1), cval0ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 3), cval1ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 3), cval1ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 5), cval2ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 5), cval2ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 7), cval3ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 7), cval3ri);
+                    MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
+                        &result3);
 
                     // reshuffle
                     output0 = svuzp1(result0, result1);
@@ -740,69 +730,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, vec_select, cval3ri);
 
                     // perform matrix-vector product
-                    result0 = svmul_z(pg, svdup_lane(mat01rr, 0), cval0ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 0), cval0ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 2), cval1ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 2), cval1ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 4), cval2ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 4), cval2ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 6), cval3ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 6), cval3ri);
-
-                    result1 = svmul_z(pg, svdup_lane(mat01rr, 1), cval0ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 1), cval0ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 3), cval1ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 3), cval1ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 5), cval2ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 5), cval2ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 7), cval3ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 7), cval3ri);
-
-                    result2 = svmul_z(pg, svdup_lane(mat23rr, 0), cval0ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 0), cval0ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 2), cval1ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 2), cval1ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 4), cval2ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 4), cval2ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 6), cval3ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 6), cval3ri);
-
-                    result3 = svmul_z(pg, svdup_lane(mat23rr, 1), cval0ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 1), cval0ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 3), cval1ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 3), cval1ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 5), cval2ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 5), cval2ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 7), cval3ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 7), cval3ri);
+                    MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
+                        &result3);
 
                     // reshuffle
                     output0 = svuzp1(result0, result1);
@@ -866,69 +797,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, vec_select, cval3ri);
 
                     // perform matrix-vector product
-                    result0 = svmul_z(pg, svdup_lane(mat01rr, 0), cval0ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 0), cval0ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 2), cval1ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 2), cval1ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 4), cval2ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 4), cval2ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 6), cval3ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 6), cval3ri);
-
-                    result1 = svmul_z(pg, svdup_lane(mat01rr, 1), cval0ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 1), cval0ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 3), cval1ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 3), cval1ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 5), cval2ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 5), cval2ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 7), cval3ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 7), cval3ri);
-
-                    result2 = svmul_z(pg, svdup_lane(mat23rr, 0), cval0ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 0), cval0ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 2), cval1ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 2), cval1ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 4), cval2ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 4), cval2ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 6), cval3ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 6), cval3ri);
-
-                    result3 = svmul_z(pg, svdup_lane(mat23rr, 1), cval0ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 1), cval0ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 3), cval1ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 3), cval1ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 5), cval2ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 5), cval2ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 7), cval3ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 7), cval3ri);
+                    MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
+                        &result3);
 
                     // reshuffle
                     output0 = svuzp1(result0, result2);
@@ -999,69 +871,10 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, vec_select, cval3ri);
 
                     // perform matrix-vector product
-                    result0 = svmul_z(pg, svdup_lane(mat01rr, 0), cval0ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 0), cval0ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 2), cval1ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 2), cval1ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 4), cval2ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 4), cval2ri);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01rr, 6), cval3ir);
-                    result0 =
-                        svmla_z(pg, result0, svdup_lane(mat01ii, 6), cval3ri);
-
-                    result1 = svmul_z(pg, svdup_lane(mat01rr, 1), cval0ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 1), cval0ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 3), cval1ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 3), cval1ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 5), cval2ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 5), cval2ri);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01rr, 7), cval3ir);
-                    result1 =
-                        svmla_z(pg, result1, svdup_lane(mat01ii, 7), cval3ri);
-
-                    result2 = svmul_z(pg, svdup_lane(mat23rr, 0), cval0ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 0), cval0ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 2), cval1ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 2), cval1ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 4), cval2ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 4), cval2ri);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23rr, 6), cval3ir);
-                    result2 =
-                        svmla_z(pg, result2, svdup_lane(mat23ii, 6), cval3ri);
-
-                    result3 = svmul_z(pg, svdup_lane(mat23rr, 1), cval0ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 1), cval0ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 3), cval1ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 3), cval1ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 5), cval2ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 5), cval2ri);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23rr, 7), cval3ir);
-                    result3 =
-                        svmla_z(pg, result3, svdup_lane(mat23ii, 7), cval3ri);
+                    MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
+                        cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
+                        mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
+                        &result3);
 
                     // reshuffle
                     output0 = svuzp1(result0, result2);
