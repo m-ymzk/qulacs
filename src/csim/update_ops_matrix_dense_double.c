@@ -1285,6 +1285,11 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
     mat1ri = svtbl(mat1ir, vec_tbl);
     mat2ri = svtbl(mat2ir, vec_tbl);
     mat3ri = svtbl(mat3ir, vec_tbl);
+ 
+    mat0ri = svneg_m(mat0ri, pg_neg, mat0ri);
+    mat1ri = svneg_m(mat1ri, pg_neg, mat1ri);
+    mat2ri = svneg_m(mat2ri, pg_neg, mat2ri);
+    mat3ri = svneg_m(mat3ri, pg_neg, mat3ri);
    
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -1302,7 +1307,6 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
 
         SV_FTYPE inputrr = svtbl(input, vec_tbl_real);
         SV_FTYPE inputii = svtbl(input, vec_tbl_imag);
-        inputii = svneg_m(inputii, pg_neg, inputii);
 
         // perform matrix-vector product
         SV_FTYPE output;
