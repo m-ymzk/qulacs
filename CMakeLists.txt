@@ -29,6 +29,8 @@ elseif("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES
     if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
         set(DEFAULT_USE_SVE Yes)
     endif()
+    set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
     set(DEFAULT_OPT_FLAGS "-mtune=native -march=native -msve-vector-bits=512 -fopenmp-simd")
     set(CMAKE_EXE_LINKER_FLAGS "-lmpi")
   else()
