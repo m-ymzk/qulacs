@@ -1,26 +1,25 @@
-# mpi-qulacs General info
+# mpi-qulacs 概説
 
 ## Base
 - qulacs v0.3.0
     - [code(original, github)](https://github.com/qulacs/qulacs.git)
-    - [document](http://docs.qulacs.org/en/latest/index.html)
+    - [document](http://docs.qulacs.org/ja/latest/index.html)
 
-## Functionality
-- Quantum state generation & gate simulation with multi-process and multi-nodes
-- MPI-Qulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
-  - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
-  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=1$ constant）
-- Please also see Limitation
+## 機能
+- マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=1$ ）
+- A64FXの512bit-SVE命令に最適化されている
+- 対応関数及び範囲は、制限事項を参照
 
 <hr>
 
-## Limitation
+## 制限事項
 
-- The number of MPI rank (WORLD_SIZE) should be $2^n$
-- Unsupported gates/functions may cause severe error.
-- "device=gpu" not supported
+- mpi実行時のランク数（WORLD_SIZE）は2のべき数とすること
+- 未対応の機能・ゲートを使用した場合、segvや、結果異常となる場合がある
+- device=gpuは、対応しない
 
-- The following items are supported. MPI-Qulacs does not support any other items.
+- 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumState
       - Constructor
       - get_device_name
@@ -40,7 +39,7 @@
       - DenseMatrix(single target)
       - DiagonalMatrix(single target)
 
-- To be supported after March (T.B.D.)
+- 3月末版対応予定の関数・機能
   - gate
       - Measurement
       - Pauli
@@ -58,8 +57,8 @@
   - ParametricQuantumCircuit
   - PauliOperator
 
-## Additional info
-- To be supported after April (T.B.D.)
+## 注意事項
+- 4月以降の版で順次対応予定の関数・機能
   - gate
       - TOFFOLI
       - FREDKIN
@@ -79,7 +78,7 @@
       - drop_qubit
       - partial_trace
 
-- Might be supported in future (T.B.D.)
+- 対応予定が未定な関数・機能
   - gate
       - DenseMatrix(multi target)
       - DenseMatrix(single control, multi target)
@@ -104,27 +103,27 @@
   - QuantumGateMatrix
   - QuantumGate_SingleParameter
 
-- API which has different functionality from the original
-  - Instantiation of QuantumState
+- オリジナルqulacsとの機能に差があるAPI
+  - QuantumStateインスタンスの作成
     - QuantumState state(qubits, use_multi_cpu)
       - use_multi_cpu = false
-        -  Generate state vector in a node (same as the original)
+          ノード内にstate vectorを作成する。（従来動作）
       - use_multi_cpu = true
-        -  Generate a state vector in multiple nodes if possible.
-        -  qubits are divided into inner_qc + outer_qc internally.
-            - inner_qc: qubits in one node
-            - outer_qc: qubits in multiple nodes (=log2(#rank))
+          可能であれば分散してstate vectorを作成する。
+          qubits を内部で inner_qc + outer_qc に分割
+        - inner_qc: １ノード内のqubits
+        - outer_qc: 分散配置されたqubits (=log2(rank数))
     - state.get_device()
-      - return the list of devices having the state vector.
+    state vectorの配置されているデバイスを返す。
 
-        | ret value | explanation|
+        | 返り値 | 説明 |
         | -------- | -------- |
-        | "cpu"   | state vector generated in a cpu |
-        | "multi-cpu" | state vector generated in multi cpu |
-        | ("gpu") | Not supported in mpi-qulacs |
+        | "cpu"   | ノード内に作成されたstate vector |
+        | "multi-cpu" | 分散配置されたstate vector |
+        | ("gpu") | mpi-qulacsではサポートしない |
 
     - state.to_string()
-      Output state info
+      state情報を出力
         ```
         to_string() example
         -- rank 0 --------------------------------------
@@ -142,15 +141,16 @@
           ...
         ```
   - state.set_Haar_random_state()
-    - Initialize each item with random value
-    - In the case state vector distributed in multi nodes
-      - If the seed is not specified, random value in rank0 is broadcasted in all ranks.
-      - Based on the specified or broadcasted seed, each rank uses (seed + rank) as a seed. Even if the same seed is set in a distributed state vector, the random created states are different if the number of divisions is different.
+    - 各要素を乱数で初期化する。
+    - 分散配置されたstate vectorの場合
+      - seedを指定しない場合でも、rank0の乱数値が全ランクで共有され、seedとして使用する。
+      - 指定されたseedもしくは共有されたseedを基に、各rankは (seed + rank番号) をseedとして使用する。
+      そのため、分散配置されたstate vectorでは同じseedを設定しても、 **分割数が異なると、作成される状態は異なる。**
 
   - state.sample( number_sampling [, seed])
-    - As the same as gate operation, you must call it in all ranks.
-    - Even if a seed is not specified, the random value in rank0 is shared (bcast) and used as a seed.
-    - If you specify a seed, use the same one in all ranks.
+    - 他のgate等の操作と同様に、必ず全ランクでcallすること。
+    - seedを指定しない場合でも、rank0での乱数値が全ランクで共有(bcast)され、seedとして使用される。
+    - seedを指定する場合、全ランクで共通の値を指定すること。
 
 <hr>
 
@@ -164,8 +164,8 @@ $ pip install -U pip wheel (*1)
 $ pip install pytest numpy mpi4py (*1, *2)
 $ python setup_mpi.py install (*1)
 
-*1 internet required
-*2 if you use fcc, Fujitsu C compiler, run below instead (memo)
+*1 要internet接続
+*2 fccを使う場合(参考)
    $ MPICC=mpifcc pip install mpi4py
 ```
 ### test
@@ -175,7 +175,7 @@ $ pytest
 
 ## c++/c library build
 ### GCC
-- Prerequisites (Verified version)
+- 前提条件 (確認済みバージョン)
     - gcc 11.2
     - openmpi 4.1 (gcc 11.2)
         - configure-option: --with-openib
