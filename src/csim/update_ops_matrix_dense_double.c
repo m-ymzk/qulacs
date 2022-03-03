@@ -121,6 +121,19 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE mat3ii, SV_FTYPE* output0, SV_FTYPE* output1, SV_FTYPE* output2,
     SV_FTYPE* output3);
 
+static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
+    SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
+    SV_FTYPE* mat2ii, SV_FTYPE* mat3ii);
+
+static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
+    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
+    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
+    SV_FTYPE mat23rr, SV_FTYPE mat01ii, SV_FTYPE mat23ii, SV_FTYPE* output0,
+    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
+
+static inline void PrepareMatrixElementsMT1(SV_PRED pg, const CTYPE matrix[16],
+    SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat01ii, SV_FTYPE* mat23ii);
+
 // clang-format off
 /*
  * This function performs multiplication of a 4x4 matrix and four vectors
@@ -209,10 +222,6 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 3), input3ri);
 }
 
-static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
-    SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat0ii, SV_FTYPE* mat1ii,
-    SV_FTYPE* mat2ii, SV_FTYPE* mat3ii);
-
 // clang-format off
 /*
  * This function prepare SVE registers mat01rr, mat23rr, mat0ii, mat1ii,
@@ -250,12 +259,6 @@ static inline void PrepareMatrixElements(SV_PRED pg, const CTYPE matrix[16],
     *mat2ii = svneg_m(*mat2ii, pred_01, *mat2ii);
     *mat3ii = svneg_m(*mat3ii, pred_01, *mat3ii);
 }
-
-static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
-    SV_FTYPE input1ir, SV_FTYPE input2ir, SV_FTYPE input3ir, SV_FTYPE input0ri,
-    SV_FTYPE input1ri, SV_FTYPE input2ri, SV_FTYPE input3ri, SV_FTYPE mat01rr,
-    SV_FTYPE mat23rr, SV_FTYPE mat01ii, SV_FTYPE mat23ii, SV_FTYPE* output0,
-    SV_FTYPE* output1, SV_FTYPE* output2, SV_FTYPE* output3);
 
 // clang-format off
 /*
@@ -312,6 +315,24 @@ static inline void MatrixVectorProduct4x4MT1(SV_PRED pg, SV_FTYPE input0ir,
     *output3 = svmla_z(pg, *output3, svdup_lane(mat23ii, 7), input3ri);
 }
 
+static inline void PrepareMatrixElementsMT1(SV_PRED pg, const CTYPE matrix[16],
+     SV_FTYPE* mat01rr, SV_FTYPE* mat23rr, SV_FTYPE* mat01ii, SV_FTYPE* mat23ii){
+
+    // load each row of the matrix
+    SV_FTYPE input0 = svld1(pg, (ETYPE*)&matrix[0]);
+    SV_FTYPE input1 = svld1(pg, (ETYPE*)&matrix[4]);
+    SV_FTYPE input2 = svld1(pg, (ETYPE*)&matrix[8]);
+    SV_FTYPE input3 = svld1(pg, (ETYPE*)&matrix[12]);
+
+    // gather the real parts of every two rows
+    *mat01rr = svtrn1(input0, input1);
+    *mat23rr = svtrn1(input2, input3);
+
+    // gather the imag. parts of every two rows
+    *mat01ii = svtrn2(input0, input1);
+    *mat23ii = svtrn2(input2, input3);
+}
+
 void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
     const UINT min_qubit_index =
@@ -334,14 +355,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     ITYPE prefetch_taget1, prefetch_taget2;
 
     SV_PRED pg = Svptrue();
-
     SV_ITYPE vec_tbl;
 
     SV_FTYPE mat01rr, mat23rr;
     SV_FTYPE mat0ii, mat1ii, mat2ii, mat3ii;
-    SV_FTYPE input0ir, input1ir, input2ir, input3ir;
-    SV_FTYPE input0ri, input1ri, input2ri, input3ri;
-    SV_FTYPE output0, output1, output2, output3;
 
     // load each row of the matrix
     PrepareMatrixElements(
@@ -357,9 +374,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
 
     if (prefetch_taget1 && prefetch_taget2) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
-    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
-    output3)                                                             \
+#pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
         for (state_index = 0; state_index < loop_dim;
@@ -375,17 +390,18 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             ITYPE basis_3 = basis_1 + target_mask2;
 
             // fetch values
-            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+            SV_FTYPE input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            SV_FTYPE input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            SV_FTYPE input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            SV_FTYPE input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
 
             // swap the real and imag. parts
-            input0ri = svtbl(input0ir, vec_tbl);
-            input1ri = svtbl(input1ir, vec_tbl);
-            input2ri = svtbl(input2ir, vec_tbl);
-            input3ri = svtbl(input3ir, vec_tbl);
+            SV_FTYPE input0ri = svtbl(input0ir, vec_tbl);
+            SV_FTYPE input1ri = svtbl(input1ir, vec_tbl);
+            SV_FTYPE input2ri = svtbl(input2ir, vec_tbl);
+            SV_FTYPE input3ri = svtbl(input3ir, vec_tbl);
 
+            SV_FTYPE output0, output1, output2, output3;
             MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
                 input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
                 mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
@@ -413,9 +429,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
 
     } else if (prefetch_taget1) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
-    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
-    output3)                                                             \
+#pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
         for (state_index = 0; state_index < loop_dim;
@@ -431,17 +445,18 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             ITYPE basis_3 = basis_1 + target_mask2;
 
             // fetch values
-            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+            SV_FTYPE input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            SV_FTYPE input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            SV_FTYPE input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            SV_FTYPE input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
 
             // swap the real and imag. parts
-            input0ri = svtbl(input0ir, vec_tbl);
-            input1ri = svtbl(input1ir, vec_tbl);
-            input2ri = svtbl(input2ir, vec_tbl);
-            input3ri = svtbl(input3ir, vec_tbl);
+            SV_FTYPE input0ri = svtbl(input0ir, vec_tbl);
+            SV_FTYPE input1ri = svtbl(input1ir, vec_tbl);
+            SV_FTYPE input2ri = svtbl(input2ir, vec_tbl);
+            SV_FTYPE input3ri = svtbl(input3ir, vec_tbl);
 
+            SV_FTYPE output0, output1, output2, output3;
             MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
                 input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
                 mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
@@ -466,9 +481,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         }
     } else if (prefetch_taget2) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
-    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
-    output3)                                                             \
+#pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
         for (state_index = 0; state_index < loop_dim;
@@ -484,17 +497,18 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             ITYPE basis_3 = basis_1 + target_mask2;
 
             // fetch values
-            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+            SV_FTYPE input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            SV_FTYPE input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            SV_FTYPE input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            SV_FTYPE input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
 
             // swap the real and imag. parts
-            input0ri = svtbl(input0ir, vec_tbl);
-            input1ri = svtbl(input1ir, vec_tbl);
-            input2ri = svtbl(input2ir, vec_tbl);
-            input3ri = svtbl(input3ir, vec_tbl);
+            SV_FTYPE input0ri = svtbl(input0ir, vec_tbl);
+            SV_FTYPE input1ri = svtbl(input1ir, vec_tbl);
+            SV_FTYPE input2ri = svtbl(input2ir, vec_tbl);
+            SV_FTYPE input3ri = svtbl(input3ir, vec_tbl);
 
+            SV_FTYPE output0, output1, output2, output3;
             MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
                 input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
                 mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
@@ -520,9 +534,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
 
     } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0ir, input1ir, input2ir, input3ir, \
-    input0ri, input1ri, input2ri, input3ri, output0, output1, output2,   \
-    output3)                                                             \
+#pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
         for (state_index = 0; state_index < loop_dim;
@@ -538,17 +550,18 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             ITYPE basis_3 = basis_1 + target_mask2;
 
             // fetch values
-            input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
-            input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
-            input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
-            input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
+            SV_FTYPE input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
+            SV_FTYPE input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
+            SV_FTYPE input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
+            SV_FTYPE input3ir = svld1(pg, (ETYPE*)&state[basis_3]);
 
             // swap the real and imag. parts
-            input0ri = svtbl(input0ir, vec_tbl);
-            input1ri = svtbl(input1ir, vec_tbl);
-            input2ri = svtbl(input2ir, vec_tbl);
-            input3ri = svtbl(input3ir, vec_tbl);
+            SV_FTYPE input0ri = svtbl(input0ir, vec_tbl);
+            SV_FTYPE input1ri = svtbl(input1ir, vec_tbl);
+            SV_FTYPE input2ri = svtbl(input2ir, vec_tbl);
+            SV_FTYPE input3ri = svtbl(input3ir, vec_tbl);
 
+            SV_FTYPE output0, output1, output2, output3;
             MatrixVectorProduct4x4(pg, input0ir, input1ir, input2ir, input3ir,
                 input0ri, input1ri, input2ri, input3ri, mat01rr, mat23rr,
                 mat0ii, mat1ii, mat2ii, mat3ii, &output0, &output1, &output2,
@@ -591,25 +604,9 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         SV_ITYPE vec_tbl;
 
         SV_FTYPE mat01rr, mat23rr, mat01ii, mat23ii;
-        SV_FTYPE input0, input1, input2, input3;
-        SV_FTYPE cval0ir, cval1ir, cval2ir, cval3ir;
-        SV_FTYPE cval0ri, cval1ri, cval2ri, cval3ri;
-        SV_FTYPE result0, result1, result2, result3;
-        SV_FTYPE output0, output1, output2, output3;
 
-        // load each row of the matrix
-        input0 = svld1(pg, (ETYPE*)&matrix[0]);
-        input1 = svld1(pg, (ETYPE*)&matrix[4]);
-        input2 = svld1(pg, (ETYPE*)&matrix[8]);
-        input3 = svld1(pg, (ETYPE*)&matrix[12]);
-
-        // gather the real parts of every two rows
-        mat01rr = svtrn1(input0, input1);
-        mat23rr = svtrn1(input2, input3);
-
-        // gather the imag. parts of every two rows
-        mat01ii = svtrn2(input0, input1);
-        mat23ii = svtrn2(input2, input3);
+        // load elements of the matrix
+        PrepareMatrixElementsMT1(pg, matrix, &mat01rr, &mat23rr, &mat01ii, &mat23ii);
 
         // create a table for swapping the real and imag. parts
         vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(2));
@@ -623,9 +620,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,   \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0, \
-    output1, output2, output3, result0, result1, result2, result3)          \
+#pragma omp parallel for \
     shared(pg, pg_neg, vec_tbl, mat01ii, mat23ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -642,22 +637,22 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask2;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir = svzip1(input0, input1);
-                    cval1ir = svzip2(input0, input1);
-                    cval2ir = svzip1(input2, input3);
-                    cval3ir = svzip2(input2, input3);
+                    SV_FTYPE cval0ir = svzip1(input0, input1);
+                    SV_FTYPE cval1ir = svzip2(input0, input1);
+                    SV_FTYPE cval2ir = svzip1(input2, input3);
+                    SV_FTYPE cval3ir = svzip2(input2, input3);
 
                     // swap the real and imag. parts
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // reverse the sign every two elements
                     cval0ri = svneg_m(cval0ri, pg_neg, cval0ri);
@@ -666,6 +661,8 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, pg_neg, cval3ri);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
@@ -697,9 +694,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,   \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0, \
-    output1, output2, output3, result0, result1, result2, result3)          \
+#pragma omp parallel for  \
     shared(pg, pg_neg, vec_tbl, mat01ii, mat23ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -716,22 +711,22 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask2;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir = svzip1(input0, input1);
-                    cval1ir = svzip2(input0, input1);
-                    cval2ir = svzip1(input2, input3);
-                    cval3ir = svzip2(input2, input3);
+                    SV_FTYPE cval0ir = svzip1(input0, input1);
+                    SV_FTYPE cval1ir = svzip2(input0, input1);
+                    SV_FTYPE cval2ir = svzip1(input2, input3);
+                    SV_FTYPE cval3ir = svzip2(input2, input3);
 
                     // swap the real and imag. parts
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // reverse the sign every two elements
                     cval0ri = svneg_m(cval0ri, pg_neg, cval0ri);
@@ -740,6 +735,8 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, pg_neg, cval3ri);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
@@ -764,9 +761,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,   \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0, \
-    output1, output2, output3, result0, result1, result2, result3)          \
+#pragma omp parallel for  \
     shared(pg, pg_neg, vec_tbl, mat01ii, mat23ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -783,22 +778,22 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask1;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir = svzip1(input0, input1);
-                    cval2ir = svzip2(input0, input1);
-                    cval1ir = svzip1(input2, input3);
-                    cval3ir = svzip2(input2, input3);
+                    SV_FTYPE cval0ir = svzip1(input0, input1);
+                    SV_FTYPE cval2ir = svzip2(input0, input1);
+                    SV_FTYPE cval1ir = svzip1(input2, input3);
+                    SV_FTYPE cval3ir = svzip2(input2, input3);
 
                     // swap the real and imag. parts
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // reverse the sign every two elements
                     cval0ri = svneg_m(cval0ri, pg_neg, cval0ri);
@@ -807,6 +802,8 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, pg_neg, cval3ri);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
@@ -838,9 +835,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,   \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0, \
-    output1, output2, output3, result0, result1, result2, result3)          \
+#pragma omp parallel for \
     shared(pg, pg_neg, vec_tbl, mat01ii, mat23ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -857,22 +852,22 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask1;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir = svzip1(input0, input1);
-                    cval2ir = svzip2(input0, input1);
-                    cval1ir = svzip1(input2, input3);
-                    cval3ir = svzip2(input2, input3);
+                    SV_FTYPE cval0ir = svzip1(input0, input1);
+                    SV_FTYPE cval2ir = svzip2(input0, input1);
+                    SV_FTYPE cval1ir = svzip1(input2, input3);
+                    SV_FTYPE cval3ir = svzip2(input2, input3);
 
                     // swap the real and imag. parts
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // reverse the sign every two elements
                     cval0ri = svneg_m(cval0ri, pg_neg, cval0ri);
@@ -881,6 +876,8 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     cval3ri = svneg_m(cval3ri, pg_neg, cval3ri);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4MT1(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat01ii, mat23ii, &result0, &result1, &result2,
@@ -907,11 +904,6 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
         SV_FTYPE mat0ii, mat1ii, mat2ii, mat3ii;
         SV_FTYPE mat01rr, mat23rr;
-        SV_FTYPE input0, input1, input2, input3;
-        SV_FTYPE cval0ir, cval1ir, cval2ir, cval3ir;
-        SV_FTYPE cval0ri, cval1ri, cval2ri, cval3ri;
-        SV_FTYPE result0, result1, result2, result3;
-        SV_FTYPE output0, output1, output2, output3;
 
         // load each row of the matrix
         PrepareMatrixElements(
@@ -932,9 +924,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,     \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0,   \
-    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+#pragma omp parallel for shared(pg, \
     pg_select, vec_tbl, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -951,27 +941,29 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask2;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir =
-                        svsel(pg_select, input0, svext(input1, input1, 6));
-                    cval1ir =
-                        svsel(pg_select, svext(input0, input0, 2), input1);
-                    cval2ir =
-                        svsel(pg_select, input2, svext(input3, input3, 6));
-                    cval3ir =
+                    SV_FTYPE cval0ir =
+                         svsel(pg_select, input0, svext(input1, input1, 6));
+                    SV_FTYPE cval1ir =
+                         svsel(pg_select, svext(input0, input0, 2), input1);
+                    SV_FTYPE cval2ir =
+                         svsel(pg_select, input2, svext(input3, input3, 6));
+                    SV_FTYPE cval3ir =
                         svsel(pg_select, svext(input2, input2, 2), input3);
                     // swap
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
@@ -1006,9 +998,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,     \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0,   \
-    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+#pragma omp parallel for shared(pg, \
     pg_select, vec_tbl, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -1025,27 +1015,29 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask2;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir =
-                        svsel(pg_select, input0, svext(input1, input1, 6));
-                    cval1ir =
-                        svsel(pg_select, svext(input0, input0, 2), input1);
-                    cval2ir =
-                        svsel(pg_select, input2, svext(input3, input3, 6));
-                    cval3ir =
+                    SV_FTYPE cval0ir =
+                         svsel(pg_select, input0, svext(input1, input1, 6));
+                    SV_FTYPE cval1ir =
+                         svsel(pg_select, svext(input0, input0, 2), input1);
+                    SV_FTYPE cval2ir =
+                         svsel(pg_select, input2, svext(input3, input3, 6));
+                    SV_FTYPE cval3ir =
                         svsel(pg_select, svext(input2, input2, 2), input3);
                     // swap
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
@@ -1080,9 +1072,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
             if (prefetch_flag) {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,     \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0,   \
-    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+#pragma omp parallel for shared(pg, \
     pg_select, vec_tbl, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -1100,27 +1090,29 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask1;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir =
-                        svsel(pg_select, input0, svext(input1, input1, 6));
-                    cval2ir =
-                        svsel(pg_select, svext(input0, input0, 2), input1);
-                    cval1ir =
-                        svsel(pg_select, input2, svext(input3, input3, 6));
-                    cval3ir =
+                    SV_FTYPE cval0ir =
+                         svsel(pg_select, input0, svext(input1, input1, 6));
+                    SV_FTYPE cval2ir =
+                         svsel(pg_select, svext(input0, input0, 2), input1);
+                    SV_FTYPE cval1ir =
+                         svsel(pg_select, input2, svext(input3, input3, 6));
+                    SV_FTYPE cval3ir =
                         svsel(pg_select, svext(input2, input2, 2), input3);
                     // swap
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
@@ -1155,9 +1147,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                 }
             } else {
 #ifdef _OPENMP
-#pragma omp parallel for private(input0, input1, input2, input3, cval0ir,     \
-    cval1ir, cval2ir, cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, output0,   \
-    output1, output2, output3, result0, result1, result2, result3) shared(pg, \
+#pragma omp parallel for shared(pg, \
     pg_select, vec_tbl, mat0ii, mat1ii, mat2ii, mat3ii, mat01rr, mat23rr)
 #endif
                 for (state_index = 0; state_index < loop_dim;
@@ -1175,27 +1165,29 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
                     ITYPE basis_3 = basis_1 + target_mask1;
 
                     // fetch values
-                    input0 = svld1(pg, (ETYPE*)&state[basis_0]);
-                    input1 = svld1(pg, (ETYPE*)&state[basis_1]);
-                    input2 = svld1(pg, (ETYPE*)&state[basis_2]);
-                    input3 = svld1(pg, (ETYPE*)&state[basis_3]);
+                    SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                    SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+                    SV_FTYPE input2 = svld1(pg, (ETYPE*)&state[basis_2]);
+                    SV_FTYPE input3 = svld1(pg, (ETYPE*)&state[basis_3]);
 
                     // shuffle
-                    cval0ir =
+                    SV_FTYPE cval0ir =
                         svsel(pg_select, input0, svext(input1, input1, 6));
-                    cval2ir =
+                    SV_FTYPE cval2ir =
                         svsel(pg_select, svext(input0, input0, 2), input1);
-                    cval1ir =
+                    SV_FTYPE cval1ir =
                         svsel(pg_select, input2, svext(input3, input3, 6));
-                    cval3ir =
+                    SV_FTYPE cval3ir =
                         svsel(pg_select, svext(input2, input2, 2), input3);
                     // swap
-                    cval0ri = svtbl(cval0ir, vec_tbl);
-                    cval1ri = svtbl(cval1ir, vec_tbl);
-                    cval2ri = svtbl(cval2ir, vec_tbl);
-                    cval3ri = svtbl(cval3ir, vec_tbl);
+                    SV_FTYPE cval0ri = svtbl(cval0ir, vec_tbl);
+                    SV_FTYPE cval1ri = svtbl(cval1ir, vec_tbl);
+                    SV_FTYPE cval2ri = svtbl(cval2ir, vec_tbl);
+                    SV_FTYPE cval3ri = svtbl(cval3ir, vec_tbl);
 
                     // perform matrix-vector product
+                    SV_FTYPE result0, result1, result2, result3;
+                    SV_FTYPE output0, output1, output2, output3;
                     MatrixVectorProduct4x4(pg, cval0ir, cval1ir, cval2ir,
                         cval3ir, cval0ri, cval1ri, cval2ri, cval3ri, mat01rr,
                         mat23rr, mat0ii, mat1ii, mat2ii, mat3ii, &result0,
