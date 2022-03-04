@@ -11,6 +11,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -457,9 +461,32 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 #ifdef _USE_MPI
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
-    const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT outer_qc) {
+    const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT inner_qc) {
 
-    fprintf(stderr, "Not implemented. (file: %s, line: %d)\n", __FILE__, __LINE__ );
+    const MPIutil m = get_mpiutil();
+    const UINT rank = m->get_rank();
+    const UINT control_rank_bit = 1 << (control_qubit_index - inner_qc);
+
+    if (control_qubit_index < inner_qc){ // control_qubit_index is in inner
+        if(target_qubit_index < inner_qc){ // target_qubit_index is in inner
+
+            single_qubit_control_single_qubit_dense_matrix_gate(
+                control_qubit_index, control_value, target_qubit_index,
+                matrix, state, dim);
+           
+        }else{ // target_qubit_index is outer
+            fprintf(stderr, "[control:inner, target:outer]: Not implemented. (file: %s, line: %d)\n", __FILE__, __LINE__ );
+        }
+    }else{ // control_qubit_index is outer
+        if(target_qubit_index < inner_qc){ // target_qubit_index is in inner
+            if ((rank & control_rank_bit) && (control_value==1)) 
+                single_qubit_dense_matrix_gate( target_qubit_index, matrix, state, dim);
+            else if(!(rank & control_rank_bit) && (control_value==0))
+                single_qubit_dense_matrix_gate( target_qubit_index, matrix, state, dim);
+        }else{ // target_qubit_index is outer
+            fprintf(stderr, "[control:outer, target:outer]: Not implemented. (file: %s, line: %d)\n", __FILE__, __LINE__ );
+        }
+    }
 
 }
 #endif
