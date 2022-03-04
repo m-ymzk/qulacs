@@ -371,6 +371,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
         ((5 <= target_qubit_index1) && (target_qubit_index1 <= 9));
     prefetch_taget2 =
         ((5 <= target_qubit_index2) && (target_qubit_index2 <= 9));
+    ITYPE state_step = (vec_len >> 1);
 
     if (prefetch_taget1 && prefetch_taget2) {
 #ifdef _OPENMP
@@ -378,7 +379,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
 #endif
         for (state_index = 0; state_index < loop_dim;
-             state_index += (vec_len >> 1)) {
+             state_index += state_step) {
             // create index
             ITYPE basis_0 = (state_index & low_mask) +
                             ((state_index & mid_mask) << 1) +
@@ -390,6 +391,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             ITYPE basis_3 = basis_1 + target_mask2;
 
             // fetch values
+
             SV_FTYPE input0ir = svld1(pg, (ETYPE*)&state[basis_0]);
             SV_FTYPE input1ir = svld1(pg, (ETYPE*)&state[basis_1]);
             SV_FTYPE input2ir = svld1(pg, (ETYPE*)&state[basis_2]);
@@ -414,17 +416,38 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             svst1(pg, (ETYPE*)&state[basis_3], output3);
 
             // L1 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
+#define L1_DISTANCE 8
+            ITYPE basis_pf_l1_0 =
+                ((state_index + state_step * L1_DISTANCE) & low_mask) +
+                (((state_index + state_step * L1_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L1_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l1_1 = basis_pf_l1_0 + target_mask1;
+            ITYPE basis_pf_l1_2 = basis_pf_l1_0 + target_mask2;
+            ITYPE basis_pf_l1_3 = basis_pf_l1_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l1_0], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_1], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_2], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_3], 1, 3);
+
             // L2 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask1 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_1 + target_mask1 * 8], 1, 2);
-            // L1 prefetch
-            __builtin_prefetch(&state[basis_2 + target_mask2 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_3 + target_mask2 * 4], 1, 3);
-            // L2 prefetch
-            __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
+#define L2_DISTANCE 16
+            ITYPE basis_pf_l2_0 =
+                ((state_index + state_step * L2_DISTANCE) & low_mask) +
+                (((state_index + state_step * L2_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L2_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l2_1 = basis_pf_l2_0 + target_mask1;
+            ITYPE basis_pf_l2_2 = basis_pf_l2_0 + target_mask2;
+            ITYPE basis_pf_l2_3 = basis_pf_l2_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l2_0], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_1], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_2], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_3], 1, 2);
         }
 
     } else if (prefetch_taget1) {
@@ -469,15 +492,38 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             svst1(pg, (ETYPE*)&state[basis_3], output3);
 
             // L1 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask1 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_1 + target_mask1 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_2 + target_mask1 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_3 + target_mask1 * 4], 1, 3);
+#define L1_DISTANCE 8
+            ITYPE basis_pf_l1_0 =
+                ((state_index + state_step * L1_DISTANCE) & low_mask) +
+                (((state_index + state_step * L1_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L1_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l1_1 = basis_pf_l1_0 + target_mask1;
+            ITYPE basis_pf_l1_2 = basis_pf_l1_0 + target_mask2;
+            ITYPE basis_pf_l1_3 = basis_pf_l1_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l1_0], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_1], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_2], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_3], 1, 3);
+
             // L2 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask1 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_1 + target_mask1 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_2 + target_mask1 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_3 + target_mask1 * 8], 1, 2);
+#define L2_DISTANCE 16
+            ITYPE basis_pf_l2_0 =
+                ((state_index + state_step * L2_DISTANCE) & low_mask) +
+                (((state_index + state_step * L2_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L2_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l2_1 = basis_pf_l2_0 + target_mask1;
+            ITYPE basis_pf_l2_2 = basis_pf_l2_0 + target_mask2;
+            ITYPE basis_pf_l2_3 = basis_pf_l2_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l2_0], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_1], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_2], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_3], 1, 2);
         }
     } else if (prefetch_taget2) {
 #ifdef _OPENMP
@@ -521,15 +567,38 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             svst1(pg, (ETYPE*)&state[basis_3], output3);
 
             // L1 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask2 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_1 + target_mask2 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_2 + target_mask2 * 4], 1, 3);
-            __builtin_prefetch(&state[basis_3 + target_mask2 * 4], 1, 3);
+#define L1_DISTANCE 8
+            ITYPE basis_pf_l1_0 =
+                ((state_index + state_step * L1_DISTANCE) & low_mask) +
+                (((state_index + state_step * L1_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L1_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l1_1 = basis_pf_l1_0 + target_mask1;
+            ITYPE basis_pf_l1_2 = basis_pf_l1_0 + target_mask2;
+            ITYPE basis_pf_l1_3 = basis_pf_l1_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l1_0], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_1], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_2], 1, 3);
+            __builtin_prefetch(&state[basis_pf_l1_3], 1, 3);
+
             // L2 prefetch
-            __builtin_prefetch(&state[basis_0 + target_mask2 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_1 + target_mask2 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_2 + target_mask2 * 8], 1, 2);
-            __builtin_prefetch(&state[basis_3 + target_mask2 * 8], 1, 2);
+#define L2_DISTANCE 16
+            ITYPE basis_pf_l2_0 =
+                ((state_index + state_step * L2_DISTANCE) & low_mask) +
+                (((state_index + state_step * L2_DISTANCE) & mid_mask) << 1) +
+                (((state_index + state_step * L2_DISTANCE) & high_mask) << 2);
+
+            // gather index
+            ITYPE basis_pf_l2_1 = basis_pf_l2_0 + target_mask1;
+            ITYPE basis_pf_l2_2 = basis_pf_l2_0 + target_mask2;
+            ITYPE basis_pf_l2_3 = basis_pf_l2_1 + target_mask2;
+
+            __builtin_prefetch(&state[basis_pf_l2_0], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_1], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_2], 1, 2);
+            __builtin_prefetch(&state[basis_pf_l2_3], 1, 2);
         }
 
     } else {
