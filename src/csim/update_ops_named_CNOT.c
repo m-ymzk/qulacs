@@ -102,23 +102,25 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                                 ((state_index & high_mask) << 2) + control_mask;
             CTYPE temp = state[basis_index];
 #ifdef __aarch64__
-	    if (5 <= control_qubit_index && control_qubit_index <= 8) {
-		// L1 prefetch
-		#define _PRF_L1_ITR 16
-		ITYPE basis_index_l1pf = (((state_index + _PRF_L1_ITR) & mid_mask) << 1)
-		                       + (((state_index + _PRF_L1_ITR) & high_mask) << 2)
-				       + control_mask;
-		__builtin_prefetch(&state[basis_index_l1pf    ], 1, 3);
-		__builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
-		// L2 prefetch
-		#define _PRF_L2_ITR 64
-		ITYPE basis_index_l2pf = (((state_index + _PRF_L2_ITR) & mid_mask) << 1)
-				       + (((state_index + _PRF_L2_ITR) & high_mask) << 2)
-				       + control_mask;
-		__builtin_prefetch(&state[basis_index_l2pf    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf + 1], 1, 2);
-	    }
-#endif	// #ifdef __aarch64__
+            if (5 <= control_qubit_index && control_qubit_index <= 8) {
+// L1 prefetch
+#define _PRF_L1_ITR 16
+                ITYPE basis_index_l1pf =
+                    (((state_index + _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                __builtin_prefetch(&state[basis_index_l1pf], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf =
+                    (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                __builtin_prefetch(&state[basis_index_l2pf], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf + 1], 1, 2);
+            }
+#endif  // #ifdef __aarch64__
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
@@ -131,128 +133,130 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
             ITYPE basis_index_1 = basis_index_0 + target_mask;
             CTYPE temp = state[basis_index_0];
 #ifdef __aarch64__
-	    if (5 <= target_qubit_index && target_qubit_index <= 8) {
-		// L2 prefetch
-		#define _PRF_L2_ITR 128
-		ITYPE basis_index_l2pf0 =  ((state_index + _PRF_L2_ITR) & low_mask)
-					+ (((state_index + _PRF_L2_ITR) & mid_mask) << 1)
-					+ (((state_index + _PRF_L2_ITR) & high_mask) << 2)
-					+ control_mask;
-		ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-		__builtin_prefetch(&state[basis_index_l2pf0    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf1    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
-	    }
-#endif	// #ifdef __aarch64__
+            if (5 <= target_qubit_index && target_qubit_index <= 8) {
+// L2 prefetch
+#define _PRF_L2_ITR 128
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + _PRF_L2_ITR) & low_mask) +
+                    (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
+            }
+#endif  // #ifdef __aarch64__
             state[basis_index_0] = state[basis_index_1];
             state[basis_index_1] = temp;
         }
 #ifdef __aarch64__
     } else if ((5 <= control_qubit_index && control_qubit_index <= 8) ||
-	       (5 <= target_qubit_index  && target_qubit_index  <= 8)) {
+               (5 <= target_qubit_index && target_qubit_index <= 8)) {
         if (4 <= min_qubit_mask) {
-		// SIMD + PREFETCH
-		// a,a+1 is swapped to a^m, a^m+1, respectively
-		for (state_index = 0; state_index < loop_dim; state_index+=4) {
-			ITYPE basis_index_0 =  (state_index & low_mask)
-					    + ((state_index & mid_mask) << 1)
-					    + ((state_index & high_mask) << 2)
-					    + control_mask;
-			ITYPE basis_index_1 = basis_index_0 + target_mask;
-			ETYPE * restrict state0 = (ETYPE *)&state[basis_index_0];
-			ETYPE * restrict state1 = (ETYPE *)&state[basis_index_1];
-			// L1 prefetch
-			#define _PRF_L1_ITR 4
-			ITYPE basis_index_l1pf0 =  ((state_index + 4 * _PRF_L1_ITR) & low_mask)
-						+ (((state_index + 4 * _PRF_L1_ITR) & mid_mask) << 1)
-						+ (((state_index + 4 * _PRF_L1_ITR) & high_mask) << 2)
-						+ control_mask;
-			ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
-			ETYPE * restrict state0_l1pf = (ETYPE *)&state[basis_index_l1pf0];
-			ETYPE * restrict state1_l1pf = (ETYPE *)&state[basis_index_l1pf1];
-			__builtin_prefetch(&state0_l1pf[0], 1, 3);
-			__builtin_prefetch(&state0_l1pf[7], 1, 3);
-			__builtin_prefetch(&state1_l1pf[0], 1, 3);
-			__builtin_prefetch(&state1_l1pf[7], 1, 3);
-			// L2 prefetch
-			#define _PRF_L2_ITR 64
-			ITYPE basis_index_l2pf0 =  ((state_index + 4 * _PRF_L2_ITR) & low_mask)
-		    				+ (((state_index + 4 * _PRF_L2_ITR) & mid_mask) << 1)
-						+ (((state_index + 4 * _PRF_L2_ITR) & high_mask) << 2)
-						+ control_mask;
-			ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-			ETYPE * restrict state0_l2pf = (ETYPE *)&state[basis_index_l2pf0];
-			ETYPE * restrict state1_l2pf = (ETYPE *)&state[basis_index_l2pf1];
-			__builtin_prefetch(&state0_l2pf[0], 1, 2);
-			__builtin_prefetch(&state0_l2pf[7], 1, 2);
-			__builtin_prefetch(&state1_l2pf[0], 1, 2);
-			__builtin_prefetch(&state1_l2pf[7], 1, 2);
+            // SIMD + PREFETCH
+            // a,a+1 is swapped to a^m, a^m+1, respectively
+            for (state_index = 0; state_index < loop_dim; state_index += 4) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+                ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+// L1 prefetch
+#define _PRF_L1_ITR 4
+                ITYPE basis_index_l1pf0 =
+                    ((state_index + 4 * _PRF_L1_ITR) & low_mask) +
+                    (((state_index + 4 * _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + 4 * _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
+                ETYPE* restrict state0_l1pf = (ETYPE*)&state[basis_index_l1pf0];
+                ETYPE* restrict state1_l1pf = (ETYPE*)&state[basis_index_l1pf1];
+                __builtin_prefetch(&state0_l1pf[0], 1, 3);
+                __builtin_prefetch(&state0_l1pf[7], 1, 3);
+                __builtin_prefetch(&state1_l1pf[0], 1, 3);
+                __builtin_prefetch(&state1_l1pf[7], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + 4 * _PRF_L2_ITR) & low_mask) +
+                    (((state_index + 4 * _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + 4 * _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                ETYPE* restrict state0_l2pf = (ETYPE*)&state[basis_index_l2pf0];
+                ETYPE* restrict state1_l2pf = (ETYPE*)&state[basis_index_l2pf1];
+                __builtin_prefetch(&state0_l2pf[0], 1, 2);
+                __builtin_prefetch(&state0_l2pf[7], 1, 2);
+                __builtin_prefetch(&state1_l2pf[0], 1, 2);
+                __builtin_prefetch(&state1_l2pf[7], 1, 2);
 #pragma omp simd
-			for (ITYPE i = 0; i < 8; ++i) {
-				ETYPE temp = state0[i];
-				state0[i] = state1[i];
-				state1[i] = temp;
-			}
-		}
-	} else {
-		// PREFETCH
-        	// a,a+1 is swapped to a^m, a^m+1, respectively
-        	for (state_index = 0; state_index < loop_dim; state_index += 2) {
-            		ITYPE basis_index_0 =  (state_index & low_mask)
-					    + ((state_index & mid_mask) << 1)
-					    + ((state_index & high_mask) << 2)
-					    + control_mask;
-            		ITYPE basis_index_1 = basis_index_0 + target_mask;
-            		CTYPE temp0 = state[basis_index_0];
-            		CTYPE temp1 = state[basis_index_0 + 1];
-			// L1 prefetch
-			#define _PRF_L1_ITR 4
-            		ITYPE basis_index_l1pf0 =  ((state_index + 2 * _PRF_L1_ITR) & low_mask)
-						+ (((state_index + 2 * _PRF_L1_ITR) & mid_mask) << 1)
-						+ (((state_index + 2 * _PRF_L1_ITR) & high_mask) << 2)
-						+ control_mask;
-                	ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
-			__builtin_prefetch(&state[basis_index_l1pf0    ], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf0 + 1], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf1    ], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
-			// L2 prefetch
-			#define _PRF_L2_ITR 64
-            		ITYPE basis_index_l2pf0 =  ((state_index + 2 * _PRF_L2_ITR) & low_mask)
-						+ (((state_index + 2 * _PRF_L2_ITR) & mid_mask) << 1)
-						+ (((state_index + 2 * _PRF_L2_ITR) & high_mask) << 2)
-						+ control_mask;
-                	ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-			__builtin_prefetch(&state[basis_index_l2pf0    ], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf1    ], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
+                for (ITYPE i = 0; i < 8; ++i) {
+                    ETYPE temp = state0[i];
+                    state0[i] = state1[i];
+                    state1[i] = temp;
+                }
+            }
+        } else {
+            // PREFETCH
+            // a,a+1 is swapped to a^m, a^m+1, respectively
+            for (state_index = 0; state_index < loop_dim; state_index += 2) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp0 = state[basis_index_0];
+                CTYPE temp1 = state[basis_index_0 + 1];
+// L1 prefetch
+#define _PRF_L1_ITR 4
+                ITYPE basis_index_l1pf0 =
+                    ((state_index + 2 * _PRF_L1_ITR) & low_mask) +
+                    (((state_index + 2 * _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + 2 * _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l1pf0], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf0 + 1], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + 2 * _PRF_L2_ITR) & low_mask) +
+                    (((state_index + 2 * _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + 2 * _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
 
-            		state[basis_index_0] = state[basis_index_1];
-            		state[basis_index_0 + 1] = state[basis_index_1 + 1];
-            		state[basis_index_1] = temp0;
-            		state[basis_index_1 + 1] = temp1;
-        	}
-	}
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_0 + 1] = state[basis_index_1 + 1];
+                state[basis_index_1] = temp0;
+                state[basis_index_1 + 1] = temp1;
+            }
+        }
     } else if (4 <= min_qubit_mask && 9 <= control_qubit_index) {
-	// a,a+1 is swapped to a^m, a^m+1, respectively
-	for (state_index = 0; state_index < loop_dim; state_index+=4) {
-		ITYPE basis_index_0 =  (state_index & low_mask)
-				    + ((state_index & mid_mask) << 1)
-				    + ((state_index & high_mask) << 2)
-				    + control_mask;
-		ITYPE basis_index_1 = basis_index_0 + target_mask;
-		ETYPE * restrict state0 = (ETYPE *)&state[basis_index_0];
-		ETYPE * restrict state1 = (ETYPE *)&state[basis_index_1];
+        // a,a+1 is swapped to a^m, a^m+1, respectively
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                ((state_index & high_mask) << 2) + control_mask;
+            ITYPE basis_index_1 = basis_index_0 + target_mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
 #pragma omp simd
-		for (ITYPE i = 0; i < 8; ++i) {
-			ETYPE temp = state0[i];
-			state0[i] = state1[i];
-			state1[i] = temp;
-		}
-	}
-#endif	// #ifdef __aarch64__
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+#endif  // #ifdef __aarch64__
     } else {
         // a,a+1 is swapped to a^m, a^m+1, respectively
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
@@ -321,23 +325,25 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                                 ((state_index & high_mask) << 2) + control_mask;
             CTYPE temp = state[basis_index];
 #ifdef __aarch64__
-	    if (5 <= control_qubit_index && control_qubit_index <= 8) {
-		// L1 prefetch
-		#define _PRF_L1_ITR 16
-		ITYPE basis_index_l1pf = (((state_index + _PRF_L1_ITR) & mid_mask) << 1)
-		                       + (((state_index + _PRF_L1_ITR) & high_mask) << 2)
-				       + control_mask;
-		__builtin_prefetch(&state[basis_index_l1pf    ], 1, 3);
-		__builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
-		// L2 prefetch
-		#define _PRF_L2_ITR 64
-		ITYPE basis_index_l2pf = (((state_index + _PRF_L2_ITR) & mid_mask) << 1)
-				       + (((state_index + _PRF_L2_ITR) & high_mask) << 2)
-				       + control_mask;
-		__builtin_prefetch(&state[basis_index_l2pf    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf + 1], 1, 2);
-	    }
-#endif	// #ifdef __aarch64__
+            if (5 <= control_qubit_index && control_qubit_index <= 8) {
+// L1 prefetch
+#define _PRF_L1_ITR 16
+                ITYPE basis_index_l1pf =
+                    (((state_index + _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                __builtin_prefetch(&state[basis_index_l1pf], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf =
+                    (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                __builtin_prefetch(&state[basis_index_l2pf], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf + 1], 1, 2);
+            }
+#endif  // #ifdef __aarch64__
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
@@ -351,131 +357,133 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
             ITYPE basis_index_1 = basis_index_0 + target_mask;
             CTYPE temp = state[basis_index_0];
 #ifdef __aarch64__
-	    if (5 <= target_qubit_index && target_qubit_index <= 8) {
-		// L2 prefetch
-		#define _PRF_L2_ITR 128
-		ITYPE basis_index_l2pf0 =  ((state_index + _PRF_L2_ITR) & low_mask)
-					+ (((state_index + _PRF_L2_ITR) & mid_mask) << 1)
-					+ (((state_index + _PRF_L2_ITR) & high_mask) << 2)
-					+ control_mask;
-		ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-		__builtin_prefetch(&state[basis_index_l2pf0    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf1    ], 1, 2);
-		__builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
-	    }
-#endif	// #ifdef __aarch64__
+            if (5 <= target_qubit_index && target_qubit_index <= 8) {
+// L2 prefetch
+#define _PRF_L2_ITR 128
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + _PRF_L2_ITR) & low_mask) +
+                    (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
+            }
+#endif  // #ifdef __aarch64__
             state[basis_index_0] = state[basis_index_1];
             state[basis_index_1] = temp;
         }
 #ifdef __aarch64__
     } else if ((5 <= control_qubit_index && control_qubit_index <= 8) ||
-	       (5 <= target_qubit_index  && target_qubit_index  <= 8)) {
+               (5 <= target_qubit_index && target_qubit_index <= 8)) {
         if (4 <= min_qubit_mask) {
-		// SIMD + PREFETCH
-		// a,a+1 is swapped to a^m, a^m+1, respectively
+            // SIMD + PREFETCH
+            // a,a+1 is swapped to a^m, a^m+1, respectively
 #pragma omp parallel for
-		for (state_index = 0; state_index < loop_dim; state_index+=4) {
-			ITYPE basis_index_0 =  (state_index & low_mask)
-					    + ((state_index & mid_mask) << 1)
-					    + ((state_index & high_mask) << 2)
-					    + control_mask;
-			ITYPE basis_index_1 = basis_index_0 + target_mask;
-			ETYPE * restrict state0 = (ETYPE *)&state[basis_index_0];
-			ETYPE * restrict state1 = (ETYPE *)&state[basis_index_1];
-			// L1 prefetch
-			#define _PRF_L1_ITR 4
-			ITYPE basis_index_l1pf0 =  ((state_index + 4 * _PRF_L1_ITR) & low_mask)
-						+ (((state_index + 4 * _PRF_L1_ITR) & mid_mask) << 1)
-						+ (((state_index + 4 * _PRF_L1_ITR) & high_mask) << 2)
-						+ control_mask;
-			ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
-			ETYPE * restrict state0_l1pf = (ETYPE *)&state[basis_index_l1pf0];
-			ETYPE * restrict state1_l1pf = (ETYPE *)&state[basis_index_l1pf1];
-			__builtin_prefetch(&state0_l1pf[0], 1, 3);
-			__builtin_prefetch(&state0_l1pf[7], 1, 3);
-			__builtin_prefetch(&state1_l1pf[0], 1, 3);
-			__builtin_prefetch(&state1_l1pf[7], 1, 3);
-			// L2 prefetch
-			#define _PRF_L2_ITR 64
-			ITYPE basis_index_l2pf0 =  ((state_index + 4 * _PRF_L2_ITR) & low_mask)
-		    				+ (((state_index + 4 * _PRF_L2_ITR) & mid_mask) << 1)
-						+ (((state_index + 4 * _PRF_L2_ITR) & high_mask) << 2)
-						+ control_mask;
-			ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-			ETYPE * restrict state0_l2pf = (ETYPE *)&state[basis_index_l2pf0];
-			ETYPE * restrict state1_l2pf = (ETYPE *)&state[basis_index_l2pf1];
-			__builtin_prefetch(&state0_l2pf[0], 1, 2);
-			__builtin_prefetch(&state0_l2pf[7], 1, 2);
-			__builtin_prefetch(&state1_l2pf[0], 1, 2);
-			__builtin_prefetch(&state1_l2pf[7], 1, 2);
+            for (state_index = 0; state_index < loop_dim; state_index += 4) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+                ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
+// L1 prefetch
+#define _PRF_L1_ITR 4
+                ITYPE basis_index_l1pf0 =
+                    ((state_index + 4 * _PRF_L1_ITR) & low_mask) +
+                    (((state_index + 4 * _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + 4 * _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
+                ETYPE* restrict state0_l1pf = (ETYPE*)&state[basis_index_l1pf0];
+                ETYPE* restrict state1_l1pf = (ETYPE*)&state[basis_index_l1pf1];
+                __builtin_prefetch(&state0_l1pf[0], 1, 3);
+                __builtin_prefetch(&state0_l1pf[7], 1, 3);
+                __builtin_prefetch(&state1_l1pf[0], 1, 3);
+                __builtin_prefetch(&state1_l1pf[7], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + 4 * _PRF_L2_ITR) & low_mask) +
+                    (((state_index + 4 * _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + 4 * _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                ETYPE* restrict state0_l2pf = (ETYPE*)&state[basis_index_l2pf0];
+                ETYPE* restrict state1_l2pf = (ETYPE*)&state[basis_index_l2pf1];
+                __builtin_prefetch(&state0_l2pf[0], 1, 2);
+                __builtin_prefetch(&state0_l2pf[7], 1, 2);
+                __builtin_prefetch(&state1_l2pf[0], 1, 2);
+                __builtin_prefetch(&state1_l2pf[7], 1, 2);
 #pragma omp simd
-			for (ITYPE i = 0; i < 8; ++i) {
-				ETYPE temp = state0[i];
-				state0[i] = state1[i];
-				state1[i] = temp;
-			}
-		}
-	} else {
-		// PREFETCH
-        	// a,a+1 is swapped to a^m, a^m+1, respectively
+                for (ITYPE i = 0; i < 8; ++i) {
+                    ETYPE temp = state0[i];
+                    state0[i] = state1[i];
+                    state1[i] = temp;
+                }
+            }
+        } else {
+            // PREFETCH
+            // a,a+1 is swapped to a^m, a^m+1, respectively
 #pragma omp parallel for
-        	for (state_index = 0; state_index < loop_dim; state_index += 2) {
-            		ITYPE basis_index_0 =  (state_index & low_mask)
-					    + ((state_index & mid_mask) << 1)
-					    + ((state_index & high_mask) << 2)
-					    + control_mask;
-            		ITYPE basis_index_1 = basis_index_0 + target_mask;
-            		CTYPE temp0 = state[basis_index_0];
-            		CTYPE temp1 = state[basis_index_0 + 1];
-			// L1 prefetch
-			#define _PRF_L1_ITR 4
-            		ITYPE basis_index_l1pf0 =  ((state_index + 2 * _PRF_L1_ITR) & low_mask)
-						+ (((state_index + 2 * _PRF_L1_ITR) & mid_mask) << 1)
-						+ (((state_index + 2 * _PRF_L1_ITR) & high_mask) << 2)
-						+ control_mask;
-                	ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
-			__builtin_prefetch(&state[basis_index_l1pf0    ], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf0 + 1], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf1    ], 1, 3);
-			__builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
-			// L2 prefetch
-			#define _PRF_L2_ITR 64
-            		ITYPE basis_index_l2pf0 =  ((state_index + 2 * _PRF_L2_ITR) & low_mask)
-						+ (((state_index + 2 * _PRF_L2_ITR) & mid_mask) << 1)
-						+ (((state_index + 2 * _PRF_L2_ITR) & high_mask) << 2)
-						+ control_mask;
-                	ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
-			__builtin_prefetch(&state[basis_index_l2pf0    ], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf1    ], 1, 2);
-			__builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
+            for (state_index = 0; state_index < loop_dim; state_index += 2) {
+                ITYPE basis_index_0 =
+                    (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                    ((state_index & high_mask) << 2) + control_mask;
+                ITYPE basis_index_1 = basis_index_0 + target_mask;
+                CTYPE temp0 = state[basis_index_0];
+                CTYPE temp1 = state[basis_index_0 + 1];
+// L1 prefetch
+#define _PRF_L1_ITR 4
+                ITYPE basis_index_l1pf0 =
+                    ((state_index + 2 * _PRF_L1_ITR) & low_mask) +
+                    (((state_index + 2 * _PRF_L1_ITR) & mid_mask) << 1) +
+                    (((state_index + 2 * _PRF_L1_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l1pf1 = basis_index_l1pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l1pf0], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf0 + 1], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
+                __builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
+// L2 prefetch
+#define _PRF_L2_ITR 64
+                ITYPE basis_index_l2pf0 =
+                    ((state_index + 2 * _PRF_L2_ITR) & low_mask) +
+                    (((state_index + 2 * _PRF_L2_ITR) & mid_mask) << 1) +
+                    (((state_index + 2 * _PRF_L2_ITR) & high_mask) << 2) +
+                    control_mask;
+                ITYPE basis_index_l2pf1 = basis_index_l2pf0 + target_mask;
+                __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+                __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
 
-            		state[basis_index_0] = state[basis_index_1];
-            		state[basis_index_0 + 1] = state[basis_index_1 + 1];
-            		state[basis_index_1] = temp0;
-            		state[basis_index_1 + 1] = temp1;
-        	}
-	}
+                state[basis_index_0] = state[basis_index_1];
+                state[basis_index_0 + 1] = state[basis_index_1 + 1];
+                state[basis_index_1] = temp0;
+                state[basis_index_1 + 1] = temp1;
+            }
+        }
     } else if (4 <= min_qubit_mask && 9 <= control_qubit_index) {
-	// a,a+1 is swapped to a^m, a^m+1, respectively
+        // a,a+1 is swapped to a^m, a^m+1, respectively
 #pragma omp parallel for
-	for (state_index = 0; state_index < loop_dim; state_index+=4) {
-		ITYPE basis_index_0 =  (state_index & low_mask)
-				    + ((state_index & mid_mask) << 1)
-				    + ((state_index & high_mask) << 2)
-				    + control_mask;
-		ITYPE basis_index_1 = basis_index_0 + target_mask;
-		ETYPE * restrict state0 = (ETYPE *)&state[basis_index_0];
-		ETYPE * restrict state1 = (ETYPE *)&state[basis_index_1];
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index_0 =
+                (state_index & low_mask) + ((state_index & mid_mask) << 1) +
+                ((state_index & high_mask) << 2) + control_mask;
+            ITYPE basis_index_1 = basis_index_0 + target_mask;
+            ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
+            ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
 #pragma omp simd
-		for (ITYPE i = 0; i < 8; ++i) {
-			ETYPE temp = state0[i];
-			state0[i] = state1[i];
-			state1[i] = temp;
-		}
-	}
-#endif	// #ifdef __aarch64__
+            for (ITYPE i = 0; i < 8; ++i) {
+                ETYPE temp = state0[i];
+                state0[i] = state1[i];
+                state1[i] = temp;
+            }
+        }
+#endif  // #ifdef __aarch64__
     } else {
         // a,a+1 is swapped to a^m, a^m+1, respectively
 #pragma omp parallel for
@@ -677,7 +685,7 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
             CNOT_gate_single_unroll_cin_tout(
                 control_qubit_index, pair_rank, state, dim);
         }
-    } else { // (control_qubit_index >= inner_qc)
+    } else {  // (control_qubit_index >= inner_qc)
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int control_rank_bit = 1 << (control_qubit_index - inner_qc);
@@ -711,8 +719,8 @@ void CNOT_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
                     m->get_tag();  // dummy to count up tag
                 }
             }
-        } // (target_qubit_index < inner_qc)
-    } // (control_qubit_index >= inner_qc)
+        }  // (target_qubit_index < inner_qc)
+    }      // (control_qubit_index >= inner_qc)
 }
 
 // CNOT_gate_mpi, control_qubit_index is inner, target_qubit_index is outer.
@@ -728,7 +736,7 @@ void CNOT_gate_single_unroll_cin_tout(
     const ITYPE control_isone_offset = 1ULL << control_qubit_index;
 
     if (control_isone_offset < dim_work) {
-        dim_work >>= 1;                     // 1/2: for send, 1/2: for recv
+        dim_work >>= 1;  // 1/2: for send, 1/2: for recv
         CTYPE* t_send = t;
         CTYPE* t_recv = t + dim_work;
         const ITYPE num_control_block = (dim / dim_work) >> 1;
@@ -781,4 +789,3 @@ void CNOT_gate_single_unroll_cin_tout(
     }
 }
 #endif  //#ifdef _USE_MPI
-
