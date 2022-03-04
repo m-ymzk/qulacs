@@ -104,8 +104,9 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
     }
     for (auto val : this->_control_qubit_list) {
         control_index.push_back(val.index());
-        if((val.control_value() != 0) && (val.control_value() != 0)){
-            std::cerr << "control_value must be 0 or 1 (value: ." << val.control_value() << std::endl;
+        if ((val.control_value() != 0) && (val.control_value() != 1)) {
+            std::cerr << "control_value must be 0 or 1 (value: "
+                      << val.control_value() << " )." << std::endl;
             return;
         }
         control_value.push_back(val.control_value());
