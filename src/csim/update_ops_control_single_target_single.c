@@ -476,6 +476,15 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 #endif
 #endif
 
+#ifdef _USE_MPI
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
+    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
+    const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT outer_qc) {
+    fprintf(
+        stderr, "Not implemented. (file: %s, line: %d)\n", __FILE__, __LINE__);
+}
+#endif
+
 /*
 void single_qubit_control_single_qubit_dense_matrix_gate_old_single(UINT
 control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE

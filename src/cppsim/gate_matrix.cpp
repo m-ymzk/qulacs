@@ -151,8 +151,10 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                         control_index[0], control_value[0], target_index[0],
                         matrix_ptr, state->data_c(), state->dim);
                 else  // for distributed-state vector
-                    std::cerr << "not implemented:" << __FILE__ << ":"
-                              << __LINE__ << std::endl;
+                    single_qubit_control_single_qubit_dense_matrix_gate_mpi(
+                        control_index[0], control_value[0], target_index[0],
+                        matrix_ptr, state->data_c(), state->dim,
+                        state->outer_qc);
 #endif
             }
             // multiple control qubits
