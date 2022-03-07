@@ -352,7 +352,16 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     const ITYPE loop_dim = dim / 4;
     ITYPE state_index;
     ITYPE vec_len = getVecLength();
-    ITYPE prefetch_taget1, prefetch_taget2;
+
+    ITYPE prefetch_taget1 =
+        ((5 <= target_qubit_index1) && (target_qubit_index1 <= 9));
+    ITYPE prefetch_taget2 =
+        ((5 <= target_qubit_index2) && (target_qubit_index2 <= 9));
+
+    ITYPE prefetch_subcond1 =
+        ((5 <= target_qubit_index1) && (target_qubit_index1 <= 12));
+    ITYPE prefetch_subcond2 =
+        ((5 <= target_qubit_index2) && (target_qubit_index2 <= 12));
 
     SV_PRED pg = Svptrue();
     SV_ITYPE vec_tbl;
@@ -367,13 +376,10 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     // create a table for swap
     vec_tbl = sveor_z(pg, SvindexI(0, 1), SvdupI(1));
 
-    prefetch_taget1 =
-        ((5 <= target_qubit_index1) && (target_qubit_index1 <= 9));
-    prefetch_taget2 =
-        ((5 <= target_qubit_index2) && (target_qubit_index2 <= 9));
+
     ITYPE state_step = (vec_len >> 1);
 
-    if (prefetch_taget1 && prefetch_taget2) {
+    if ((prefetch_taget1 && prefetch_subcond2) || (prefetch_taget2 && prefetch_subcond1)) {
 #ifdef _OPENMP
 #pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
