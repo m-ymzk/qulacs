@@ -926,6 +926,8 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 DllExport void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+    UINT control_qubit_index, UINT control_value, CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag, UINT index_offset);
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag);
 #endif

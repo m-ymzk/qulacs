@@ -461,9 +461,18 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT inner_qc) {
+
     const MPIutil m = get_mpiutil();
     const UINT rank = m->get_rank();
     const UINT control_rank_bit = 1 << (control_qubit_index - inner_qc);
+    ITYPE dim_work = dim;
+    ITYPE num_work = 0;
+    CTYPE* t = m->get_workarea(&dim_work, &num_work);
+    assert(num_work > 0);
+    const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+    const int pair_rank = rank ^ pair_rank_bit;
+    CTYPE* si = state;
+
 
     if (control_qubit_index < inner_qc) {     // control_qubit_index is in inner
         if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
@@ -473,10 +482,15 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 state, dim);
 
         } else {  // target_qubit_index is outer
-            fprintf(stderr,
-                "[control:inner, target:outer]: Not implemented. (file: %s, "
-                "line: %d)\n",
-                __FILE__, __LINE__);
+            for (ITYPE iter = 0; iter < num_work; ++iter) {
+                m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+
+                UINT index_offset = iter * dim_work;
+                single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+                    control_qubit_index, control_value, t, matrix, si, dim_work, rank & pair_rank_bit, index_offset);
+
+                si += dim_work;
+            }
         }
     } else {                                  // control_qubit_index is outer
         if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
@@ -485,13 +499,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 single_qubit_dense_matrix_gate(
                     target_qubit_index, matrix, state, dim);
         } else {  // target_qubit_index is outer
-            ITYPE dim_work = dim;
-            ITYPE num_work = 0;
-            CTYPE* t = m->get_workarea(&dim_work, &num_work);
-            assert(num_work > 0);
-            const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
-            const int pair_rank = rank ^ pair_rank_bit;
-            CTYPE* si = state;
 
             if (((rank & control_rank_bit) && (control_value == 1)) ||
                 (!(rank & control_rank_bit) && (control_value == 0))) {
@@ -504,6 +511,35 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                     si += dim_work;
                 }
             }
+        }
+    }
+}
+
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+    UINT control_qubit_index, UINT control_value, CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag, UINT index_offset) {
+
+    UINT control_qubit_mask = 1ULL << control_qubit_index;
+
+    for (ITYPE state_index = 0; state_index < dim; ++state_index) {
+
+        UINT skip_flag = ( state_index + index_offset ) & control_qubit_mask;
+        skip_flag = skip_flag >> control_qubit_index;
+        if (skip_flag != control_value)  continue;
+
+        if (flag) {  // val=1
+            // fetch values
+            CTYPE cval_0 = t[state_index];
+            CTYPE cval_1 = state[state_index];
+
+            // set values
+            state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
+        } else {  // val=0
+            // fetch values
+            CTYPE cval_0 = state[state_index];
+            CTYPE cval_1 = t[state_index];
+
+            // set values
+            state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
         }
     }
 }
