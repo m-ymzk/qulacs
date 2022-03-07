@@ -461,7 +461,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT inner_qc) {
-
     const MPIutil m = get_mpiutil();
     const UINT rank = m->get_rank();
     const UINT control_rank_bit = 1 << (control_qubit_index - inner_qc);
@@ -472,7 +471,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
     const int pair_rank = rank ^ pair_rank_bit;
     CTYPE* si = state;
-
 
     if (control_qubit_index < inner_qc) {     // control_qubit_index is in inner
         if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
@@ -487,7 +485,8 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
 
                 UINT index_offset = iter * dim_work;
                 single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
-                    control_qubit_index, control_value, t, matrix, si, dim_work, rank & pair_rank_bit, index_offset);
+                    control_qubit_index, control_value, t, matrix, si, dim_work,
+                    rank & pair_rank_bit, index_offset);
 
                 si += dim_work;
             }
@@ -500,9 +499,13 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                     target_qubit_index, matrix, state, dim);
         } else {  // target_qubit_index is outer
 
-            if (((rank & control_rank_bit) && (control_value == 1)) ||
-                (!(rank & control_rank_bit) && (control_value == 0))) {
-                for (ITYPE iter = 0; iter < num_work; ++iter) {
+            ITYPE dummy_flag =
+                !(((rank & control_rank_bit) && (control_value == 1)) ||
+                    (!(rank & control_rank_bit) && (control_value == 0)));
+            for (ITYPE iter = 0; iter < num_work; ++iter) {
+                if (dummy_flag) {  // only count up tag
+                    m->get_tag();
+                } else {
                     m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 
                     single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
@@ -516,15 +519,15 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
 }
 
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
-    UINT control_qubit_index, UINT control_value, CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag, UINT index_offset) {
-
+    UINT control_qubit_index, UINT control_value, CTYPE* t,
+    const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag,
+    UINT index_offset) {
     UINT control_qubit_mask = 1ULL << control_qubit_index;
 
     for (ITYPE state_index = 0; state_index < dim; ++state_index) {
-
-        UINT skip_flag = ( state_index + index_offset ) & control_qubit_mask;
+        UINT skip_flag = (state_index + index_offset) & control_qubit_mask;
         skip_flag = skip_flag >> control_qubit_index;
-        if (skip_flag != control_value)  continue;
+        if (skip_flag != control_value) continue;
 
         if (flag) {  // val=1
             // fetch values

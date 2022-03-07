@@ -1,5 +1,5 @@
-#include <csim/update_ops.h>
 #include <gtest/gtest.h>
+#include <csim/update_ops.h>
 
 #include <algorithm>
 #include <cmath>
