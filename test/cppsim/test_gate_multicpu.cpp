@@ -1552,6 +1552,7 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
         circuit->update_quantum_state(&state);
         circuit_ref->update_quantum_state(&state_ref);
 
+#if 0
         if (m->get_rank() == 0) {
             for (auto& gate : circuit->gate_list) {
                 auto t_index_list = gate->get_target_index_list();
@@ -1565,6 +1566,18 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
                     std::cout << idx << ",";
                 }
                 std::cout<< "})" << std::endl;
+            }
+        }
+#endif
+
+        // check if all target qubits are inner except for SWAP and BSWAP gate
+        for (auto& gate : circuit->gate_list) {
+            if (gate->get_name() == "SWAP" || gate->get_name() == "BSWAP") {
+                continue;
+            }
+            auto t_index_list = gate->get_target_index_list();
+            for (auto idx : t_index_list) {
+                ASSERT_TRUE(idx < state.inner_qc);
             }
         }
 
@@ -1582,7 +1595,7 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
 
     Random random;
     random.set_seed(2022);
-    if(0){
+    if(1){
         QuantumCircuit circuit(n);
         circuit.add_RZ_gate(0, random.uniform()*3.14159);
         circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
@@ -1598,7 +1611,7 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
         _ApplyOptimizer(&circuit, 0, 1);
     }
 
-    if(0){
+    if(1){
         // 0 1 2 | 3 4 -> 4 1 2 | 3 0
         //                *         *
         QuantumCircuit circuit(n);

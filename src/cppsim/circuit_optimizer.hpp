@@ -29,6 +29,8 @@ private:
     UINT insert_swaps(const UINT gate_idx, const std::vector<UINT> cur_qubit_table, std::unordered_set<UINT> next_innder_qubits, std::vector<UINT>& next_qubit_table);
     void rewrite_qubits_index(const UINT gate_idx, std::vector<UINT> &qubit_table);
     void add_swaps_to_reorder(std::vector<UINT> &qubit_table);
+    void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order);
+    void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order, UINT gate_pos);
 public:
     /**
      * \~japanese-en コンストラクタ
