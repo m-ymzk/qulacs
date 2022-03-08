@@ -104,6 +104,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
 #ifdef __aarch64__
             if (5 <= control_qubit_index && control_qubit_index <= 8) {
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 16
                 ITYPE basis_index_l1pf =
                     (((state_index + _PRF_L1_ITR) & mid_mask) << 1) +
@@ -112,6 +113,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 __builtin_prefetch(&state[basis_index_l1pf], 1, 3);
                 __builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf =
                     (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
@@ -135,6 +137,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
 #ifdef __aarch64__
             if (5 <= target_qubit_index && target_qubit_index <= 8) {
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 128
                 ITYPE basis_index_l2pf0 =
                     ((state_index + _PRF_L2_ITR) & low_mask) +
@@ -165,6 +168,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
                 ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 4
                 ITYPE basis_index_l1pf0 =
                     ((state_index + 4 * _PRF_L1_ITR) & low_mask) +
@@ -179,6 +183,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 __builtin_prefetch(&state1_l1pf[0], 1, 3);
                 __builtin_prefetch(&state1_l1pf[7], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf0 =
                     ((state_index + 4 * _PRF_L2_ITR) & low_mask) +
@@ -210,6 +215,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 CTYPE temp0 = state[basis_index_0];
                 CTYPE temp1 = state[basis_index_0 + 1];
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 4
                 ITYPE basis_index_l1pf0 =
                     ((state_index + 2 * _PRF_L1_ITR) & low_mask) +
@@ -222,6 +228,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
                 __builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf0 =
                     ((state_index + 2 * _PRF_L2_ITR) & low_mask) +
@@ -327,6 +334,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
 #ifdef __aarch64__
             if (5 <= control_qubit_index && control_qubit_index <= 8) {
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 16
                 ITYPE basis_index_l1pf =
                     (((state_index + _PRF_L1_ITR) & mid_mask) << 1) +
@@ -335,6 +343,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l1pf], 1, 3);
                 __builtin_prefetch(&state[basis_index_l1pf + 1], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf =
                     (((state_index + _PRF_L2_ITR) & mid_mask) << 1) +
@@ -359,6 +368,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
 #ifdef __aarch64__
             if (5 <= target_qubit_index && target_qubit_index <= 8) {
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 128
                 ITYPE basis_index_l2pf0 =
                     ((state_index + _PRF_L2_ITR) & low_mask) +
@@ -390,6 +400,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 ETYPE* restrict state0 = (ETYPE*)&state[basis_index_0];
                 ETYPE* restrict state1 = (ETYPE*)&state[basis_index_1];
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 4
                 ITYPE basis_index_l1pf0 =
                     ((state_index + 4 * _PRF_L1_ITR) & low_mask) +
@@ -404,6 +415,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state1_l1pf[0], 1, 3);
                 __builtin_prefetch(&state1_l1pf[7], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf0 =
                     ((state_index + 4 * _PRF_L2_ITR) & low_mask) +
@@ -436,6 +448,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 CTYPE temp0 = state[basis_index_0];
                 CTYPE temp1 = state[basis_index_0 + 1];
 // L1 prefetch
+#undef _PRF_L1_ITR
 #define _PRF_L1_ITR 4
                 ITYPE basis_index_l1pf0 =
                     ((state_index + 2 * _PRF_L1_ITR) & low_mask) +
@@ -448,6 +461,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
                 __builtin_prefetch(&state[basis_index_l1pf1 + 1], 1, 3);
 // L2 prefetch
+#undef _PRF_L2_ITR
 #define _PRF_L2_ITR 64
                 ITYPE basis_index_l2pf0 =
                     ((state_index + 2 * _PRF_L2_ITR) & low_mask) +
