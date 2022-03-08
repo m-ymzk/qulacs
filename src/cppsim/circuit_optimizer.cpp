@@ -87,13 +87,17 @@ bool QuantumCircuitOptimizer::is_neighboring(
 }
 
 void QuantumCircuitOptimizer::optimize(
-    QuantumCircuit* circuit_, UINT max_block_size) {
+    QuantumCircuit* circuit_, UINT max_block_size, UINT swap_level) {
     circuit = circuit_;
 
-    //TODO きちんとAPIを作る
-    if (true) {
-        insert_fswap();
+    if (max_block_size > 0 && swap_level > 1) {
+        std::cerr
+            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
+               ": using both gate merge and swap optimization is not tested well"
+            << std::endl;
     }
+
+    insert_fswap(swap_level);
 
     bool merged_flag = true;
     while (merged_flag) {
@@ -237,10 +241,6 @@ QuantumGateMatrix* QuantumCircuitOptimizer::merge_all(
 
 
 bool QuantumCircuitOptimizer::use_outer_qubits(UINT gate_index, std::vector<UINT> &qubit_table){
-    UINT outer_qubits = 2; //TODO circuitのouter_qubitフィールドにする
-
-    UINT inner_qubits = circuit->qubit_count - outer_qubits;
-
     for (auto target_idx : circuit->gate_list[gate_index]->get_target_index_list()) {
         #if 0
         UINT phy_target_idx = qubit_table[target_idx];
@@ -248,7 +248,7 @@ bool QuantumCircuitOptimizer::use_outer_qubits(UINT gate_index, std::vector<UINT
         auto it = std::find(qubit_table.begin(), qubit_table.end(), target_idx);
         UINT phy_target_idx = std::distance(qubit_table.begin(), it);
         #endif
-        if (phy_target_idx >= inner_qubits) {
+        if (phy_target_idx >= inner_qc) {
             return true;
         }
     }
@@ -258,11 +258,6 @@ bool QuantumCircuitOptimizer::use_outer_qubits(UINT gate_index, std::vector<UINT
 
 std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT start_gate_idx, const std::vector<UINT> cur_qubit_table)
 {
-    UINT outer_qubits = 2; //TODO circuitのouter_qubitフィールドにする
-
-    UINT inner_qubits = circuit->qubit_count - outer_qubits;
-
-
     MPIutil m = get_mpiutil();
     int rank = m->get_rank();
 
@@ -288,7 +283,7 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
                 additional_idx_count++;
             }
         }
-        if (used_idx.size() + additional_idx_count <= inner_qubits) {
+        if (used_idx.size() + additional_idx_count <= inner_qc) {
             // 現在のgateを追加で処理してもinner qubit内に抑えられる
             used_idx.insert(target_idx_list.begin(), target_idx_list.end());
         } else {
@@ -311,10 +306,6 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
 }
 
 UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vector<UINT> cur_qubit_table, std::unordered_set<UINT> next_inner_qubits, std::vector<UINT>& next_qubit_table) {
-    UINT outer_qubits = 2; //TODO circuitのouter_qubitフィールドにする
-
-    UINT inner_qubits = circuit->qubit_count - outer_qubits;
-
     UINT num_inserted_gates = 0;
 
     // 現在のqubit table をコピー
@@ -329,7 +320,7 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
     UINT cur_gate_idx = gate_idx;
 
 
-    std::unordered_set<UINT> cur_inner_qubits(cur_qubit_table.begin(), cur_qubit_table.begin()+inner_qubits);
+    std::unordered_set<UINT> cur_inner_qubits(cur_qubit_table.begin(), cur_qubit_table.begin()+inner_qc);
     std::unordered_set<UINT> import_qubits;
     std::unordered_set<UINT> exportable_qubits;
 
@@ -351,12 +342,12 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
     if (fswap_width > exportable_qubits.size()) {
         if(rank == 0) std::cout << "error. import_qubits.size() > export_qubits.size()" << std::endl;
     }
-    if (inner_qubits < fswap_width) {
+    if (inner_qc < fswap_width) {
         if(rank == 0) std::cout << "error. inner_qubits < fswap_width" << std::endl;
     }
 
     UINT fswap_outer = 0;
-    for (UINT i = inner_qubits; i < circuit->qubit_count; i++) {
+    for (UINT i = inner_qc; i < circuit->qubit_count; i++) {
         if(import_qubits.find(next_qubit_table[i]) != import_qubits.end()) {
             fswap_outer = i;
             break;
@@ -377,13 +368,13 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         //TODO outer qubit間での並び替えに対応したらswapを入れる
     }
 
-    UINT fswap_inner = inner_qubits - fswap_width;
+    UINT fswap_inner = inner_qc - fswap_width;
     // export するqubitをinnerの最後にまとめる
-    for (UINT i = inner_qubits - 1; i >= fswap_inner; i--) {
+    for (UINT i = inner_qc - 1; i >= fswap_inner; i--) {
         if (exportable_qubits.find(next_qubit_table[i]) == exportable_qubits.end()) {
             // fswap対象のqubitがexportableでないのでswapを入れる
             bool swap_target_found = false;
-            for (int j = inner_qubits - fswap_width - 1; j >= 0; j--) {
+            for (int j = inner_qc - fswap_width - 1; j >= 0; j--) {
                 if (exportable_qubits.find(next_qubit_table[j]) != exportable_qubits.end()) {
                     // swapを行う
                     swap_target_found = true;
@@ -457,10 +448,46 @@ void QuantumCircuitOptimizer::add_swaps_to_reorder(std::vector<UINT> &qubit_tabl
     }
 }
 
-void QuantumCircuitOptimizer::insert_fswap(void) {
-    int rank = get_mpiutil()->get_rank();
+void QuantumCircuitOptimizer::insert_fswap(UINT level) {
+    if (level == 0) {
+        return;
+    }
 
-    if (rank == 0) {
+#ifdef _USE_MPI
+    MPIutil mpiutil = get_mpiutil();
+    UINT mpisize = mpiutil->get_size();
+    UINT mpirank = mpiutil->get_rank();
+
+    assert(!(mpisize & (mpisize - 1)));  // mpi-size must be power of 2
+
+    UINT log_nodes = std::log2(mpisize);
+    inner_qc = circuit->qubit_count - log_nodes;
+    outer_qc = log_nodes;
+#else
+    std::cerr
+        << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
+        ": insert_swap is no effect to non MPI build"
+        << std::endl;
+    return;
+#endif
+
+    if (outer_qc == 0) {
+        std::cerr
+            << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
+               ": insert_swap is no effect when MPI size = 1"
+            << std::endl;
+        return;
+    }
+
+    if (level > 1) {
+        std::cerr
+            << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
+               ": invalid level. currently supports only level <= 1"
+            << std::endl;
+        return;
+    }
+
+    if (mpirank == 0) {
         std::cout << "insert_fswap" << std::endl;
     }
 
@@ -474,7 +501,7 @@ void QuantumCircuitOptimizer::insert_fswap(void) {
     std::vector<UINT> cur_qubit_table = initial_qubit_table;
 
     for (UINT gate_idx = 0; gate_idx < num_gates; gate_idx++) {
-        if (rank == 0) std::cout << "processing gate #" << gate_idx << std::endl;
+        if (mpirank == 0) std::cout << "processing gate #" << gate_idx << std::endl;
         if (use_outer_qubits(gate_idx, cur_qubit_table)) {
             std::unordered_set<UINT> next_inner_qubits = find_next_inner_qubits(gate_idx, cur_qubit_table);
             std::vector<UINT> next_qubit_table;
@@ -484,7 +511,7 @@ void QuantumCircuitOptimizer::insert_fswap(void) {
             num_gates += num_inserted_gates;
 
         }
-        if (rank == 0) std::cout << "rewrite_qubits_index #" << gate_idx << std::endl;
+        if (mpirank == 0) std::cout << "rewrite_qubits_index #" << gate_idx << std::endl;
         //circuit->gate_list[gate_idx]->rewrite_qubits_index(cur_qubit_table);
         rewrite_qubits_index(gate_idx, cur_qubit_table);
     }

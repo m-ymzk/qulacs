@@ -1528,7 +1528,7 @@ gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
 }
 */
 
-void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv) {
+void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
     const UINT n = circuit_ref->qubit_count;
     const ITYPE dim = 1ULL << n;
     double eps = _EPS;
@@ -1547,7 +1547,7 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv) {
 
         QuantumCircuit* circuit = circuit_ref->copy();
         QuantumCircuitOptimizer qco;
-        qco.optimize(circuit, opt_lv);
+        qco.optimize(circuit, opt_lv, swap_lv);
 
         circuit->update_quantum_state(&state);
         circuit_ref->update_quantum_state(&state_ref);
@@ -1586,19 +1586,19 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
         QuantumCircuit circuit(n);
         circuit.add_RZ_gate(0, random.uniform()*3.14159);
         circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
-        _ApplyOptimizer(&circuit, 0);
+        _ApplyOptimizer(&circuit, 0, 1);
     }
-    if(0){
+    if(1){
         QuantumCircuit circuit(n);
         for (UINT rep = 0; rep < 2; rep++) {
             for (UINT i = 0; i < n; i++) {
                 circuit.add_H_gate(i);
             }
         }
-        _ApplyOptimizer(&circuit, 0);
+        _ApplyOptimizer(&circuit, 0, 1);
     }
 
-    {
+    if(0){
         // 0 1 2 | 3 4 -> 4 1 2 | 3 0
         //                *         *
         QuantumCircuit circuit(n);
@@ -1606,7 +1606,7 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
         circuit.add_H_gate(1);
         circuit.add_H_gate(2);
 
-        _ApplyOptimizer(&circuit, 0);
+        _ApplyOptimizer(&circuit, 0, 1);
     }
 
 }
