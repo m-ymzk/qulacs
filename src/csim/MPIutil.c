@@ -87,8 +87,8 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
 static void barrier() { MPI_Barrier(mpicomm); }
 
 static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
-    MPI_Allgather(sendbuf, count, MPI_DOUBLE_COMPLEX, recvbuf, count,
-        MPI_DOUBLE_COMPLEX, mpicomm);
+    MPI_Allgather(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, recvbuf, count,
+        MPI_CXX_DOUBLE_COMPLEX, mpicomm);
 }
 
 static void m_DC_sendrecv(
@@ -100,8 +100,8 @@ static void m_DC_sendrecv(
     // int mpi_tag2 = mpi_tag1 ^ 1;
     // printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count,
     // mpirank, pair_rank, mpi_tag1, mpi_tag2);
-    MPI_Sendrecv(sendbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
-        recvbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
+    MPI_Sendrecv(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+        recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
         &mpistat);
 }
 
@@ -109,7 +109,7 @@ static void m_DC_sendrecv_replace(void *buf, int count, int pair_rank) {
     int tag0 = get_tag();
     int mpi_tag1 = tag0 + ((mpirank & pair_rank) << 1) + (mpirank > pair_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
-    MPI_Sendrecv_replace(buf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+    MPI_Sendrecv_replace(buf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
         pair_rank, mpi_tag2, mpicomm, &mpistat);
 }
 
@@ -121,9 +121,9 @@ static void m_DC_isendrecv(
     MPI_Request *send_request = get_request();
     MPI_Request *recv_request = get_request();
 
-    MPI_Isend(sendbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag1, mpicomm,
+    MPI_Isend(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1, mpicomm,
         send_request);
-    MPI_Irecv(recvbuf, count, MPI_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
+    MPI_Irecv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
         recv_request);
 }
 
