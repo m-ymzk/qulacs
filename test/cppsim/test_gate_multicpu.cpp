@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <cppsim/state.hpp>
+#include <cppsim/circuit.hpp>
+#include <cppsim/circuit_optimizer.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_matrix.hpp>
@@ -1525,3 +1527,86 @@ gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
         }
 }
 */
+
+void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv) {
+    const UINT n = circuit_ref->qubit_count;
+    const ITYPE dim = 1ULL << n;
+    double eps = _EPS;
+
+    QuantumState state_ref(n);
+    QuantumState state(n, 1);
+
+    MPIutil m = get_mpiutil();
+    const ITYPE inner_dim = dim >> state.outer_qc;
+    const ITYPE offs = inner_dim * m->get_rank();
+
+    {
+        state_ref.set_Haar_random_state(2022);
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            state.data_cpp()[i] = state_ref.data_cpp()[(i + offs) % dim];
+
+        QuantumCircuit* circuit = circuit_ref->copy();
+        QuantumCircuitOptimizer qco;
+        qco.optimize(circuit, opt_lv);
+
+        circuit->update_quantum_state(&state);
+        circuit_ref->update_quantum_state(&state_ref);
+
+        if (m->get_rank() == 0) {
+            for (auto& gate : circuit->gate_list) {
+                auto t_index_list = gate->get_target_index_list();
+                auto c_index_list = gate->get_control_index_list();
+                std::cout << gate->get_name() << "(t:{" ;
+                for (auto idx : t_index_list) {
+                    std::cout << idx << ",";
+                }
+                std::cout << "}, c:{";
+                for (auto idx : c_index_list) {
+                    std::cout << idx << ",";
+                }
+                std::cout<< "})" << std::endl;
+            }
+        }
+
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(abs(state.data_cpp()[i] -
+                            state_ref.data_cpp()[(i + offs) % dim]),
+                        0, eps) << "[rank:" << m->get_rank() << "] Optimizer diff at " << i;
+
+        delete circuit;
+    }
+}
+
+TEST(GateTest_multicpu, ApplyOptimizer_1) {
+    UINT n = 5;
+
+    Random random;
+    random.set_seed(2022);
+    if(0){
+        QuantumCircuit circuit(n);
+        circuit.add_RZ_gate(0, random.uniform()*3.14159);
+        circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
+        _ApplyOptimizer(&circuit, 0);
+    }
+    if(0){
+        QuantumCircuit circuit(n);
+        for (UINT rep = 0; rep < 2; rep++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_H_gate(i);
+            }
+        }
+        _ApplyOptimizer(&circuit, 0);
+    }
+
+    {
+        // 0 1 2 | 3 4 -> 4 1 2 | 3 0
+        //                *         *
+        QuantumCircuit circuit(n);
+        circuit.add_H_gate(4);
+        circuit.add_H_gate(1);
+        circuit.add_H_gate(2);
+
+        _ApplyOptimizer(&circuit, 0);
+    }
+
+}
