@@ -368,9 +368,29 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         //TODO outer qubit間での並び替えに対応したらswapを入れる
     }
 
+    if(rank == 0) std::cout << "debug 4. " << import_qubits.size() << " " << exportable_qubits.size() << std::endl;
+    if(rank==0){
+        std::cout<<"import qubits: ";
+        for(UINT i = 0; i < circuit->qubit_count; i++){
+            if (import_qubits.find(i) != import_qubits.end()) {
+                std::cout<<i<<",";
+            }
+        }
+        std::cout << std::endl;
+    }
+    if(rank==0){
+        std::cout<<"exportable qubits: ";
+        for(UINT i = 0; i < circuit->qubit_count; i++){
+            if (exportable_qubits.find(i) != exportable_qubits.end()) {
+                std::cout<<i<<",";
+            }
+        }
+        std::cout << std::endl;
+    }
+    
     UINT fswap_inner = inner_qc - fswap_width;
     // export するqubitをinnerの最後にまとめる
-    for (UINT i = inner_qc - 1; i >= fswap_inner; i--) {
+    for (int i = inner_qc - 1; i >= (int)fswap_inner; i--) {
         if (exportable_qubits.find(next_qubit_table[i]) == exportable_qubits.end()) {
             // fswap対象のqubitがexportableでないのでswapを入れる
             bool swap_target_found = false;
