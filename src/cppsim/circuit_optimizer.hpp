@@ -24,11 +24,10 @@ private:
     UINT get_merged_gate_size(UINT gate_index1, UINT gate_index2);
     bool is_neighboring(UINT gate_index1, UINT gate_index2);
     void insert_fswap(UINT level);
-    bool use_outer_qubits(UINT gate_index, std::vector<UINT> &qubit_table);
-    std::unordered_set<UINT> find_next_inner_qubits(UINT start_gate_idx, const std::vector<UINT> cur_qubit_table);
-    UINT insert_swaps(const UINT gate_idx, const std::vector<UINT> cur_qubit_table, std::unordered_set<UINT> next_innder_qubits, std::vector<UINT>& next_qubit_table);
-    void rewrite_qubits_index(const UINT gate_idx, std::vector<UINT> &qubit_table);
-    void add_swaps_to_reorder(std::vector<UINT> &qubit_table);
+    bool use_outer_qubits(UINT gate_index, std::vector<UINT> &qubit_order);
+    std::unordered_set<UINT> find_next_inner_qubits(UINT start_gate_idx, const std::vector<UINT> cur_qubit_order);
+    UINT insert_swaps(const UINT gate_idx, const std::vector<UINT> cur_qubit_order, std::unordered_set<UINT> next_innder_qubits, std::vector<UINT>& next_qubit_order);
+    void add_swaps_to_reorder(std::vector<UINT> &qubit_order);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order, UINT gate_pos);
 public:
