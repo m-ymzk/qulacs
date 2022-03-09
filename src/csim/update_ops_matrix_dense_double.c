@@ -353,9 +353,9 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
     ITYPE state_index;
     ITYPE vec_len = getVecLength();
 
-    ITYPE prefetch_taget1 =
+    ITYPE prefetch_target1 =
         ((5 <= target_qubit_index1) && (target_qubit_index1 <= 9));
-    ITYPE prefetch_taget2 =
+    ITYPE prefetch_target2 =
         ((5 <= target_qubit_index2) && (target_qubit_index2 <= 9));
 
     ITYPE prefetch_subcond1 =
@@ -379,7 +379,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
 
     ITYPE state_step = (vec_len >> 1);
 
-    if ((prefetch_taget1 && prefetch_subcond2) || (prefetch_taget2 && prefetch_subcond1)) {
+    if ((prefetch_target1 && prefetch_subcond2) || (prefetch_target2 && prefetch_subcond1)) {
 #ifdef _OPENMP
 #pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
@@ -456,7 +456,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_pf_l2_3], 1, 2);
         }
 
-    } else if (prefetch_taget1) {
+    } else if (prefetch_target1) {
 #ifdef _OPENMP
 #pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
@@ -509,7 +509,7 @@ void double_qubit_dense_matrix_gate_sve_high(UINT target_qubit_index1,
             __builtin_prefetch(&state[basis_3 + target_mask1 * 8], 1, 2);
  
         }
-    } else if (prefetch_taget2) {
+    } else if (prefetch_target2) {
 #ifdef _OPENMP
 #pragma omp parallel for \
     shared(pg, vec_tbl, mat01rr, mat23rr, mat0ii, mat1ii, mat2ii, mat3ii)
