@@ -29,3 +29,11 @@ if(MSVC)
 endif()
 
 set_target_properties(csim_shared PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+if("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+    if(${CMAKE_C_COMPILER} MATCHES "mpicc")
+        if(USE_SVE)
+            set_source_files_properties(update_ops_matrix_dense_double.c PROPERTIES COMPILE_FLAGS "-fno-schedule-insns -fno-schedule-insns2")
+        endif()
+    endif()
+endif()
