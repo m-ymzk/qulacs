@@ -38,6 +38,7 @@
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
       - DenseMatrix(single target)
+      - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
 
 - To be supported after March (T.B.D.)
@@ -45,7 +46,6 @@
       - Measurement
       - Pauli
       - PauliRotation
-      - DenseMatrix(single control, single target)
       - DiagonalMatrix(with control)
       - to_matrix_gate
   - Observable
