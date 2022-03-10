@@ -480,6 +480,13 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 state, dim);
 
         } else {  // target_qubit_index is outer
+
+#ifdef _OPENMP
+            UINT threshold = 13;
+            UINT default_thread_count = omp_get_max_threads();
+            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
+
             for (ITYPE iter = 0; iter < num_work; ++iter) {
                 m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 
@@ -490,6 +497,10 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
 
                 si += dim_work;
             }
+
+#ifdef _OPENMP
+            omp_set_num_threads(default_thread_count);
+#endif
         }
     } else {                                  // control_qubit_index is outer
         if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
@@ -498,6 +509,12 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 single_qubit_dense_matrix_gate(
                     target_qubit_index, matrix, state, dim);
         } else {  // target_qubit_index is outer
+
+#ifdef _OPENMP
+            UINT threshold = 13;
+            UINT default_thread_count = omp_get_max_threads();
+            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
 
             ITYPE dummy_flag =
                 !(((rank & control_rank_bit) && (control_value == 1)) ||
@@ -514,6 +531,10 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                     si += dim_work;
                 }
             }
+
+#ifdef _OPENMP
+            omp_set_num_threads(default_thread_count);
+#endif
         }
     }
 }
@@ -524,6 +545,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
     UINT index_offset) {
     UINT control_qubit_mask = 1ULL << control_qubit_index;
 
+#pragma omp parallel for
     for (ITYPE state_index = 0; state_index < dim; ++state_index) {
         UINT skip_flag = (state_index + index_offset) & control_qubit_mask;
         skip_flag = skip_flag >> control_qubit_index;
@@ -549,6 +571,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
 
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
     CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag) {
+#pragma omp parallel for
     for (ITYPE state_index = 0; state_index < dim; ++state_index) {
         if (flag) {  // val=1
             // fetch values
