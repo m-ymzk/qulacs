@@ -651,7 +651,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
         if (target_qubit_index1 == 1) {
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index2) && (target_qubit_index2 <= 8);
+                (5 <= target_qubit_index2) && (target_qubit_index2 <= 11);
 
             if (prefetch_flag) {
 #ifdef _OPENMP
@@ -792,7 +792,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
             }
         } else {  // target_qubit_index2 == 1
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index1) && (target_qubit_index1 <= 8);
+                (5 <= target_qubit_index1) && (target_qubit_index1 <= 11);
 
             if (prefetch_flag) {
 #ifdef _OPENMP
@@ -950,7 +950,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         if (target_qubit_index2 >
             target_qubit_index1) {  // target_qubit_index1 == 0
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index2) && (target_qubit_index2 <= 8);
+                (5 <= target_qubit_index2) && (target_qubit_index2 <= 11);
 
             // creat element index for shuffling in a vector
             pg_select = svcmpeq(pg,
@@ -1098,7 +1098,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         } else {  // target_qubit_index2 == 0
 
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index1) && (target_qubit_index1 <= 8);
+                (5 <= target_qubit_index1) && (target_qubit_index1 <= 11);
 
             // create element index for shuffling in a vector
             pg_select = svcmpeq(pg,
