@@ -186,39 +186,43 @@ static inline void MatrixVectorProduct4x4(SV_PRED pg, SV_FTYPE input0ir,
     SV_FTYPE* output3) {
     // perform matrix-vector product
     *output0 = svmul_z(pg, svdup_lane(mat01rr, 0), input0ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 0), input0ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 2), input1ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 1), input1ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 4), input2ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 2), input2ri);
-    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 6), input3ir);
-    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 3), input3ri);
-
     *output1 = svmul_z(pg, svdup_lane(mat01rr, 1), input0ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 0), input0ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 3), input1ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 1), input1ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 5), input2ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 2), input2ri);
-    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 7), input3ir);
-    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 3), input3ri);
-
     *output2 = svmul_z(pg, svdup_lane(mat23rr, 0), input0ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 0), input0ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 2), input1ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 1), input1ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 4), input2ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 2), input2ri);
-    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 6), input3ir);
-    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 3), input3ri);
-
     *output3 = svmul_z(pg, svdup_lane(mat23rr, 1), input0ir);
+
+    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 0), input0ri);
+    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 0), input0ri);
+    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 0), input0ri);
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 0), input0ri);
+
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 2), input1ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 3), input1ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 2), input1ir);
     *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 3), input1ir);
+
+    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 1), input1ri);
+    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 1), input1ri);
+    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 1), input1ri);
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 1), input1ri);
+
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 4), input2ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 5), input2ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 4), input2ir);
     *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 5), input2ir);
+
+    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 2), input2ri);
+    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 2), input2ri);
+    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 2), input2ri);
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 2), input2ri);
+
+    *output0 = svmla_z(pg, *output0, svdup_lane(mat01rr, 6), input3ir);
+    *output1 = svmla_z(pg, *output1, svdup_lane(mat01rr, 7), input3ir);
+    *output2 = svmla_z(pg, *output2, svdup_lane(mat23rr, 6), input3ir);
     *output3 = svmla_z(pg, *output3, svdup_lane(mat23rr, 7), input3ir);
+
+    *output0 = svmla_z(pg, *output0, svdupq_lane(mat0ii, 3), input3ri);
+    *output1 = svmla_z(pg, *output1, svdupq_lane(mat1ii, 3), input3ri);
+    *output2 = svmla_z(pg, *output2, svdupq_lane(mat2ii, 3), input3ri);
     *output3 = svmla_z(pg, *output3, svdupq_lane(mat3ii, 3), input3ri);
 }
 
@@ -647,7 +651,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
 
         if (target_qubit_index1 == 1) {
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index2) && (target_qubit_index2 <= 8);
+                (5 <= target_qubit_index2) && (target_qubit_index2 <= 11);
 
             if (prefetch_flag) {
 #ifdef _OPENMP
@@ -788,7 +792,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
             }
         } else {  // target_qubit_index2 == 1
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index1) && (target_qubit_index1 <= 8);
+                (5 <= target_qubit_index1) && (target_qubit_index1 <= 11);
 
             if (prefetch_flag) {
 #ifdef _OPENMP
@@ -946,7 +950,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         if (target_qubit_index2 >
             target_qubit_index1) {  // target_qubit_index1 == 0
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index2) && (target_qubit_index2 <= 8);
+                (5 <= target_qubit_index2) && (target_qubit_index2 <= 11);
 
             // creat element index for shuffling in a vector
             pg_select = svcmpeq(pg,
@@ -1094,7 +1098,7 @@ void double_qubit_dense_matrix_gate_sve_middle(UINT target_qubit_index1,
         } else {  // target_qubit_index2 == 0
 
             ITYPE prefetch_flag =
-                (5 <= target_qubit_index1) && (target_qubit_index1 <= 8);
+                (5 <= target_qubit_index1) && (target_qubit_index1 <= 11);
 
             // create element index for shuffling in a vector
             pg_select = svcmpeq(pg,
