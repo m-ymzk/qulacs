@@ -93,5 +93,10 @@ TEST(UpdateTest, TwoQubitDenseMatrixTest) {
 	test_double_dense_matrix_gate(double_qubit_dense_matrix_gate_simd);
 #endif
 }
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, TwoQubitDenseMatrixTestSVE) {
+	test_double_dense_matrix_gate(double_qubit_dense_matrix_gate_sve);
+}
+#endif
 
 

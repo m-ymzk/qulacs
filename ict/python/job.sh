@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #-ex
-export QHOME=/home/yamazaki/mpi-qulacs
+export QHOME=${HOME}/mpi-qulacs
 
 . ${QHOME}/setenv
 #ulimit -s 1048576
@@ -13,7 +13,7 @@ cd ${QHOME}/ict/python
 #NP=$1; shift
 NP=${OMPI_COMM_WORLD_LOCAL_SIZE}
 
-COMM="python qulacsbench.py"
+COMM="python"
 
 if [ $NP -eq 1 ]; then
   export OMP_NUM_THREADS=48

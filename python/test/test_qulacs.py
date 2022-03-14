@@ -7,6 +7,7 @@ import sys
 for ind in range(1, len(sys.argv)):
     sys.path.append(sys.argv[ind])
 sys.argv = sys.argv[:1]
+from mpi4py import MPI
 
 
 class TestQuantumState(unittest.TestCase):
