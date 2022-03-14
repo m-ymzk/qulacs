@@ -17,7 +17,7 @@
 #include <cppsim/pauli_operator.hpp>
 
 
-TEST(CircuitTest, CircuitBasic) {
+TEST(CircuitTest_multicpu, CircuitBasic) {
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2), S(2, 2), T(2, 2), sqrtX(2, 2), sqrtY(2, 2), P0(2, 2), P1(2, 2);
 
     Identity << 1, 0, 0, 1;
@@ -37,11 +37,19 @@ TEST(CircuitTest, CircuitBasic) {
     double eps = 1e-14;
     Random random;
 
-    QuantumState state(n);
+    QuantumState state_ref(n, 0);
+    QuantumState state(n, 1);
     ComplexVector state_eigen(dim);
 
+	MPIutil m = get_mpiutil();
+	const ITYPE inner_dim = dim >> state.outer_qc;
+	UINT offs = 0;
+	if (state.outer_qc > 0) offs = inner_dim * m->get_rank();
+	std::cout << "#test_circuit_multicpu " << m->get_rank() << ": " << dim << ", " << inner_dim << ", " << offs << std::endl;
+
     state.set_Haar_random_state();
-    for (ITYPE i = 0; i < dim; ++i) state_eigen[i] = state.data_cpp()[i];
+    for (ITYPE i = 0; i < dim; ++i) state_eigen[i] = state_ref.data_cpp()[i];
+    for (ITYPE i = 0; i < inner_dim; ++i) state.data_cpp()[i] = state_ref.data_cpp()[i+offs];
 
     QuantumCircuit circuit(n);
     UINT target,target_sub;
@@ -50,7 +58,7 @@ TEST(CircuitTest, CircuitBasic) {
     target = random.int32() % n;
     circuit.add_X_gate(target);
     state_eigen = get_expanded_eigen_matrix_with_identity(target, get_eigen_matrix_single_Pauli(1),n)*state_eigen;
-
+/*
     target = random.int32() % n;
     circuit.add_Y_gate(target);
     state_eigen = get_expanded_eigen_matrix_with_identity(target, get_eigen_matrix_single_Pauli(2), n)*state_eigen;
@@ -135,20 +143,20 @@ TEST(CircuitTest, CircuitBasic) {
     if (target_sub >= target) target_sub++;
     circuit.add_SWAP_gate(target, target_sub);
     state_eigen = get_eigen_matrix_full_qubit_SWAP(target, target_sub, n)*state_eigen;
-
+*/
     circuit.update_quantum_state(&state);
-    for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(state_eigen[i] - state.data_cpp()[i]), 0, eps);
+    for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state_eigen[i+offs] - state.data_cpp()[i]), 0, eps);
 }
 
-
-TEST(CircuitTest, CircuitOptimize) {
+/*
+TEST(CircuitTest_multicpu, CircuitOptimize) {
     const UINT n = 4;
     const UINT dim = 1ULL << n;
     double eps = 1e-14;
 
     {
         // merge successive gates
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -173,7 +181,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // tensor product, merged
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -199,7 +207,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // do not take tensor product
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -224,7 +232,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, control does not commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -250,7 +258,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, control does not commute with Z
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -276,7 +284,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, control commute with Z
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -302,7 +310,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -328,7 +336,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -354,7 +362,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -381,7 +389,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -408,7 +416,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -434,7 +442,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -461,7 +469,7 @@ TEST(CircuitTest, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n), test_state(n);
+        QuantumState state(n, 1), test_state(n);
         state.set_Haar_random_state();
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -487,7 +495,7 @@ TEST(CircuitTest, CircuitOptimize) {
     }
 }
 
-TEST(CircuitTest, RandomCircuitOptimize) {
+TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
     const UINT n = 5;
     const UINT dim = 1ULL << n;
     const UINT depth = 5;
@@ -497,7 +505,7 @@ TEST(CircuitTest, RandomCircuitOptimize) {
     UINT max_block_size = n;
 
     for(UINT repeat=0;repeat<max_repeat;++repeat){
-        QuantumState state(n), org_state(n), test_state(n);
+        QuantumState state(n, 1), org_state(n), test_state(n);
         state.set_Haar_random_state();
         org_state.load(&state);
         QuantumCircuit circuit(n);
@@ -534,7 +542,7 @@ TEST(CircuitTest, RandomCircuitOptimize) {
 
 }
 
-TEST(CircuitTest, RandomCircuitOptimize2) {
+TEST(CircuitTest_multicpu, RandomCircuitOptimize2) {
 	const UINT n = 5;
 	const UINT dim = 1ULL << n;
 	const UINT depth = 10;
@@ -544,7 +552,7 @@ TEST(CircuitTest, RandomCircuitOptimize2) {
 	UINT max_block_size = n;
 
 	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n), org_state(n), test_state(n);
+		QuantumState state(n, 1), org_state(n), test_state(n);
 		state.set_Haar_random_state();
 		org_state.load(&state);
 		QuantumCircuit circuit(n);
@@ -590,7 +598,7 @@ TEST(CircuitTest, RandomCircuitOptimize2) {
 
 }
 
-TEST(CircuitTest, RandomCircuitOptimize3) {
+TEST(CircuitTest_multicpu, RandomCircuitOptimize3) {
 	const UINT n = 5;
 	const UINT dim = 1ULL << n;
 	const UINT depth = 10*n;
@@ -603,7 +611,7 @@ TEST(CircuitTest, RandomCircuitOptimize3) {
 	for (int i = 0; i < n; ++i) qubit_list.push_back(i);
 
 	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n), org_state(n), test_state(n);
+		QuantumState state(n, 1), org_state(n), test_state(n);
 		state.set_Haar_random_state();
 		org_state.load(&state);
 		QuantumCircuit circuit(n);
@@ -634,7 +642,7 @@ TEST(CircuitTest, RandomCircuitOptimize3) {
 
 
 
-TEST(CircuitTest, SuzukiTrotterExpansion) {
+TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
     CPPCTYPE J(0.0, 1.0);
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2);
     Identity << 1, 0, 0, 1;
@@ -660,7 +668,7 @@ TEST(CircuitTest, SuzukiTrotterExpansion) {
     Observable diag_observable(n), non_diag_observable(n), observable(n);
     Eigen::MatrixXcd test_observable;
 
-    QuantumState state(n);
+    QuantumState state(n, 1);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
 
     QuantumCircuit circuit(n);
@@ -720,7 +728,7 @@ TEST(CircuitTest, SuzukiTrotterExpansion) {
 }
 
 
-TEST(CircuitTest, RotateDiagonalObservable){
+TEST(CircuitTest_multicpu, RotateDiagonalObservable){
     CPPCTYPE J(0.0, 1.0);
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2);
     Identity << 1, 0, 0, 1;
@@ -741,7 +749,7 @@ TEST(CircuitTest, RotateDiagonalObservable){
     Observable observable(n);
     Eigen::MatrixXcd test_observable;
 
-    QuantumState state(n);
+    QuantumState state(n, 1);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
 
     QuantumCircuit circuit(n);
@@ -798,11 +806,11 @@ TEST(CircuitTest, RotateDiagonalObservable){
 }
 
 
-TEST(CircuitTest, SpecialGatesToString) {
-	QuantumState state(1);
+TEST(CircuitTest_multicpu, SpecialGatesToString) {
+	QuantumState state(1, 1);
 	QuantumCircuit c(1);
 	c.add_gate(gate::DepolarizingNoise(0, 0));
 	c.update_quantum_state(&state);
 	std::string s = c.to_string();
 }
-
+*/
