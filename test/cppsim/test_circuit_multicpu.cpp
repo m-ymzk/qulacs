@@ -820,7 +820,7 @@ TEST(CircuitTest_multicpu, RotateDiagonalObservable){
     ASSERT_NEAR(test_res.imag(), 0, eps);
 
 }
-
+*/
 
 TEST(CircuitTest_multicpu, SpecialGatesToString) {
 	QuantumState state(1, 1);
@@ -828,5 +828,5 @@ TEST(CircuitTest_multicpu, SpecialGatesToString) {
 	c.add_gate(gate::DepolarizingNoise(0, 0));
 	c.update_quantum_state(&state);
 	std::string s = c.to_string();
+	std::cout << "#s =" << std::endl << s;
 }
-*/
