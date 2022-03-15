@@ -1,4 +1,4 @@
-# mpi-qulacs 概説
+# mpiQulacs 概説
 
 ## Base
 - qulacs v0.3.0
@@ -120,7 +120,7 @@
         | -------- | -------- |
         | "cpu"   | ノード内に作成されたstate vector |
         | "multi-cpu" | 分散配置されたstate vector |
-        | ("gpu") | mpi-qulacsではサポートしない |
+        | ("gpu") | mpiQulacsではサポートしない |
 
     - state.to_string()
       state情報を出力
@@ -157,7 +157,7 @@
 ## build/install
 ### use python3-venv (qenv)
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ python3 -m venv qenv
 $ . ./qenv/bin/activate
 $ pip install -U pip wheel (*1)
@@ -181,7 +181,7 @@ $ pytest
         - configure-option: --with-openib
 ```shell
 <lib. build>
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ . ./setenv
 $ ./script/build_mpicc.sh
 
@@ -202,16 +202,16 @@ $ mpirun -n 4 mpiqtest -1 20 0
 
 ### fcc/FCC
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ ./script/build_fcc.sh
 
 <c++ program sample>
-$ cd [mpi-qulacs]/ict
+$ cd [mpiQulacs]/ict
 $ usefcc=1 make
 $ mpirun -n 4 mpiqtest -1 20 0
 
 <python script sample>
-$ cd [mpi-qulacs]/ict/python
+$ cd [mpiQulacs]/ict/python
 $ mpirun -n 4 python test.py -n 20
 ```
 
