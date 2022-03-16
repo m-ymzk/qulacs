@@ -1607,23 +1607,25 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
     }
 }
 
-TEST(GateTest_multicpu, ApplyOptimizer_1) {
-    UINT n = 5;
+TEST(GateTest_multicpu, ApplyOptimizer_6qubits) {
+    UINT n = 6;
 
     MPIutil m = get_mpiutil();
-    const UINT inner_qc = std::log2(m->get_size());
-    const UINT outer_qc = n - inner_qc;
+    const UINT outer_qc = std::log2(m->get_size());
+    const UINT inner_qc = n - outer_qc;
+    std::cout << "inner_qc="<<inner_qc<<",outer_qc="<<outer_qc<<std::endl;
 
     Random random;
-    random.set_seed(2022);
-    if(true){
+    {
+        random.set_seed(2022);
         QuantumCircuit circuit(n);
         circuit.add_RZ_gate(0, random.uniform()*3.14159);
         circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
         _ApplyOptimizer(&circuit, 0, 1, 2);
     }
 
-    if(true){
+    if(inner_qc >= outer_qc * 2){
+        random.set_seed(2022);
         QuantumCircuit circuit(n);
         for (UINT rep = 0; rep < 2; rep++) {
             for (UINT i = 0; i < n; i++) {
@@ -1634,15 +1636,47 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
         _ApplyOptimizer(&circuit, 0, 1, 4);
     }
 
-    if(outer_qc <= 2){
-        // 0 1 2 | 3 4 -> 4 1 2 | 3 0
-        //                *         *
+    if(inner_qc >= outer_qc * 2){
+        random.set_seed(2022);
         QuantumCircuit circuit(n);
-        circuit.add_H_gate(4);
-        circuit.add_H_gate(1);
-        circuit.add_H_gate(2);
+        for (UINT rep = 0; rep < 2; rep++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_CNOT_gate(i, (i+1)%n);
+            }
+        }
+        // TODO gate順序変更に対応したら2回に変更
+        _ApplyOptimizer(&circuit, 0, 1, 4);
+    }
 
-        _ApplyOptimizer(&circuit, 0, 1, 2);
+    if(outer_qc <= n/2){
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+
+        // outer
+        for (UINT rep = 0; rep < n*2; rep++) {
+            circuit.add_RZ_gate(inner_qc+(rep%outer_qc), random.uniform()*3.14159);
+        }
+        // inner
+        for (UINT rep = 0; rep < n*2; rep++) {
+            circuit.add_RZ_gate((rep%inner_qc), random.uniform()*3.14159);
+        }
+        // outer
+        for (UINT rep = 0; rep < n*2; rep++) {
+            circuit.add_RZ_gate(inner_qc+(rep%outer_qc), random.uniform()*3.14159);
+        }
+
+        _ApplyOptimizer(&circuit, 0, 1, 4);
+    }
+
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+
+        for (UINT rep = 0; rep < n*4; rep++) {
+            circuit.add_RZ_gate(((UINT)(random.uniform()*n))%n, random.uniform()*3.14159);
+        }
+
+        _ApplyOptimizer(&circuit, 0, 1, n*8);
     }
 
 }
