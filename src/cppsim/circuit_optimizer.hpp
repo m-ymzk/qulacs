@@ -28,6 +28,7 @@ private:
     std::unordered_set<UINT> find_next_inner_qubits(UINT start_gate_idx, const std::vector<UINT> cur_qubit_order);
     UINT insert_swaps(const UINT gate_idx, const std::vector<UINT> cur_qubit_order, std::unordered_set<UINT> next_innder_qubits, std::vector<UINT>& next_qubit_order);
     void add_swaps_to_reorder(std::vector<UINT> &qubit_order);
+    void add_swaps_to_reorder_at(std::vector<UINT> &qubit_order, const UINT i, const UINT v);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order, UINT gate_pos);
 public:

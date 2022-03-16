@@ -1528,7 +1528,7 @@ gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
 }
 */
 
-void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
+void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT num_exp_outer_swaps) {
     const UINT n = circuit_ref->qubit_count;
     const ITYPE dim = 1ULL << n;
     double eps = _EPS;
@@ -1581,6 +1581,23 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
             }
         }
 
+        // check the number of SWAP and BSWAP is the same with expected.
+        UINT num_outer_swap_gates = 0;
+        for (auto& gate : circuit->gate_list) {
+            if (gate->get_name() == "SWAP" || gate->get_name() == "BSWAP") {
+                auto t_index_list = gate->get_target_index_list();
+                for (auto idx : t_index_list) {
+                    if (idx >= state.inner_qc) {
+                        num_outer_swap_gates++;
+                        break;
+                    }
+                }
+            }
+        }
+        ASSERT_TRUE(num_outer_swap_gates <= num_exp_outer_swaps)
+            << "# outer swaps is " << num_outer_swap_gates << ", but expected is " << num_exp_outer_swaps;
+
+
         for (ITYPE i = 0; i < inner_dim; ++i)
             ASSERT_NEAR(abs(state.data_cpp()[i] -
                             state_ref.data_cpp()[(i + offs) % dim]),
@@ -1593,25 +1610,31 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv) {
 TEST(GateTest_multicpu, ApplyOptimizer_1) {
     UINT n = 5;
 
+    MPIutil m = get_mpiutil();
+    const UINT inner_qc = std::log2(m->get_size());
+    const UINT outer_qc = n - inner_qc;
+
     Random random;
     random.set_seed(2022);
-    if(1){
+    if(true){
         QuantumCircuit circuit(n);
         circuit.add_RZ_gate(0, random.uniform()*3.14159);
         circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
-        _ApplyOptimizer(&circuit, 0, 1);
+        _ApplyOptimizer(&circuit, 0, 1, 2);
     }
-    if(1){
+
+    if(true){
         QuantumCircuit circuit(n);
         for (UINT rep = 0; rep < 2; rep++) {
             for (UINT i = 0; i < n; i++) {
                 circuit.add_H_gate(i);
             }
         }
-        _ApplyOptimizer(&circuit, 0, 1);
+        // TODO gate順序変更に対応したら2回に変更
+        _ApplyOptimizer(&circuit, 0, 1, 4);
     }
 
-    if(1){
+    if(outer_qc <= 2){
         // 0 1 2 | 3 4 -> 4 1 2 | 3 0
         //                *         *
         QuantumCircuit circuit(n);
@@ -1619,7 +1642,7 @@ TEST(GateTest_multicpu, ApplyOptimizer_1) {
         circuit.add_H_gate(1);
         circuit.add_H_gate(2);
 
-        _ApplyOptimizer(&circuit, 0, 1);
+        _ApplyOptimizer(&circuit, 0, 1, 2);
     }
 
 }

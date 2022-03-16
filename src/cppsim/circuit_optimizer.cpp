@@ -444,11 +444,77 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
     return num_inserted_gates;
 }
 
+void QuantumCircuitOptimizer::add_swaps_to_reorder_at(std::vector<UINT> &qubit_order, const UINT i, const UINT v) {
+    MPIutil m = get_mpiutil();
+    int rank = m->get_rank();
+    if (rank == 0) std::cout << "add_swaps_to_reorder_at(" << i<< "," << v <<")" << std::endl;
+
+    if (qubit_order[i] != v) {
+        auto it = std::find(qubit_order.begin(), qubit_order.end(), v);
+        if (it == qubit_order.end()) {
+            std::cout << "invalid qubit_order" << std::endl;
+        }
+        auto j = std::distance(qubit_order.begin(), it);
+
+        add_swap_gate(i, j, 1, qubit_order);
+    }
+}
+
 void QuantumCircuitOptimizer::add_swaps_to_reorder(std::vector<UINT> &qubit_order) {
     // qubitを昇順に並び替えるためのswapをcircuitの最後に追加する
+    MPIutil m = get_mpiutil();
+    int rank = m->get_rank();
 
-    // TODO fswapを活用する。現在はswapのみのナイーブ実装
-    for (UINT i = 0; i < circuit->qubit_count; i++) {
+    // outer qubitで交換が必要な物を探す
+    UINT fswap_outer_lower = circuit->qubit_count;
+    UINT fswap_outer_upper = 0;
+    for (UINT i = inner_qc; i < circuit->qubit_count; i++) {
+        if (qubit_order[i] != i) {
+            fswap_outer_lower = std::min(i, fswap_outer_lower);
+            fswap_outer_upper = std::max(i, fswap_outer_upper);
+        }
+    }
+
+    if (fswap_outer_upper > 0) {
+        // outerに交換が必要なqubitがあった場合
+
+        UINT fswap_outer = fswap_outer_lower;
+        UINT fswap_width = fswap_outer_upper - fswap_outer_lower + 1;
+        UINT fswap_inner = inner_qc - fswap_width;
+
+
+        // fswapのinner側にouter側に持って行かないといけないqubitが内容にする
+        bool outerqc_in_outer = false;
+        for (UINT i = fswap_outer; i < fswap_outer + fswap_width; i++) {
+            if (qubit_order[i] >= inner_qc) {
+                outerqc_in_outer = true;
+                break;
+            }
+        }
+
+        if (outerqc_in_outer) {
+            int swap_idx = inner_qc - fswap_width - 1;
+            for (UINT i = inner_qc - fswap_width; i < inner_qc; i++) {
+                if (qubit_order[i] >= inner_qc) {
+                    if (swap_idx < 0) {
+                        std::cerr << "invalid index at QuantumCircuitOptimizer::add_swaps_to_reorder" << std::endl;
+                    }
+                    add_swap_gate(i, swap_idx, 1, qubit_order);
+                    swap_idx--;
+                }
+            }
+            add_swap_gate(fswap_inner, fswap_outer, fswap_width, qubit_order);
+        }
+
+        // fswapのinner側にinner_qc~(qc-1)を集める
+        for (UINT i = inner_qc - fswap_width, v = fswap_outer; i < inner_qc; i++, v++) {
+            add_swaps_to_reorder_at(qubit_order, i, v);
+        }
+        add_swap_gate(fswap_inner, fswap_outer, fswap_width, qubit_order);
+    }
+
+    // inner_qubitを並べ替える
+    for (UINT i = 0; i < inner_qc; i++) {
         if (qubit_order[i] != i) {
             auto it = std::find(qubit_order.begin()+i, qubit_order.end(), i);
             if (it == qubit_order.end()) {
@@ -456,9 +522,20 @@ void QuantumCircuitOptimizer::add_swaps_to_reorder(std::vector<UINT> &qubit_orde
             }
             auto j = std::distance(qubit_order.begin(), it);
 
+            if (j >= inner_qc) {
+                if(rank == 0) std::cerr << "unexpected index" << std::endl;
+            }
             add_swap_gate(i, j, 1, qubit_order);
         }
     }
+
+    // if(rank==0){
+    //     std::cout<<"after reorder: ";
+    //     for(auto idx : qubit_order){
+    //         std::cout<<idx<<",";
+    //     }
+    //     std::cout << std::endl;
+    // }
 }
 
 static std::vector<UINT> to_table(const std::vector<UINT>& qubit_order) {
