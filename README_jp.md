@@ -45,10 +45,9 @@
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
-      - DiagonalMatrix(with control)
       - to_matrix_gate
-  - Observable
   - QuantumCircuit
+  - QuantumCircuitOptimizer
   - QuantumState
       - normalize
       - copy
@@ -69,7 +68,7 @@
       - CPTP
       - Instrument
       - Adaptive
-  - QuantumCircuitOptimizer
+  - Observable
   - QuantumCircuitSimulator
   - state
       - inner_product
