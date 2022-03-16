@@ -384,6 +384,37 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         std::cout << std::endl;
     }
 
+
+    /// importするouter qubitのリストを作成
+    std::vector<UINT> fswap_outer_list;
+    std::vector<UINT> fswap_width_list;
+    for (UINT i = inner_qc; i < circuit->qubit_count; i++) {
+        if(import_qubits.find(next_qubit_order[i]) != import_qubits.end()) {
+            fswap_outer_list.push_back(i);
+            fswap_width_list.push_back(1);
+        }
+    }
+
+    // outer qubitをまとめる
+    // TODO outer qubit同士のswapが高速化されたら連続となるようにswapするように変更
+    UINT available_ext_inner_qc = exportable_qubits.size() - fswap_width;
+    for (UINT i = 0; i < fswap_outer_list.size(); i++) {
+        for (UINT j = i + 1; j < fswap_outer_list.size(); ) {
+            if (fswap_outer_list[i] + fswap_width_list[i] + available_ext_inner_qc >= fswap_outer_list[j]) {
+                UINT ext_inner_qc = fswap_outer_list[j] - (fswap_outer_list[i] + fswap_width_list[i]);
+                fswap_width_list[i] = fswap_width_list[i] + fswap_width_list[j] + ext_inner_qc;
+                available_ext_inner_qc -= ext_inner_qc;
+                fswap_outer_list.erase(fswap_outer_list.begin() + j);
+                fswap_width_list.erase(fswap_width_list.begin() + j);
+            } else {
+                j++;
+            }
+        }
+    }
+
+    if (rank == 0) std::cout << "available_ext_inner_qc = " << available_ext_inner_qc << std::endl;
+    UINT use_ext_inner_qc = exportable_qubits.size() - fswap_width - available_ext_inner_qc;
+    fswap_width = fswap_width + use_ext_inner_qc;
     UINT fswap_inner = inner_qc - fswap_width;
     // export するqubitをinnerの最後にまとめる
     for (int i = inner_qc - 1; i >= (int)fswap_inner; i--) {
@@ -405,33 +436,15 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         }
     }
 
-#if 1 //連続するouter qubitごとにBSWAP
     UINT part_fswap_inner = fswap_inner;
-    UINT part_fswap_outer = 0; //dummy
-    UINT part_fswap_width = 0;
-    for (UINT i = inner_qc; i < circuit->qubit_count; i++) {
-        if(import_qubits.find(next_qubit_order[i]) != import_qubits.end()) {
-            if (part_fswap_outer == 0) {
-                part_fswap_outer = i;
-            }
-            part_fswap_width++;
-        } else {
-            if (part_fswap_outer != 0) {
-                add_swap_gate(part_fswap_inner, part_fswap_outer, part_fswap_width, next_qubit_order, gate_idx + num_inserted_gates);
-                num_inserted_gates++;
-                part_fswap_inner += part_fswap_width;
-                part_fswap_outer = 0;
-                part_fswap_width = 0;
-            }
-        }
-    }
-    if (part_fswap_outer != 0 && part_fswap_width > 0) {
+    for (UINT i = 0; i < fswap_outer_list.size(); i++) {
+        UINT part_fswap_outer = fswap_outer_list[i];
+        UINT part_fswap_width = fswap_width_list[i];
+
         add_swap_gate(part_fswap_inner, part_fswap_outer, part_fswap_width, next_qubit_order, gate_idx + num_inserted_gates);
         num_inserted_gates++;
+        part_fswap_inner += part_fswap_width;
     }
-#else //outer qubitをSWAPして連続にしてからBSWAP
-    // TODO 実装する
-#endif
 
     if(rank==0){
         std::cout<<"next order: ";

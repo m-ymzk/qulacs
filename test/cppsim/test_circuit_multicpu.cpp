@@ -166,4 +166,13 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_6qubits) {
         _ApplyOptimizer(&circuit, 0, 1, n*8);
     }
 
+    if (inner_qc >= 3 && outer_qc >= 3) {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+
+        circuit.add_H_gate(n-1);
+        circuit.add_H_gate(n-3);
+
+        _ApplyOptimizer(&circuit, 0, 1, 2);
+    }
 }
