@@ -8,9 +8,9 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-_VERSION = '0.3.0'
+_VERSION = '0.9.0'
 
-project_name = 'Qulacs'
+project_name = 'mpiQulacs'
 
 def _is_valid_compiler(cmd):
     try:
@@ -110,10 +110,8 @@ class CMakeBuild(build_ext):
 setup(
     name=project_name,
     version=_VERSION,
-    author='QunaSys',
-    author_email='qulacs@qunasys.com',
-    url='http://www.qulacs.org',
-    description='Quantum circuit simulator for research',
+    author='QunaSys/Fujitsu',
+    description='Quantum circuit simulator for research with mpi',
     long_description='',
     packages=find_packages(exclude=['test*']),
     include_package_data=True,
