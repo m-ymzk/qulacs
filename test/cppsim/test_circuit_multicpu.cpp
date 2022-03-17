@@ -1,30 +1,34 @@
 #include <gtest/gtest.h>
-#include "../util/util.h"
-#include <cppsim/type.hpp>
-#include <csim/constant.h>
+
 //#define _USE_MATH_DEFINES
 //#include <cmath>
-#include <cppsim/state.hpp>
+#include <csim/constant.h>
+
 #include <cppsim/circuit.hpp>
-#include <cppsim/utility.hpp>
-#include <cppsim/gate_factory.hpp>
-#include <cppsim/gate_merge.hpp>
-#include <cppsim/gate_matrix.hpp>
 #include <cppsim/circuit_optimizer.hpp>
-#include <utility>
-#include <unsupported/Eigen/MatrixFunctions>
+#include <cppsim/gate_factory.hpp>
+#include <cppsim/gate_matrix.hpp>
+#include <cppsim/gate_merge.hpp>
 #include <cppsim/observable.hpp>
 #include <cppsim/pauli_operator.hpp>
+#include <cppsim/state.hpp>
+#include <cppsim/type.hpp>
+#include <cppsim/utility.hpp>
+#include <unsupported/Eigen/MatrixFunctions>
+#include <utility>
 
+#include "../util/util.h"
 
 TEST(CircuitTest_multicpu, CircuitBasic) {
-    Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2), S(2, 2), T(2, 2), sqrtX(2, 2), sqrtY(2, 2), P0(2, 2), P1(2, 2);
+    Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2),
+        S(2, 2), T(2, 2), sqrtX(2, 2), sqrtY(2, 2), P0(2, 2), P1(2, 2);
 
     Identity << 1, 0, 0, 1;
     X << 0, 1, 1, 0;
     Y << 0, -1.i, 1.i, 0;
     Z << 1, 0, 0, -1;
-    H << 1, 1, 1, -1; H /= sqrt(2.);
+    H << 1, 1, 1, -1;
+    H /= sqrt(2.);
     S << 1, 0, 0, 1.i;
     T << 1, 0, 0, (1. + 1.i) / sqrt(2.);
     sqrtX << 0.5 + 0.5i, 0.5 - 0.5i, 0.5 - 0.5i, 0.5 + 0.5i;
@@ -36,117 +40,151 @@ TEST(CircuitTest_multicpu, CircuitBasic) {
     const UINT dim = 1ULL << n;
     double eps = 1e-14;
     Random random;
-	random.set_seed(2022);
+    random.set_seed(2022);
 
     QuantumState state_ref(n, 0);
     QuantumState state(n, 1);
     ComplexVector state_eigen(dim);
 
-	MPIutil m = get_mpiutil();
-	const ITYPE inner_dim = dim >> state.outer_qc;
-	UINT offs = 0;
-	if (state.outer_qc > 0) offs = inner_dim * m->get_rank();
-	//std::cout << "#test_circuit_multicpu " << m->get_rank() << ": " << dim << ", " << inner_dim << ", " << offs << std::endl;
+    MPIutil m = get_mpiutil();
+    const ITYPE inner_dim = dim >> state.outer_qc;
+    UINT offs = 0;
+    if (state.outer_qc > 0) offs = inner_dim * m->get_rank();
+    // std::cout << "#test_circuit_multicpu " << m->get_rank() << ": " << dim <<
+    // ", " << inner_dim << ", " << offs << std::endl;
 
     state_ref.set_Haar_random_state(2022);
     for (ITYPE i = 0; i < dim; ++i) state_eigen[i] = state_ref.data_cpp()[i];
-    for (ITYPE i = 0; i < inner_dim; ++i) state.data_cpp()[i] = state_ref.data_cpp()[i+offs];
+    for (ITYPE i = 0; i < inner_dim; ++i)
+        state.data_cpp()[i] = state_ref.data_cpp()[i + offs];
 
     QuantumCircuit circuit(n);
-    UINT target,target_sub;
+    UINT target, target_sub;
     double angle;
 
     target = random.int32() % n;
     circuit.add_X_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, get_eigen_matrix_single_Pauli(1),n)*state_eigen;
+    state_eigen = get_expanded_eigen_matrix_with_identity(
+                      target, get_eigen_matrix_single_Pauli(1), n) *
+                  state_eigen;
 
     target = random.int32() % n;
     circuit.add_Y_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, get_eigen_matrix_single_Pauli(2), n)*state_eigen;
+    state_eigen = get_expanded_eigen_matrix_with_identity(
+                      target, get_eigen_matrix_single_Pauli(2), n) *
+                  state_eigen;
 
     target = random.int32() % n;
     circuit.add_Z_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, get_eigen_matrix_single_Pauli(3), n)*state_eigen;
+    state_eigen = get_expanded_eigen_matrix_with_identity(
+                      target, get_eigen_matrix_single_Pauli(3), n) *
+                  state_eigen;
 
     target = random.int32() % n;
     circuit.add_H_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, H, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, H, n) * state_eigen;
 
     target = random.int32() % n;
     circuit.add_S_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, S, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, S, n) * state_eigen;
 
     target = random.int32() % n;
     circuit.add_Sdag_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, S.adjoint(), n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, S.adjoint(), n) *
+        state_eigen;
 
     target = random.int32() % n;
     circuit.add_T_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, T, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, T, n) * state_eigen;
 
     target = random.int32() % n;
     circuit.add_Tdag_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, T.adjoint(), n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, T.adjoint(), n) *
+        state_eigen;
 
     target = random.int32() % n;
     circuit.add_sqrtX_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, sqrtX, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, sqrtX, n) * state_eigen;
 
     target = random.int32() % n;
     circuit.add_sqrtXdag_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, sqrtX.adjoint(), n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, sqrtX.adjoint(), n) *
+        state_eigen;
 
     target = random.int32() % n;
     circuit.add_sqrtY_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, sqrtY, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, sqrtY, n) * state_eigen;
 
     target = random.int32() % n;
     circuit.add_sqrtYdag_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, sqrtY.adjoint(), n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, sqrtY.adjoint(), n) *
+        state_eigen;
 
     target = random.int32() % n;
     circuit.add_P0_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, P0, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, P0, n) * state_eigen;
 
-    target = (target+1)%n;
+    target = (target + 1) % n;
     circuit.add_P1_gate(target);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, P1, n)*state_eigen;
+    state_eigen =
+        get_expanded_eigen_matrix_with_identity(target, P1, n) * state_eigen;
 
     target = random.int32() % n;
     angle = random.uniform() * 3.14159;
-    circuit.add_RX_gate(target,angle);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, cos(angle/2)*Identity + 1.i*sin(angle/2)*X, n)*state_eigen;
+    circuit.add_RX_gate(target, angle);
+    state_eigen = get_expanded_eigen_matrix_with_identity(target,
+                      cos(angle / 2) * Identity + 1.i * sin(angle / 2) * X, n) *
+                  state_eigen;
 
     target = random.int32() % n;
     angle = random.uniform() * 3.14159;
     circuit.add_RY_gate(target, angle);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, cos(angle/2)*Identity + 1.i*sin(angle/2)*Y, n)*state_eigen;
+    state_eigen = get_expanded_eigen_matrix_with_identity(target,
+                      cos(angle / 2) * Identity + 1.i * sin(angle / 2) * Y, n) *
+                  state_eigen;
 
     target = random.int32() % n;
     angle = random.uniform() * 3.14159;
     circuit.add_RZ_gate(target, angle);
-    state_eigen = get_expanded_eigen_matrix_with_identity(target, cos(angle/2)*Identity + 1.i*sin(angle/2)*Z, n)*state_eigen;
+    state_eigen = get_expanded_eigen_matrix_with_identity(target,
+                      cos(angle / 2) * Identity + 1.i * sin(angle / 2) * Z, n) *
+                  state_eigen;
 
     target = random.int32() % n;
-    target_sub = random.int32() % (n-1);
+    target_sub = random.int32() % (n - 1);
     if (target_sub >= target) target_sub++;
     circuit.add_CNOT_gate(target, target_sub);
-    state_eigen = get_eigen_matrix_full_qubit_CNOT(target,target_sub,n)*state_eigen;
+    state_eigen =
+        get_eigen_matrix_full_qubit_CNOT(target, target_sub, n) * state_eigen;
 
     target = random.int32() % n;
     target_sub = random.int32() % (n - 1);
     if (target_sub >= target) target_sub++;
     circuit.add_CZ_gate(target, target_sub);
-    state_eigen = get_eigen_matrix_full_qubit_CZ(target, target_sub, n)*state_eigen;
+    state_eigen =
+        get_eigen_matrix_full_qubit_CZ(target, target_sub, n) * state_eigen;
 
     target = random.int32() % n;
     target_sub = random.int32() % (n - 1);
     if (target_sub >= target) target_sub++;
     circuit.add_SWAP_gate(target, target_sub);
-    state_eigen = get_eigen_matrix_full_qubit_SWAP(target, target_sub, n)*state_eigen;
+    state_eigen =
+        get_eigen_matrix_full_qubit_SWAP(target, target_sub, n) * state_eigen;
 
     circuit.update_quantum_state(&state);
-    for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state_eigen[i+offs] - state.data_cpp()[i]), 0, eps) << ", i=" << i << " rank=" << m->get_rank();
+    for (ITYPE i = 0; i < inner_dim; ++i)
+        ASSERT_NEAR(abs(state_eigen[i + offs] - state.data_cpp()[i]), 0, eps)
+            << ", i=" << i << " rank=" << m->get_rank();
 }
 
 TEST(CircuitTest_multicpu, CircuitOptimize) {
@@ -154,12 +192,12 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
     const UINT dim = 1ULL << n;
     double eps = 1e-14;
 
-	MPIutil m = get_mpiutil();
-	QuantumState dummy_state(n, 1);
-	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
-	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
+    MPIutil m = get_mpiutil();
+    QuantumState dummy_state(n, 1);
+    const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+    const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
-#if 0 // block_size > 1
+#if 0  // block_size > 1
     {
         // merge successive gates
         QuantumState state(n, 0), test_state(n, 1);
@@ -235,8 +273,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -261,8 +302,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -287,8 +331,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -313,8 +360,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -339,8 +389,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -365,8 +418,11 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -391,9 +447,12 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        //std::cout << state << std::endl << test_state << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        // std::cout << state << std::endl << test_state << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -418,14 +477,17 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         qco.optimize(copy_circuit, block_size);
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
-        //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+        // std::cout << circuit << std::endl << copy_circuit << std::endl;
+        for (UINT i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0,
+                eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
     }
 
-#if 0 // block_size > 1
+#if 0  // block_size > 1
     {
         // CNOT, target commute with X
         QuantumState state(n, 0), test_state(n, 1);
@@ -513,17 +575,18 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
     const UINT dim = 1ULL << n;
     const UINT depth = 5;
     Random random;
-	random.set_seed(2022);
+    random.set_seed(2022);
     double eps = 1e-14;
-    UINT max_repeat=3;
-    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+    UINT max_repeat = 3;
+    UINT max_block_size =
+        1;  // The maximum block size is one when using multi-cpu.
 
-	MPIutil m = get_mpiutil();
-	QuantumState dummy_state(n, 1);
-	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
-	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
+    MPIutil m = get_mpiutil();
+    QuantumState dummy_state(n, 1);
+    const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+    const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
-    for(UINT repeat=0;repeat<max_repeat;++repeat){
+    for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
         QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
         state.set_Haar_random_state(2022);
         org_state.load(&state);
@@ -532,13 +595,15 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
         for (UINT d = 0; d < depth; ++d) {
             for (UINT i = 0; i < n; ++i) {
                 UINT r = random.int32() % 5;
-                if (r == 0)    circuit.add_sqrtX_gate(i);
-                else if (r == 1) circuit.add_sqrtY_gate(i);
-                else if (r == 2) circuit.add_T_gate(i);
+                if (r == 0)
+                    circuit.add_sqrtX_gate(i);
+                else if (r == 1)
+                    circuit.add_sqrtY_gate(i);
+                else if (r == 2)
+                    circuit.add_T_gate(i);
                 else if (r == 3) {
                     if (i + 1 < n) circuit.add_CNOT_gate(i, i + 1);
-                }
-                else if (r == 4) {
+                } else if (r == 4) {
                     if (i + 1 < n) circuit.add_CZ_gate(i, i + 1);
                 }
             }
@@ -546,133 +611,144 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
 
         test_state.load(&org_state);
         circuit.update_quantum_state(&test_state);
-        //std::cout << circuit << std::endl;
+        // std::cout << circuit << std::endl;
         QuantumCircuitOptimizer qco;
         for (UINT block_size = 1; block_size <= max_block_size; ++block_size) {
             QuantumCircuit* copy_circuit = circuit.copy();
             qco.optimize(copy_circuit, block_size);
-            state.load(&org_state); // TODO cpu to multicpu function
+            state.load(&org_state);  // TODO cpu to multicpu function
             copy_circuit->update_quantum_state(&state);
-            //std::cout << copy_circuit << std::endl;
-            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
-            for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+            // std::cout << copy_circuit << std::endl;
+            // for (UINT i = 0; i < inner_dim; ++i)
+            // ASSERT_NEAR(abs(state.data_cpp()[i + offs] -
+            // test_state.data_cpp()[i]), 0, eps);
+            for (UINT i = 0; i < inner_dim; ++i)
+                ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]),
+                    0, eps);
             delete copy_circuit;
         }
     }
-
 }
 
 TEST(CircuitTest_multicpu, RandomCircuitOptimize2) {
-	const UINT n = 5;
-	const UINT dim = 1ULL << n;
-	const UINT depth = 10;
-	Random random;
-	random.set_seed(2022);
-	double eps = 1e-14;
-	UINT max_repeat = 3;
-    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+    const UINT n = 5;
+    const UINT dim = 1ULL << n;
+    const UINT depth = 10;
+    Random random;
+    random.set_seed(2022);
+    double eps = 1e-14;
+    UINT max_repeat = 3;
+    UINT max_block_size =
+        1;  // The maximum block size is one when using multi-cpu.
 
-	MPIutil m = get_mpiutil();
-	QuantumState dummy_state(n, 1);
-	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
-	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
+    MPIutil m = get_mpiutil();
+    QuantumState dummy_state(n, 1);
+    const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+    const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
-	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
-		state.set_Haar_random_state(2022);
-		org_state.load(&state);
-		QuantumCircuit circuit(n);
+    for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
+        QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
+        state.set_Haar_random_state(2022);
+        org_state.load(&state);
+        QuantumCircuit circuit(n);
 
-		for (UINT d = 0; d < depth; ++d) {
-			for (UINT i = 0; i < n; ++i) {
-				UINT r = random.int32() % 6;
-				if (r == 0)    circuit.add_sqrtX_gate(i);
-				else if (r == 1) circuit.add_sqrtY_gate(i);
-				else if (r == 2) circuit.add_T_gate(i);
-				else if (r == 3) {
-					UINT r2 = random.int32() % n;
-					if (r2 == i) r2 = (r2 + 1) % n;
-					if (i + 1 < n) circuit.add_CNOT_gate(i, r2);
-				}
-				else if (r == 4) {
-					UINT r2 = random.int32() % n;
-					if (r2 == i) r2 = (r2 + 1) % n;
-					if (i + 1 < n) circuit.add_CZ_gate(i, r2);
-				}
-				else if (r == 5) {
-					UINT r2 = random.int32() % n;
-					if (r2 == i) r2 = (r2 + 1) % n;
-					if (i + 1 < n) circuit.add_SWAP_gate(i, r2);
-				}
-			}
-		}
+        for (UINT d = 0; d < depth; ++d) {
+            for (UINT i = 0; i < n; ++i) {
+                UINT r = random.int32() % 6;
+                if (r == 0)
+                    circuit.add_sqrtX_gate(i);
+                else if (r == 1)
+                    circuit.add_sqrtY_gate(i);
+                else if (r == 2)
+                    circuit.add_T_gate(i);
+                else if (r == 3) {
+                    UINT r2 = random.int32() % n;
+                    if (r2 == i) r2 = (r2 + 1) % n;
+                    if (i + 1 < n) circuit.add_CNOT_gate(i, r2);
+                } else if (r == 4) {
+                    UINT r2 = random.int32() % n;
+                    if (r2 == i) r2 = (r2 + 1) % n;
+                    if (i + 1 < n) circuit.add_CZ_gate(i, r2);
+                } else if (r == 5) {
+                    UINT r2 = random.int32() % n;
+                    if (r2 == i) r2 = (r2 + 1) % n;
+                    if (i + 1 < n) circuit.add_SWAP_gate(i, r2);
+                }
+            }
+        }
 
-		test_state.load(&org_state);
-		circuit.update_quantum_state(&test_state);
-		//std::cout << circuit << std::endl;
-		QuantumCircuitOptimizer qco;
-		for (UINT block_size = 1; block_size <= max_block_size; ++block_size) {
-			QuantumCircuit* copy_circuit = circuit.copy();
-			qco.optimize(copy_circuit, block_size);
-			state.load(&org_state);
-			copy_circuit->update_quantum_state(&state);
-			//std::cout << copy_circuit << std::endl;
-            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
-			for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
-			delete copy_circuit;
-		}
-	}
-
+        test_state.load(&org_state);
+        circuit.update_quantum_state(&test_state);
+        // std::cout << circuit << std::endl;
+        QuantumCircuitOptimizer qco;
+        for (UINT block_size = 1; block_size <= max_block_size; ++block_size) {
+            QuantumCircuit* copy_circuit = circuit.copy();
+            qco.optimize(copy_circuit, block_size);
+            state.load(&org_state);
+            copy_circuit->update_quantum_state(&state);
+            // std::cout << copy_circuit << std::endl;
+            // for (UINT i = 0; i < inner_dim; ++i)
+            // ASSERT_NEAR(abs(state.data_cpp()[i + offs] -
+            // test_state.data_cpp()[i]), 0, eps);
+            for (UINT i = 0; i < inner_dim; ++i)
+                ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]),
+                    0, eps);
+            delete copy_circuit;
+        }
+    }
 }
 
 /* This test uses multi_qubit_dense_matrix_gate.
 TEST(CircuitTest_multicpu, RandomCircuitOptimize3) {
-	const UINT n = 5;
-	const UINT dim = 1ULL << n;
-	const UINT depth = 10*n;
-	Random random;
-	random.set_seed(2022);
-	double eps = 1e-14;
-	UINT max_repeat = 3;
-    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+        const UINT n = 5;
+        const UINT dim = 1ULL << n;
+        const UINT depth = 10*n;
+        Random random;
+        random.set_seed(2022);
+        double eps = 1e-14;
+        UINT max_repeat = 3;
+    UINT max_block_size = 1; // The maximum block size is one when using
+multi-cpu.
 
-	MPIutil m = get_mpiutil();
-	QuantumState dummy_state(n, 1);
-	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
-	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
+        MPIutil m = get_mpiutil();
+        QuantumState dummy_state(n, 1);
+        const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+        const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim *
+m->get_rank();
 
-	std::vector<UINT> qubit_list;
-	for (int i = 0; i < n; ++i) qubit_list.push_back(i);
+        std::vector<UINT> qubit_list;
+        for (int i = 0; i < n; ++i) qubit_list.push_back(i);
 
-	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
-		state.set_Haar_random_state(2022);
-		org_state.load(&state);
-		QuantumCircuit circuit(n);
+        for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
+                QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
+                state.set_Haar_random_state(2022);
+                org_state.load(&state);
+                QuantumCircuit circuit(n);
 
-		for (UINT d = 0; d < depth; ++d) {
-			std::random_shuffle(qubit_list.begin(), qubit_list.end());
-			std::vector<UINT> mylist;
-			mylist.push_back(qubit_list[0]);
-			mylist.push_back(qubit_list[1]);
-			circuit.add_random_unitary_gate(mylist);
-		}
+                for (UINT d = 0; d < depth; ++d) {
+                        std::random_shuffle(qubit_list.begin(),
+qubit_list.end()); std::vector<UINT> mylist; mylist.push_back(qubit_list[0]);
+                        mylist.push_back(qubit_list[1]);
+                        circuit.add_random_unitary_gate(mylist);
+                }
 
-		test_state.load(&org_state);
-		circuit.update_quantum_state(&test_state);
-		//std::cout << circuit << std::endl;
-		QuantumCircuitOptimizer qco;
-		for (UINT block_size = 1; block_size <= max_block_size; ++block_size) {
-			QuantumCircuit* copy_circuit = circuit.copy();
-			qco.optimize(copy_circuit, block_size);
-			state.load(&org_state);
-			copy_circuit->update_quantum_state(&state);
-			//std::cout << copy_circuit << std::endl;
-            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
-			for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
-			delete copy_circuit;
-		}
-	}
+                test_state.load(&org_state);
+                circuit.update_quantum_state(&test_state);
+                //std::cout << circuit << std::endl;
+                QuantumCircuitOptimizer qco;
+                for (UINT block_size = 1; block_size <= max_block_size;
+++block_size) { QuantumCircuit* copy_circuit = circuit.copy();
+                        qco.optimize(copy_circuit, block_size);
+                        state.load(&org_state);
+                        copy_circuit->update_quantum_state(&state);
+                        //std::cout << copy_circuit << std::endl;
+            //for (UINT i = 0; i < inner_dim; ++i)
+ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+                        for (UINT i = 0; i < inner_dim; ++i)
+ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps); delete
+copy_circuit;
+                }
+        }
 }
 
 TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
@@ -721,12 +797,12 @@ TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
     observable.add_operator(coef[4], "Y 0 X 1");
     observable.add_operator(coef[5], "I 0 Z 1");
 
-    test_observable = coef[0] * get_expanded_eigen_matrix_with_identity(0, Z, n);
-    test_observable += coef[1] * kronecker_product(Y, X);
-    test_observable += coef[2] * kronecker_product(Z, Z);
-    test_observable += coef[3] * kronecker_product(X, Z);
-    test_observable += coef[4] * kronecker_product(X, Y);
-    test_observable += coef[5] * get_expanded_eigen_matrix_with_identity(1, Z, n);
+    test_observable = coef[0] * get_expanded_eigen_matrix_with_identity(0, Z,
+n); test_observable += coef[1] * kronecker_product(Y, X); test_observable +=
+coef[2] * kronecker_product(Z, Z); test_observable += coef[3] *
+kronecker_product(X, Z); test_observable += coef[4] * kronecker_product(X, Y);
+    test_observable += coef[5] * get_expanded_eigen_matrix_with_identity(1, Z,
+n);
 
     num_repeats = (UINT) std::ceil(angle * (double)n* 100.);
     // circuit.add_diagonal_observable_rotation_gate(diag_observable, angle);
@@ -805,7 +881,8 @@ TEST(CircuitTest_multicpu, RotateDiagonalObservable){
     state.set_computational_basis(0);
     test_state(0) = 1.;
 
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] - state.data_cpp()[i]), 0, eps);
+    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
+state.data_cpp()[i]), 0, eps);
 
     circuit.update_quantum_state(&state);
     test_state = test_circuit * test_state;
@@ -813,9 +890,9 @@ TEST(CircuitTest_multicpu, RotateDiagonalObservable){
     res = observable.get_expectation_value(&state);
     test_res = (test_state.adjoint() * test_observable * test_state);
 
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] - state.data_cpp()[i]), 0, eps);
-    ASSERT_NEAR(abs(test_res.real() - res.real())/test_res.real(), 0, 0.01);
-    ASSERT_NEAR(res.imag(), 0, eps);
+    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
+state.data_cpp()[i]), 0, eps); ASSERT_NEAR(abs(test_res.real() -
+res.real())/test_res.real(), 0, 0.01); ASSERT_NEAR(res.imag(), 0, eps);
     ASSERT_NEAR(test_res.imag(), 0, eps);
 
 
@@ -831,19 +908,19 @@ TEST(CircuitTest_multicpu, RotateDiagonalObservable){
     res = observable.get_expectation_value(&state);
     test_res = (test_state.adjoint() * test_observable * test_state);
 
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] - state.data_cpp()[i]), 0, eps);
-    ASSERT_NEAR(abs(test_res.real() - res.real())/test_res.real(), 0, 0.01);
-    ASSERT_NEAR(res.imag(), 0, eps);
+    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
+state.data_cpp()[i]), 0, eps); ASSERT_NEAR(abs(test_res.real() -
+res.real())/test_res.real(), 0, 0.01); ASSERT_NEAR(res.imag(), 0, eps);
     ASSERT_NEAR(test_res.imag(), 0, eps);
 
 }
 */
 
 TEST(CircuitTest_multicpu, SpecialGatesToString) {
-	QuantumState state(1, 1);
-	QuantumCircuit c(1);
-	c.add_gate(gate::DepolarizingNoise(0, 0));
-	c.update_quantum_state(&state);
-	std::string s = c.to_string();
-	std::cout << "#s =" << std::endl << s;
+    QuantumState state(1, 1);
+    QuantumCircuit c(1);
+    c.add_gate(gate::DepolarizingNoise(0, 0));
+    c.update_quantum_state(&state);
+    std::string s = c.to_string();
+    std::cout << "#s =" << std::endl << s;
 }
