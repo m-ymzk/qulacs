@@ -21,9 +21,12 @@
 - "device=gpu" not supported
 
 - The following items are supported. MPI-Qulacs does not support any other items.
+  - QuantumCircuit
+  - QuantumCircuitOptimizer (supports only block_size=1 or optimize_light)
   - QuantumState
       - Constructor
       - get_device_name
+      - get_vector
       - sampling
       - set_computational_basis
       - set_Haar_random_state
@@ -39,6 +42,7 @@
       - U1 / U2 / U3
       - DenseMatrix(single target)
       - DiagonalMatrix(single target)
+      - to_matrix_gate
 
 - To be supported after March (T.B.D.)
   - gate
@@ -47,14 +51,11 @@
       - PauliRotation
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(with control)
-      - to_matrix_gate
   - Observable
-  - QuantumCircuit
   - QuantumState
       - normalize
       - copy
       - load
-      - get_vector
   - ParametricQuantumCircuit
   - PauliOperator
 
