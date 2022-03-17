@@ -601,9 +601,6 @@ public:
     QuantumStateBase* copy_cpu() const {
         QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 0);
         if (this->_outer_qc > 0) {  // copy multicpu -> (single)cpu
-            std::cerr << "#debug: QuantumStateCpu::copy_cpu(): is just "
-                         "implemented!!, now testing"
-                      << __FILE__ << ":" << __LINE__ << std::endl;
             mpiutil->m_DC_allgather(
                 this->data_cpp(), new_state->data_cpp(), _dim);
             for (UINT i = 0; i < _classical_register.size(); ++i)
@@ -632,9 +629,9 @@ public:
                 new_state->set_classical_value(i, _classical_register[i]);
             return new_state;
         } else {  // copy (single)cpu -> multicpu
-            ITYPE offs = _dim * mpiutil->get_rank();
+            ITYPE offs = (_dim / mpiutil->get_size()) * mpiutil->get_rank();
             memcpy(new_state->data_cpp(), _state_vector + offs,
-                (size_t)(sizeof(CPPCTYPE) * _dim));
+                (size_t)(sizeof(CPPCTYPE) * _dim / mpiutil->get_size()));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
             return new_state;
