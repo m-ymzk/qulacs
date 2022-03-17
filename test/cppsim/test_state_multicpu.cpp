@@ -222,7 +222,6 @@ TEST(StateTest_multicpu, CopyState) {
     // cpu -> cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         state_single_ref.set_Haar_random_state();
-        state_single_ref.set_computational_basis(0);
 
         auto state = state_single_ref.copy();
 
@@ -238,7 +237,6 @@ TEST(StateTest_multicpu, CopyState) {
     // cpu -> multi-cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         state_single_ref.set_Haar_random_state();
-        state_single_ref.set_computational_basis(0);
 
         auto state = state_single_ref.copy_multicpu();
 
@@ -253,7 +251,6 @@ TEST(StateTest_multicpu, CopyState) {
     // multi-cpu -> cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         state_multi_ref.set_Haar_random_state();
-        state_multi_ref.set_computational_basis(0);
 
         auto state = state_multi_ref.copy_cpu();
 
@@ -266,7 +263,6 @@ TEST(StateTest_multicpu, CopyState) {
     // multi-cpu -> multi-cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         state_multi_ref.set_Haar_random_state();
-        state_multi_ref.set_computational_basis(0);
 
         auto state = state_multi_ref.copy();
 
