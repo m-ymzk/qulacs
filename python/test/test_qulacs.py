@@ -1,5 +1,6 @@
 
 # set library dir
+import math
 import qulacs
 import unittest
 import numpy as np
@@ -8,25 +9,41 @@ for ind in range(1, len(sys.argv)):
     sys.path.append(sys.argv[ind])
 sys.argv = sys.argv[:1]
 from mpi4py import MPI
-
+comm = MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
 
 class TestQuantumState(unittest.TestCase):
     def setUp(self):
         self.n = 4
         self.dim = 2**self.n
-        self.state = qulacs.QuantumState(self.n)
+        self.state = qulacs.QuantumState(self.n, True)
+        if self.state.get_device_name()=="multi-cpu":
+            self.inner_dim = self.dim // mpisize
+            self.outer_qc = int(math.log2(mpisize))
+            self.inner_qc = self.n - self.outer_qc
+        else:
+            self.inner_dim = self.dim
+            self.outer_qc = 0
+            self.inner_qc = self.n
 
     def tearDown(self):
         del self.state
 
     def test_state_dim(self):
         vector = self.state.get_vector()
-        self.assertEqual(len(vector), self.dim, msg="check vector size")
+        if self.state.get_device_name()=="multi-cpu":
+            self.assertEqual(len(vector), self.dim // mpisize, msg="check vector size")
+        else:
+            self.assertEqual(len(vector), self.dim, msg="check vector size")
 
     def test_zero_state(self):
         self.state.set_zero_state()
         vector = self.state.get_vector()
-        vector_ans = np.zeros(self.dim)
+        if self.state.get_device_name()=="multi-cpu":
+            vector_ans = np.zeros(self.inner_dim)
+        else:
+            vector_ans = np.zeros(self.dim)
         vector_ans[0] = 1.
         self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check set_zero_state")
 
@@ -34,8 +51,13 @@ class TestQuantumState(unittest.TestCase):
         pos = 0b0101
         self.state.set_computational_basis(pos)
         vector = self.state.get_vector()
-        vector_ans = np.zeros(self.dim)
-        vector_ans[pos] = 1.
+        if self.state.get_device_name()=="multi-cpu":
+            vector_ans = np.zeros(self.inner_dim)
+            if (pos >> self.inner_qc) == mpirank:
+                vector_ans[pos % self.inner_dim] = 1.
+        else:
+            vector_ans = np.zeros(self.dim)
+            vector_ans[pos] = 1.
         self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check set_computational_basis")
 
 
