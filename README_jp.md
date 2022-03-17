@@ -24,8 +24,10 @@
   - QuantumCircuitOptimizer (supports only block_size=1 or optimize_light)
   - QuantumState
       - Constructor
+      - copy
       - get_device_name
       - get_vector
+      - normalize
       - sampling
       - set_computational_basis
       - set_Haar_random_state
@@ -49,10 +51,7 @@
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
-      - to_matrix_gate
   - QuantumState
-      - normalize
-      - copy
       - load
   - ParametricQuantumCircuit
   - PauliOperator
