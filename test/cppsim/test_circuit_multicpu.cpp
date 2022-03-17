@@ -149,7 +149,6 @@ TEST(CircuitTest_multicpu, CircuitBasic) {
     for (ITYPE i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state_eigen[i+offs] - state.data_cpp()[i]), 0, eps) << ", i=" << i << " rank=" << m->get_rank();
 }
 
-/*
 TEST(CircuitTest_multicpu, CircuitOptimize) {
     const UINT n = 4;
     const UINT dim = 1ULL << n;
@@ -158,12 +157,12 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 	MPIutil m = get_mpiutil();
 	QuantumState dummy_state(n, 1);
 	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
-	UINT offs = 0;
-	if (dummy_state.outer_qc > 0) offs = inner_dim * m->get_rank();
+	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
+#if 0 // block_size > 1
     {
         // merge successive gates
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         //test_state.set_Haar_random_state(2022);
         //for (ITYPE i = 0; i < inner_dim; ++i) state.data_cpp()[i] = test_state.data_cpp()[i + offs];
@@ -194,7 +193,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // tensor product, merged
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -211,16 +210,16 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
     }
-
+#endif
 
     {
         // do not take tensor product
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -237,7 +236,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -245,7 +244,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, control does not commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -263,7 +262,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -271,7 +270,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, control does not commute with Z
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -289,7 +288,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -297,7 +296,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, control commute with Z
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -315,7 +314,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -323,7 +322,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -341,7 +340,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -349,7 +348,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -367,7 +366,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -375,7 +374,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -394,7 +393,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
         //std::cout << state << std::endl << test_state << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -402,7 +401,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -420,16 +419,16 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
     }
 
-
+#if 0 // block_size > 1
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -447,7 +446,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -455,7 +454,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -474,7 +473,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
@@ -482,7 +481,7 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
 
     {
         // CNOT, target commute with X
-        QuantumState state(n, 1), test_state(n);
+        QuantumState state(n, 0), test_state(n, 1);
         state.set_Haar_random_state(2022);
         test_state.load(&state);
         QuantumCircuit circuit(n);
@@ -501,11 +500,12 @@ TEST(CircuitTest_multicpu, CircuitOptimize) {
         circuit.update_quantum_state(&test_state);
         copy_circuit->update_quantum_state(&state);
         //std::cout << circuit << std::endl << copy_circuit << std::endl;
-        for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+        for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
         ASSERT_EQ(copy_circuit->calculate_depth(), expected_depth);
         ASSERT_EQ(copy_circuit->gate_list.size(), expected_gate_count);
         delete copy_circuit;
     }
+#endif
 }
 
 TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
@@ -516,10 +516,15 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
 	random.set_seed(2022);
     double eps = 1e-14;
     UINT max_repeat=3;
-    UINT max_block_size = n;
+    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+
+	MPIutil m = get_mpiutil();
+	QuantumState dummy_state(n, 1);
+	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
     for(UINT repeat=0;repeat<max_repeat;++repeat){
-        QuantumState state(n, 1), org_state(n), test_state(n);
+        QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
         state.set_Haar_random_state(2022);
         org_state.load(&state);
         QuantumCircuit circuit(n);
@@ -546,10 +551,11 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize) {
         for (UINT block_size = 1; block_size <= max_block_size; ++block_size) {
             QuantumCircuit* copy_circuit = circuit.copy();
             qco.optimize(copy_circuit, block_size);
-            state.load(&org_state);
+            state.load(&org_state); // TODO cpu to multicpu function
             copy_circuit->update_quantum_state(&state);
             //std::cout << copy_circuit << std::endl;
-            for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+            for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
             delete copy_circuit;
         }
     }
@@ -564,10 +570,15 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize2) {
 	random.set_seed(2022);
 	double eps = 1e-14;
 	UINT max_repeat = 3;
-	UINT max_block_size = n;
+    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+
+	MPIutil m = get_mpiutil();
+	QuantumState dummy_state(n, 1);
+	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
 	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n, 1), org_state(n), test_state(n);
+		QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
 		state.set_Haar_random_state(2022);
 		org_state.load(&state);
 		QuantumCircuit circuit(n);
@@ -606,13 +617,15 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize2) {
 			state.load(&org_state);
 			copy_circuit->update_quantum_state(&state);
 			//std::cout << copy_circuit << std::endl;
-			for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+			for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
 			delete copy_circuit;
 		}
 	}
 
 }
 
+/* This test uses multi_qubit_dense_matrix_gate.
 TEST(CircuitTest_multicpu, RandomCircuitOptimize3) {
 	const UINT n = 5;
 	const UINT dim = 1ULL << n;
@@ -621,13 +634,18 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize3) {
 	random.set_seed(2022);
 	double eps = 1e-14;
 	UINT max_repeat = 3;
-	UINT max_block_size = n;
+    UINT max_block_size = 1; // The maximum block size is one when using multi-cpu.
+
+	MPIutil m = get_mpiutil();
+	QuantumState dummy_state(n, 1);
+	const ITYPE inner_dim = dim >> dummy_state.outer_qc;
+	const ITYPE offs = (dummy_state.outer_qc != 0) * inner_dim * m->get_rank();
 
 	std::vector<UINT> qubit_list;
 	for (int i = 0; i < n; ++i) qubit_list.push_back(i);
 
 	for (UINT repeat = 0; repeat < max_repeat; ++repeat) {
-		QuantumState state(n, 1), org_state(n), test_state(n);
+		QuantumState state(n, 1), org_state(n, 1), test_state(n, 1);
 		state.set_Haar_random_state(2022);
 		org_state.load(&state);
 		QuantumCircuit circuit(n);
@@ -650,13 +668,12 @@ TEST(CircuitTest_multicpu, RandomCircuitOptimize3) {
 			state.load(&org_state);
 			copy_circuit->update_quantum_state(&state);
 			//std::cout << copy_circuit << std::endl;
-			for (UINT i = 0; i < dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
+            //for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i + offs] - test_state.data_cpp()[i]), 0, eps);
+			for (UINT i = 0; i < inner_dim; ++i) ASSERT_NEAR(abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
 			delete copy_circuit;
 		}
 	}
 }
-
-
 
 TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
     CPPCTYPE J(0.0, 1.0);
@@ -733,7 +750,7 @@ TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
 
 
     state.set_Haar_random_state(seed);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state.data_cpp()[i];
+    for (ITYPE i = 0; i < inner_dim; ++i) test_state[i] = state.data_cpp()[i];
 
     test_state = test_circuit * test_state;
     circuit.update_quantum_state(&state);
