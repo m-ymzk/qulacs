@@ -1,4 +1,4 @@
-# mpi-qulacs General info
+# mpiQulacs General info
 
 ## Base
 - qulacs v0.3.0
@@ -7,7 +7,7 @@
 
 ## Functionality
 - Quantum state generation & gate simulation with multi-process and multi-nodes
-- MPI-Qulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
+- mpiQulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
   - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
   - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=1$ constant）
 - Please also see Limitation
@@ -20,7 +20,7 @@
 - Unsupported gates/functions may cause severe error.
 - "device=gpu" not supported
 
-- The following items are supported. MPI-Qulacs does not support any other items.
+- The following items are supported. mpiQulacs does not support any other items.
   - QuantumCircuit
   - QuantumCircuitOptimizer (supports only block_size=1 or optimize_light)
   - QuantumState
@@ -50,8 +50,7 @@
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
-      - DiagonalMatrix(with control)
-  - Observable
+      - to_matrix_gate
   - QuantumState
       - normalize
       - copy
@@ -71,6 +70,7 @@
       - CPTP
       - Instrument
       - Adaptive
+  - Observable
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
@@ -122,7 +122,7 @@
         | -------- | -------- |
         | "cpu"   | state vector generated in a cpu |
         | "multi-cpu" | state vector generated in multi cpu |
-        | ("gpu") | Not supported in mpi-qulacs |
+        | ("gpu") | Not supported in mpiQulacs |
 
     - state.to_string()
       Output state info
@@ -158,7 +158,7 @@
 ## build/install
 ### use python3-venv (qenv)
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ python3 -m venv qenv
 $ . ./qenv/bin/activate
 $ pip install -U pip wheel (*1)
@@ -182,7 +182,7 @@ $ pytest
         - configure-option: --with-openib
 ```shell
 <lib. build>
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ . ./setenv
 $ ./script/build_mpicc.sh
 
@@ -203,16 +203,16 @@ $ mpirun -n 4 mpiqtest -1 20 0
 
 ### fcc/FCC
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ ./script/build_fcc.sh
 
 <c++ program sample>
-$ cd [mpi-qulacs]/ict
+$ cd [mpiQulacs]/ict
 $ usefcc=1 make
 $ mpirun -n 4 mpiqtest -1 20 0
 
 <python script sample>
-$ cd [mpi-qulacs]/ict/python
+$ cd [mpiQulacs]/ict/python
 $ mpirun -n 4 python test.py -n 20
 ```
 
