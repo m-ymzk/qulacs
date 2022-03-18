@@ -3,6 +3,9 @@
 #include "gate.hpp"
 #include "state.hpp"
 #include "utility.hpp"
+#ifdef _USE_MPI
+#include "csim/MPIutil.h"
+#endif
 
 /**
  * \~japanese-en 確率的なユニタリ操作
@@ -224,7 +227,12 @@ public:
     virtual void update_quantum_state(QuantumStateBase* state) override {
         if (state->is_state_vector()) {
             double r = random.uniform();
-
+#ifdef _USE_MPI
+        if (state->outer_qc > 0) {
+            const MPIutil mpiutil = get_mpiutil();
+            mpiutil->s_D_allreduce(&r);
+        }
+#endif
             double sum = 0.;
             double org_norm = state->get_squared_norm();
 
@@ -446,7 +454,14 @@ public:
      * @param state 更新する量子状態
      */
     virtual void update_quantum_state(QuantumStateBase* state) override {
+        random.set_seed(2022);
         double r = random.uniform();
+#ifdef _USE_MPI
+        const MPIutil mpiutil = get_mpiutil();
+        if (state->outer_qc > 0) {
+            mpiutil->s_D_bcast(&r);
+        }
+#endif
 
         double sum = 0.;
         double org_norm = state->get_squared_norm();
