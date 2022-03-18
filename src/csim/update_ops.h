@@ -922,7 +922,15 @@ void single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
 void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim);
-
+#ifdef _USE_MPI
+DllExport void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
+    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
+    const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+    UINT control_qubit_index, UINT control_value, CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag, UINT index_offset);
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
+    CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag);
+#endif
 /**
  * \~english
  * Apply a multi-qubit controlled single-qubit gate.
@@ -1232,7 +1240,7 @@ void multi_qubit_dense_matrix_gate_parallel(const UINT *target_qubit_index_list,
 #ifdef _USE_MPI
 DllExport void multi_qubit_dense_matrix_gate_mpi(
     const UINT *target_qubit_index_list, UINT target_qubit_index_count,
-    const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT outer_qc);
+    const CTYPE *matrix, CTYPE *state, ITYPE dim, UINT inner_qc);
 #endif
 
 /**

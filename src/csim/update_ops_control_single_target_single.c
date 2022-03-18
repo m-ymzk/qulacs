@@ -11,6 +11,10 @@
 #include <omp.h>
 #endif
 
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -19,32 +23,9 @@
 #endif
 #endif
 
-// void single_qubit_control_single_qubit_dense_matrix_gate_single(UINT
-// control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-// matrix[4], CTYPE *state, ITYPE dim); void
-// single_qubit_control_single_qubit_dense_matrix_gate_old_single(UINT
-// control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-// matrix[4], CTYPE *state, ITYPE dim); void
-// single_qubit_control_single_qubit_dense_matrix_gate_old_parallel(UINT
-// control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-// matrix[4], CTYPE *state, ITYPE dim);
-
 void single_qubit_control_single_qubit_dense_matrix_gate(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE* state, ITYPE dim) {
-    // single_qubit_control_single_qubit_dense_matrix_gate_old_single(control_qubit_index,
-    // control_value, target_qubit_index,matrix,state, dim);
-    // single_qubit_control_single_qubit_dense_matrix_gate_old_parallel(control_qubit_index,
-    // control_value, target_qubit_index, matrix, state, dim);
-    // single_qubit_control_single_qubit_dense_matrix_gate_single(control_qubit_index,
-    // control_value, target_qubit_index, matrix, state, dim);
-    // single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(control_qubit_index,
-    // control_value, target_qubit_index, matrix, state, dim);
-    // single_qubit_control_single_qubit_dense_matrix_gate_single_simd(control_qubit_index,
-    // control_value, target_qubit_index, matrix, state, dim);
-    // single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(control_qubit_index,
-    // control_value, target_qubit_index, matrix, state, dim);
-
 #ifdef _USE_SIMD
 #ifdef _OPENMP
     UINT threshold = 13;
@@ -476,117 +457,256 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
 #endif
 #endif
 
-/*
-void single_qubit_control_single_qubit_dense_matrix_gate_old_single(UINT
-control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-matrix[4], CTYPE *state, ITYPE dim) {
-        // loop varaibles
-        const ITYPE loop_dim = dim >> 2;
-        ITYPE state_index;
-        // mask
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        const ITYPE control_mask = (1ULL << control_qubit_index) *
-control_value;
-        // insert index
-        const UINT min_qubit_index = get_min_ui(control_qubit_index,
-target_qubit_index); const UINT max_qubit_index =
-get_max_ui(control_qubit_index, target_qubit_index); const ITYPE min_qubit_mask
-= 1ULL << min_qubit_index; const ITYPE max_qubit_mask = 1ULL << max_qubit_index;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // create base index
-                ITYPE basis_c_t0 = state_index;
-                basis_c_t0 = insert_zero_to_basis_index(basis_c_t0,
-min_qubit_mask, min_qubit_index); basis_c_t0 =
-insert_zero_to_basis_index(basis_c_t0, max_qubit_mask, max_qubit_index);
+#ifdef _USE_MPI
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
+    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
+    const CTYPE matrix[4], CTYPE* state, ITYPE dim, UINT inner_qc) {
+    const MPIutil m = get_mpiutil();
+    const UINT rank = m->get_rank();
+    const UINT control_rank_bit = 1 << (control_qubit_index - inner_qc);
+    ITYPE dim_work = dim;
+    ITYPE num_work = 0;
+    CTYPE* t = m->get_workarea(&dim_work, &num_work);
+    assert(num_work > 0);
+    const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
+    const int pair_rank = rank ^ pair_rank_bit;
+    CTYPE* si = state;
 
-                // flip control
-                basis_c_t0 ^= control_mask;
+    if (control_qubit_index < inner_qc) {     // control_qubit_index is in inner
+        if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
 
-                // gather index
-                ITYPE basis_c_t1 = basis_c_t0 ^ target_mask;
+            single_qubit_control_single_qubit_dense_matrix_gate(
+                control_qubit_index, control_value, target_qubit_index, matrix,
+                state, dim);
 
-                // fetch values
-                CTYPE cval_c_t0 = state[basis_c_t0];
-                CTYPE cval_c_t1 = state[basis_c_t1];
-
-                // set values
-                state[basis_c_t0] = matrix[0] * cval_c_t0 + matrix[1] *
-cval_c_t1; state[basis_c_t1] = matrix[2] * cval_c_t0 + matrix[3] * cval_c_t1;
-        }
-}
+        } else {  // target_qubit_index is outer
 
 #ifdef _OPENMP
-void single_qubit_control_single_qubit_dense_matrix_gate_old_parallel(UINT
-control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-matrix[4], CTYPE *state, ITYPE dim) {
-        // loop varaibles
-        const ITYPE loop_dim = dim >> 2;
-        ITYPE state_index;
-        // mask
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        const ITYPE control_mask = (1ULL << control_qubit_index) *
-control_value;
-        // insert index
-        const UINT min_qubit_index = get_min_ui(control_qubit_index,
-target_qubit_index); const UINT max_qubit_index =
-get_max_ui(control_qubit_index, target_qubit_index); const ITYPE min_qubit_mask
-= 1ULL << min_qubit_index; const ITYPE max_qubit_mask = 1ULL << max_qubit_index;
-
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // create base index
-                ITYPE basis_c_t0 = state_index;
-                basis_c_t0 = insert_zero_to_basis_index(basis_c_t0,
-min_qubit_mask, min_qubit_index); basis_c_t0 =
-insert_zero_to_basis_index(basis_c_t0, max_qubit_mask, max_qubit_index);
-
-                // flip control
-                basis_c_t0 ^= control_mask;
-
-                // gather index
-                ITYPE basis_c_t1 = basis_c_t0 ^ target_mask;
-
-                // fetch values
-                CTYPE cval_c_t0 = state[basis_c_t0];
-                CTYPE cval_c_t1 = state[basis_c_t1];
-
-                // set values
-                state[basis_c_t0] = matrix[0] * cval_c_t0 + matrix[1] *
-cval_c_t1; state[basis_c_t1] = matrix[2] * cval_c_t0 + matrix[3] * cval_c_t1;
-        }
-}
+            UINT threshold = 13;
+            UINT default_thread_count = omp_get_max_threads();
+            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
 #endif
 
-void single_qubit_control_single_qubit_dense_matrix_gate_single(UINT
-control_qubit_index, UINT control_value, UINT target_qubit_index, const CTYPE
-matrix[4], CTYPE *state, ITYPE dim) { const ITYPE loop_dim = dim / 4;
+            for (ITYPE iter = 0; iter < num_work; ++iter) {
+                m->m_DC_sendrecv(si, t, dim_work, pair_rank);
 
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-        const ITYPE control_mask = 1ULL << control_qubit_index;
+                UINT index_offset = iter * dim_work;
+                single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+                    control_qubit_index, control_value, t, matrix, si, dim_work,
+                    rank & pair_rank_bit, index_offset);
 
-        const UINT min_qubit_index = get_min_ui(control_qubit_index,
-target_qubit_index); const UINT max_qubit_index =
-get_max_ui(control_qubit_index, target_qubit_index); const ITYPE min_qubit_mask
-= 1ULL << min_qubit_index; const ITYPE max_qubit_mask = 1ULL << (max_qubit_index
-- 1); const ITYPE low_mask = min_qubit_mask - 1; const ITYPE mid_mask =
-(max_qubit_mask - 1) ^ low_mask; const ITYPE high_mask = ~(max_qubit_mask - 1);
+                si += dim_work;
+            }
 
-        ITYPE state_index;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_index_0 = (state_index&low_mask)
-                        + ((state_index&mid_mask) << 1)
-                        + ((state_index&high_mask) << 2)
-                        + control_mask * control_value;
-                ITYPE basis_index_1 = basis_index_0 + target_mask;
-
-                // fetch values
-                CTYPE cval0 = state[basis_index_0];
-                CTYPE cval1 = state[basis_index_1];
-
-                // set values
-                state[basis_index_0] = matrix[0] * cval0 + matrix[1] * cval1;
-                state[basis_index_1] = matrix[2] * cval0 + matrix[3] * cval1;
+#ifdef _OPENMP
+            omp_set_num_threads(default_thread_count);
+#endif
         }
+    } else {                                  // control_qubit_index is outer
+        if (target_qubit_index < inner_qc) {  // target_qubit_index is in inner
+            if (((rank & control_rank_bit) && (control_value == 1)) ||
+                (!(rank & control_rank_bit) && (control_value == 0)))
+                single_qubit_dense_matrix_gate(
+                    target_qubit_index, matrix, state, dim);
+        } else {  // target_qubit_index is outer
+
+#ifdef _OPENMP
+            UINT threshold = 13;
+            UINT default_thread_count = omp_get_max_threads();
+            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
+
+            ITYPE dummy_flag =
+                !(((rank & control_rank_bit) && (control_value == 1)) ||
+                    (!(rank & control_rank_bit) && (control_value == 0)));
+            for (ITYPE iter = 0; iter < num_work; ++iter) {
+                if (dummy_flag) {  // only count up tag
+                    m->get_tag();
+                } else {
+                    m->m_DC_sendrecv(si, t, dim_work, pair_rank);
+
+                    single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
+                        t, matrix, si, dim_work, rank & pair_rank_bit);
+
+                    si += dim_work;
+                }
+            }
+
+#ifdef _OPENMP
+            omp_set_num_threads(default_thread_count);
+#endif
+        }
+    }
 }
 
-*/
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
+    UINT control_qubit_index, UINT control_value, CTYPE* t,
+    const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag,
+    UINT index_offset) {
+    UINT control_qubit_mask = 1ULL << control_qubit_index;
+
+#pragma omp parallel for
+    for (ITYPE state_index = 0; state_index < dim; ++state_index) {
+        UINT skip_flag = (state_index + index_offset) & control_qubit_mask;
+        skip_flag = skip_flag >> control_qubit_index;
+        if (skip_flag != control_value) continue;
+
+        if (flag) {  // val=1
+            // fetch values
+            CTYPE cval_0 = t[state_index];
+            CTYPE cval_1 = state[state_index];
+
+            // set values
+            state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
+        } else {  // val=0
+            // fetch values
+            CTYPE cval_0 = state[state_index];
+            CTYPE cval_1 = t[state_index];
+
+            // set values
+            state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
+        }
+    }
+}
+
+static inline void MatrixVectorProduct2x2Half(SV_PRED pg, SV_FTYPE mat0r,
+    SV_FTYPE mat0i, SV_FTYPE mat1r, SV_FTYPE mat1i, SV_FTYPE input02r,
+    SV_FTYPE input02i, SV_FTYPE input13r, SV_FTYPE input13i,
+    SV_FTYPE* result01r, SV_FTYPE* result01i);
+
+static inline void MatrixVectorProduct2x2Half(SV_PRED pg, SV_FTYPE mat0r,
+    SV_FTYPE mat0i, SV_FTYPE mat1r, SV_FTYPE mat1i, SV_FTYPE input02r,
+    SV_FTYPE input02i, SV_FTYPE input13r, SV_FTYPE input13i,
+    SV_FTYPE* result01r, SV_FTYPE* result01i) {
+    // perform matrix-vector product
+    *result01r = svmul_x(pg, input02r, mat0r);
+    *result01i = svmul_x(pg, input02i, mat0r);
+
+    *result01r = svmsb_x(pg, input02i, mat0i, *result01r);
+    *result01i = svmad_x(pg, input02r, mat0i, *result01i);
+
+    *result01r = svmad_x(pg, input13r, mat1r, *result01r);
+    *result01i = svmad_x(pg, input13r, mat1i, *result01i);
+
+    *result01r = svmsb_x(pg, input13i, mat1i, *result01r);
+    *result01i = svmad_x(pg, input13i, mat1r, *result01i);
+}
+
+void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
+    CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag) {
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
+    if (dim >= vec_len) {
+        SV_PRED pg = Svptrue();  // this predicate register is all 1.
+
+        if (flag) {
+            // SVE registers for matrix[4]
+            SV_FTYPE mat2r, mat2i, mat3r, mat3i;
+
+            // load matrix elements
+            mat2r = SvdupF(creal(matrix[2]));
+            mat2i = SvdupF(cimag(matrix[2]));
+            mat3r = SvdupF(creal(matrix[3]));
+            mat3i = SvdupF(cimag(matrix[3]));
+
+#pragma omp parallel for shared(pg, mat2r, mat2i, mat3r, mat3i)
+            for (ITYPE state_index = 0; state_index < dim;
+                 state_index += vec_len) {
+                // fetch values
+                SV_FTYPE input0 = svld1(pg, (ETYPE*)&t[state_index]);
+                SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[state_index]);
+                SV_FTYPE input2 =
+                    svld1(pg, (ETYPE*)&t[state_index + (vec_len >> 1)]);
+                SV_FTYPE input3 =
+                    svld1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)]);
+
+                // select odd or even elements from two vectors
+                SV_FTYPE cval02r = svuzp1(input0, input2);
+                SV_FTYPE cval02i = svuzp2(input0, input2);
+                SV_FTYPE cval13r = svuzp1(input1, input3);
+                SV_FTYPE cval13i = svuzp2(input1, input3);
+
+                // perform matrix-vector product
+                SV_FTYPE result01r, result01i;
+
+                MatrixVectorProduct2x2Half(pg, mat2r, mat2i, mat3r, mat3i,
+                    cval02r, cval02i, cval13r, cval13i, &result01r, &result01i);
+
+                // interleave elements from low halves of two vectors
+                SV_FTYPE output0 = svzip1(result01r, result01i);
+                SV_FTYPE output1 = svzip2(result01r, result01i);
+
+                // set values
+                svst1(pg, (ETYPE*)&state[state_index], output0);
+                svst1(
+                    pg, (ETYPE*)&state[state_index + (vec_len >> 1)], output1);
+            }
+        } else {  // val=0
+            // SVE registers for matrix[4]
+            SV_FTYPE mat0r, mat0i, mat1r, mat1i;
+
+            // load matrix elements
+            mat0r = SvdupF(creal(matrix[0]));
+            mat0i = SvdupF(cimag(matrix[0]));
+            mat1r = SvdupF(creal(matrix[1]));
+            mat1i = SvdupF(cimag(matrix[1]));
+
+#pragma omp parallel for shared(pg, mat0r, mat0i, mat1r, mat1i)
+            for (ITYPE state_index = 0; state_index < dim;
+                 state_index += vec_len) {
+                // fetch values
+                SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[state_index]);
+                SV_FTYPE input1 = svld1(pg, (ETYPE*)&t[state_index]);
+                SV_FTYPE input2 =
+                    svld1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)]);
+                SV_FTYPE input3 =
+                    svld1(pg, (ETYPE*)&t[state_index + (vec_len >> 1)]);
+
+                // select odd or even elements from two vectors
+                SV_FTYPE cval02r = svuzp1(input0, input2);
+                SV_FTYPE cval02i = svuzp2(input0, input2);
+                SV_FTYPE cval13r = svuzp1(input1, input3);
+                SV_FTYPE cval13i = svuzp2(input1, input3);
+
+                // perform matrix-vector product
+                SV_FTYPE result01r, result01i;
+
+                MatrixVectorProduct2x2Half(pg, mat0r, mat0i, mat1r, mat1i,
+                    cval02r, cval02i, cval13r, cval13i, &result01r, &result01i);
+
+                // interleave elements from low halves of two vectors
+                SV_FTYPE output0 = svzip1(result01r, result01i);
+                SV_FTYPE output1 = svzip2(result01r, result01i);
+
+                // set values
+                svst1(pg, (ETYPE*)&state[state_index], output0);
+                svst1(
+                    pg, (ETYPE*)&state[state_index + (vec_len >> 1)], output1);
+            }
+        }
+    } else
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    {
+#pragma omp parallel for
+        for (ITYPE state_index = 0; state_index < dim; ++state_index) {
+            if (flag) {  // val=1
+                // fetch values
+                CTYPE cval_0 = t[state_index];
+                CTYPE cval_1 = state[state_index];
+
+                // set values
+                state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
+            } else {  // val=0
+                // fetch values
+                CTYPE cval_0 = state[state_index];
+                CTYPE cval_1 = t[state_index];
+
+                // set values
+                state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
+            }
+        }
+    }
+}
+
+#endif
