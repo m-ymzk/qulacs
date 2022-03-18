@@ -47,11 +47,11 @@
       - DenseMatrix(single target)
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
+      - Measurement
       - to_matrix_gate
 
 - To be supported after March (T.B.D.)
   - gate
-      - Measurement
       - Pauli
       - PauliRotation
   - QuantumState
