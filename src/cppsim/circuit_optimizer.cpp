@@ -278,6 +278,7 @@ bool QuantumCircuitOptimizer::need_comm(UINT gate_index, std::vector<UINT> &qubi
 
 std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT start_gate_idx, const std::vector<UINT> cur_qubit_order)
 {
+#ifndef NDEBUG
     MPIutil m = get_mpiutil();
     int rank = m->get_rank();
 
@@ -288,6 +289,7 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
         }
         std::cout << std::endl;
     }
+#endif
 
     // 使用予定のqubitの集合 (logical index)
     std::unordered_set<UINT> used_idx;
@@ -312,6 +314,7 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
         }
     }
 
+#ifndef NDEBUG
     if(rank==0){
         std::cout<<"next inner qubits: ";
         for(UINT i = 0; i < circuit->qubit_count; i++){
@@ -321,6 +324,7 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
         }
         std::cout << std::endl;
     }
+#endif
 
     return used_idx;
 }
@@ -329,9 +333,12 @@ void QuantumCircuitOptimizer::add_swap_gate(UINT idx0, UINT idx1, UINT width, st
     add_swap_gate(idx0, idx1, width, qubit_order, circuit->gate_list.size());
 }
 void QuantumCircuitOptimizer::add_swap_gate(UINT idx0, UINT idx1, UINT width, std::vector<UINT>& qubit_order, UINT gate_pos) {
+#ifndef NDEBUG
     MPIutil m = get_mpiutil();
     int rank = m->get_rank();
     if (rank == 0) std::cout << "add_swap_gate(" << idx0 << "," << idx1 << "," << width << ")" << std::endl;
+#endif
+
     if (width == 1) {
         circuit->add_gate(gate::SWAP(idx0, idx1), gate_pos);
     } else {
@@ -376,15 +383,20 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
 
     UINT fswap_width = import_qubits.size();
     if (fswap_width > exportable_qubits.size()) {
-        if(rank == 0) std::cout << "error. import_qubits.size() > export_qubits.size()" << std::endl;
+        std::cerr << "Error: QuantumCircuitOptimizer::insert_swaps() "
+                     "import_qubits.size() > export_qubits.size()"
+                  << std::endl;
         return 0;
     }
     if (inner_qc < fswap_width) {
-        if(rank == 0) std::cout << "error. inner_qubits < fswap_width" << std::endl;
+        std::cerr << "Error. QuantumCircuitOptimizer::insert_swaps() "
+                     "inner_qubits < fswap_width"
+                  << std::endl;
         return 0;
     }
 
 
+#ifndef NDEBUG
     if(rank==0){
         std::cout<<"import qubits: ";
         for(UINT i = 0; i < circuit->qubit_count; i++){
@@ -393,8 +405,6 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
             }
         }
         std::cout << std::endl;
-    }
-    if(rank==0){
         std::cout<<"exportable qubits: ";
         for(UINT i = 0; i < circuit->qubit_count; i++){
             if (exportable_qubits.find(i) != exportable_qubits.end()) {
@@ -403,6 +413,7 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         }
         std::cout << std::endl;
     }
+#endif
 
 
     /// importするouter qubitのリストを作成
@@ -432,7 +443,9 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         }
     }
 
+#ifndef NDEBUG
     if (rank == 0) std::cout << "available_ext_inner_qc = " << available_ext_inner_qc << std::endl;
+#endif
     UINT use_ext_inner_qc = exportable_qubits.size() - fswap_width - available_ext_inner_qc;
     fswap_width = fswap_width + use_ext_inner_qc;
     UINT fswap_inner = inner_qc - fswap_width;
@@ -451,7 +464,9 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
                 }
             }
             if (swap_target_found == false) {
-                if(rank == 0) std::cout << "error. not enougth exportable qubits" << std::endl;
+                std::cerr << "Error: QuantumCircuitOptimizer::insert_swaps() "
+                             "no enougth exportable qubits"
+                          << std::endl;
             }
         }
     }
@@ -466,6 +481,7 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         part_fswap_inner += part_fswap_width;
     }
 
+#ifndef NDEBUG
     if(rank==0){
         std::cout<<"next order: ";
         for(auto idx : next_qubit_order){
@@ -473,19 +489,24 @@ UINT QuantumCircuitOptimizer::insert_swaps(const UINT gate_idx, const std::vecto
         }
         std::cout << std::endl;
     }
+#endif
 
     return num_inserted_gates;
 }
 
 void QuantumCircuitOptimizer::add_swaps_to_reorder_at(std::vector<UINT> &qubit_order, const UINT i, const UINT v) {
+#ifndef NDEBUG
     MPIutil m = get_mpiutil();
     int rank = m->get_rank();
     if (rank == 0) std::cout << "add_swaps_to_reorder_at(" << i<< "," << v <<")" << std::endl;
+#endif
 
     if (qubit_order[i] != v) {
         auto it = std::find(qubit_order.begin(), qubit_order.end(), v);
         if (it == qubit_order.end()) {
-            std::cout << "invalid qubit_order" << std::endl;
+            std::cerr << "Error: QuantumCircuitOptimizer::add_swaps_to_reorder_at "
+                         "invalid qubit_order"
+                      << std::endl;
         }
         auto j = std::distance(qubit_order.begin(), it);
 
@@ -612,9 +633,11 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
         return;
     }
 
+#ifndef NDEBUG
     if (mpirank == 0) {
         std::cout << "insert_fswap" << std::endl;
     }
+#endif
 
     UINT num_gates = circuit->gate_list.size();
 
@@ -626,7 +649,9 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     std::vector<UINT> cur_qubit_table = to_table(cur_qubit_order);
 
     for (UINT gate_idx = 0; gate_idx < num_gates; gate_idx++) {
+#ifndef NDEBUG
         if (mpirank == 0) std::cout << "processing gate #" << gate_idx << std::endl;
+#endif
         if (need_comm(gate_idx, cur_qubit_table)) {
             std::unordered_set<UINT> next_inner_qubits = find_next_inner_qubits(gate_idx, cur_qubit_order);
             std::vector<UINT> next_qubit_order;
@@ -637,7 +662,9 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
             num_gates += num_inserted_gates;
 
         }
+#ifndef NDEBUG
         if (mpirank == 0) std::cout << "rewrite_qubits_index #" << gate_idx << std::endl;
+#endif
         circuit->gate_list[gate_idx]->rewrite_qubits_index(cur_qubit_table);
     }
 

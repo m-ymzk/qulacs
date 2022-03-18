@@ -104,7 +104,6 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_6qubits) {
     MPIutil m = get_mpiutil();
     const UINT outer_qc = std::log2(m->get_size());
     const UINT inner_qc = n - outer_qc;
-    std::cout << "inner_qc="<<inner_qc<<",outer_qc="<<outer_qc<<std::endl;
 
     if (outer_qc < 2) {
         return;
