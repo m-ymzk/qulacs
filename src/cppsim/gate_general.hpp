@@ -454,7 +454,6 @@ public:
      * @param state 更新する量子状態
      */
     virtual void update_quantum_state(QuantumStateBase* state) override {
-        random.set_seed(2022);
         double r = random.uniform();
 #ifdef _USE_MPI
         const MPIutil mpiutil = get_mpiutil();
