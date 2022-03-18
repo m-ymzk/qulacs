@@ -34,7 +34,11 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
 
         QuantumCircuit* circuit = circuit_ref->copy();
         QuantumCircuitOptimizer qco;
-        qco.optimize(circuit, opt_lv, swap_lv);
+        if (opt_lv >= 0) {
+            qco.optimize(circuit, opt_lv, swap_lv);
+        } else {
+            qco.optimize_light(circuit, swap_lv);
+        }
 
         circuit->update_quantum_state(&state);
         circuit_ref->update_quantum_state(&state_ref);
@@ -190,3 +194,36 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_6qubits) {
     }
 
 }
+
+//TEST(CircuitTest_multicpu, FSWAPOptimizerLight_6qubits) {
+//    UINT n = 6;
+//
+//    MPIutil m = get_mpiutil();
+//    const UINT outer_qc = std::log2(m->get_size());
+//    const UINT inner_qc = n - outer_qc;
+//
+//    if (outer_qc < 2) {
+//        return;
+//    }
+//
+//    Random random;
+//    {
+//        random.set_seed(2022);
+//        QuantumCircuit circuit(n);
+//        circuit.add_RZ_gate(0, random.uniform()*3.14159);
+//        circuit.add_RZ_gate(n-1, random.uniform()*3.14159);
+//        _ApplyOptimizer(&circuit, -1, 1, 2);
+//    }
+//
+//    if(inner_qc >= outer_qc * 2){
+//        random.set_seed(2022);
+//        QuantumCircuit circuit(n);
+//        for (UINT rep = 0; rep < 2; rep++) {
+//            for (UINT i = 0; i < n; i++) {
+//                circuit.add_H_gate(i);
+//            }
+//        }
+//        // TODO gate順序変更に対応したら2回に変更
+//        _ApplyOptimizer(&circuit, -1, 1, 4);
+//    }
+//}

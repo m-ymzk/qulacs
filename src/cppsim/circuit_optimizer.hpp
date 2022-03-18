@@ -65,7 +65,7 @@ public:
      *
      * @param[in] circuit 量子回路のインスタンス
      */
-    void optimize_light(QuantumCircuit* circuit);
+    void optimize_light(QuantumCircuit* circuit, UINT swap_level = 0);
 
     /**
      * \~japanese-en 量子回路を纏めて一つの巨大な量子ゲートにする

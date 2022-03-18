@@ -90,10 +90,10 @@ void QuantumCircuitOptimizer::optimize(
     QuantumCircuit* circuit_, UINT max_block_size, UINT swap_level) {
     circuit = circuit_;
 
-    if (max_block_size > 0 && swap_level > 1) {
+    if (max_block_size > 0 && swap_level >= 1) {
         std::cerr
             << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
-               ": using both gate merge and swap optimization is not tested well"
+               ": using both gate merge and swap optimization is not tested"
             << std::endl;
     }
 
@@ -179,7 +179,18 @@ target_qubits);
 }
 */
 
-void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit) {
+void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit, UINT swap_level) {
+    this->circuit = circuit;
+
+    if (swap_level >= 1) {
+        std::cerr
+            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
+               ": using both gate merge and swap optimization is not tested"
+            << std::endl;
+    }
+
+    insert_fswap(swap_level);
+
     UINT qubit_count = circuit->qubit_count;
     std::vector<std::pair<int, std::vector<UINT>>> current_step(
         qubit_count, std::make_pair(-1, std::vector<UINT>()));
