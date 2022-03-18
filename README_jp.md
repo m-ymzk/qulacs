@@ -43,11 +43,11 @@
       - U1 / U2 / U3
       - DenseMatrix(single target)
       - DiagonalMatrix(single target)
+      - Measurement
       - to_matrix_gate
 
 - 3月末版対応予定の関数・機能
   - gate
-      - Measurement
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
