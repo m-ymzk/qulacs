@@ -1,8 +1,10 @@
-#include <csim/update_ops.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+
+#include <csim/update_ops.h>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_matrix.hpp>
@@ -10,7 +12,6 @@
 #include <cppsim/pauli_operator.hpp>
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
-#include <functional>
 
 #include "../util/util.h"
 
