@@ -184,7 +184,7 @@ void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit, UINT swap_
 
     if (swap_level >= 1) {
         std::cerr
-            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
+            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize_light(circuit, swap_level) "
                ": using both gate merge and swap optimization is not tested"
             << std::endl;
     }
