@@ -1393,7 +1393,6 @@ ASSERT_NEAR(abs(state.data_cpp()[i] - test_state_eigen[i]), 0, eps) << state <<
 "\n\n" << test_state_eigen << "\n";
     }
 }
-*/
 
 TEST(GateTest_multicpu, ProbabilisticGate) {
     auto gate1 = gate::X(0);
@@ -1409,6 +1408,7 @@ TEST(GateTest_multicpu, ProbabilisticGate) {
     delete gate3;
     delete prob_gate;
 }
+*/
 
 #if 0  // need to use dense matrix-gate(double target)
 TEST(GateTest_multicpu, CPTPGate) {
