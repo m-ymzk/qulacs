@@ -230,7 +230,7 @@ public:
 #ifdef _USE_MPI
         if (state->outer_qc > 0) {
             const MPIutil mpiutil = get_mpiutil();
-            mpiutil->s_D_allreduce(&r);
+            mpiutil->s_D_bcast(&r);
         }
 #endif
             double sum = 0.;
