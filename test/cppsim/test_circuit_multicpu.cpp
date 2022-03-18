@@ -57,9 +57,9 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
         }
 #endif
 
-        // check if all target qubits are inner except for SWAP and BSWAP gate
+        // check if all target qubits are inner except for SWAP, BSWAP, CZ gate
         for (auto& gate : circuit->gate_list) {
-            if (gate->get_name() == "SWAP" || gate->get_name() == "BSWAP") {
+            if (gate->get_name() == "SWAP" || gate->get_name() == "BSWAP" || gate->get_name() == "CZ") {
                 continue;
             }
             auto t_index_list = gate->get_target_index_list();
@@ -101,6 +101,10 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_6qubits) {
     const UINT outer_qc = std::log2(m->get_size());
     const UINT inner_qc = n - outer_qc;
     std::cout << "inner_qc="<<inner_qc<<",outer_qc="<<outer_qc<<std::endl;
+
+    if (outer_qc < 2) {
+        return;
+    }
 
     Random random;
     {
@@ -175,4 +179,14 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_6qubits) {
 
         _ApplyOptimizer(&circuit, 0, 1, 2);
     }
+
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        for (UINT i = 0; i < n; i++) {
+            circuit.add_CZ_gate(i, (i+1)%n);
+        }
+        _ApplyOptimizer(&circuit, 0, 1, 0);
+    }
+
 }

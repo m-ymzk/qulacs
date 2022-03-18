@@ -240,14 +240,23 @@ QuantumGateMatrix* QuantumCircuitOptimizer::merge_all(
 }
 
 
-bool QuantumCircuitOptimizer::use_outer_qubits(UINT gate_index, std::vector<UINT> &qubit_order){
-    for (auto target_idx : circuit->gate_list[gate_index]->get_target_index_list()) {
-        #if 1
+
+std::vector<UINT> QuantumCircuitOptimizer::get_comm_qubits(UINT gate_index) {
+    // 通信を必要とするqubitのリストを取得する
+    
+    auto& gate = circuit->gate_list[gate_index];
+
+    // CZはouterのtarget_qubitを使用しても通信不要
+    if (gate->get_name() == "CZ") {
+        return std::vector<UINT>();
+    }
+    
+    return gate->get_target_index_list();
+}
+
+bool QuantumCircuitOptimizer::need_comm(UINT gate_index, std::vector<UINT> &qubit_order){
+    for (auto target_idx : get_comm_qubits(gate_index)) {
         UINT phy_target_idx = qubit_order[target_idx];
-        #else
-        auto it = std::find(qubit_order.begin(), qubit_order.end(), target_idx);
-        UINT phy_target_idx = std::distance(qubit_order.begin(), it);
-        #endif
         if (phy_target_idx >= inner_qc) {
             return true;
         }
@@ -273,7 +282,7 @@ std::unordered_set<UINT> QuantumCircuitOptimizer::find_next_inner_qubits(UINT st
     std::unordered_set<UINT> used_idx;
 
     for (UINT gate_idx = start_gate_idx; gate_idx < circuit->gate_list.size(); gate_idx++) {
-        auto target_idx_list = circuit->gate_list[gate_idx]->get_target_index_list();
+        auto target_idx_list = get_comm_qubits(gate_idx);
 
         UINT additional_idx_count = 0;
         // 現在のgateを処理することでqubit集合に追加されるqubitの個数を数える
@@ -607,7 +616,7 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
 
     for (UINT gate_idx = 0; gate_idx < num_gates; gate_idx++) {
         if (mpirank == 0) std::cout << "processing gate #" << gate_idx << std::endl;
-        if (use_outer_qubits(gate_idx, cur_qubit_table)) {
+        if (need_comm(gate_idx, cur_qubit_table)) {
             std::unordered_set<UINT> next_inner_qubits = find_next_inner_qubits(gate_idx, cur_qubit_order);
             std::vector<UINT> next_qubit_order;
             UINT num_inserted_gates = insert_swaps(gate_idx, cur_qubit_order, next_inner_qubits, next_qubit_order);
