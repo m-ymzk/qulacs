@@ -22,7 +22,9 @@
 
 - The following items are supported. mpiQulacs does not support any other items.
   - QuantumCircuit
-  - QuantumCircuitOptimizer (supports only block_size=1 or optimize_light)
+  - QuantumCircuitOptimizer
+      - optimize (supports only block_size=1)
+      - optimize_light
   - QuantumState
       - Constructor
       - copy
@@ -151,6 +153,16 @@
     - As the same as gate operation, you must call it in all ranks.
     - Even if a seed is not specified, the random value in rank0 is shared (bcast) and used as a seed.
     - If you specify a seed, use the same one in all ranks.
+
+  - Automatic FusedSWAP gate insertion of QuantumCircuitOptimizer
+    - optimize(circuit, block_size, swap_level=0)
+      - swap_level = 0
+        - No SWAP/FusedSWAP gate insertion
+      - swap_level = 1
+        - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
+    - optimize(circuit, swap_level=0)
+      - swap_level = 0
+        - No SWAP/FusedSWAP gate insertion
 
 <hr>
 
