@@ -28,6 +28,7 @@
   - QuantumState
       - Constructor
       - copy
+      - load
       - get_device_name
       - get_vector
       - normalize
@@ -54,8 +55,6 @@
   - gate
       - Pauli
       - PauliRotation
-  - QuantumState
-      - load
   - ParametricQuantumCircuit
   - PauliOperator
 
