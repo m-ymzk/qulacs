@@ -34,7 +34,7 @@ typedef struct {
     void (*m_I_allreduce)(void *buf, UINT count);
     void (*s_D_allgather)(double a, void *recvbuf);
     void (*s_D_allreduce)(void *buf);
-    void (*s_u_bcast)(uint *a);
+    void (*s_u_bcast)(UINT *a);
     void (*s_D_bcast)(double *a);
     // void (*send_osstr)(char* sendbuf, int len);
     // void (*recv_osstr)(char* recvbuf, int len);

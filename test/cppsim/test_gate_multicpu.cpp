@@ -4,7 +4,6 @@
 #include <cmath>
 #include <functional>
 
-#include <csim/update_ops.h>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_matrix.hpp>
@@ -12,6 +11,7 @@
 #include <cppsim/pauli_operator.hpp>
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
+#include <csim/update_ops.h>
 
 #include "../util/util.h"
 

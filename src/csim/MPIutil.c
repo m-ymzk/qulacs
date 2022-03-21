@@ -153,7 +153,7 @@ mpi_tag1, mpi_tag2); MPI_Sendrecv(&a, 1, MPI_DOUBLE, pair_rank, mpi_tag1, &ret,
 }
 */
 
-static void s_u_bcast(uint *a) {
+static void s_u_bcast(UINT *a) {
     // printf("#%d: s_u_bcast(result): %d\n", mpirank, *a);
     MPI_Bcast(a, 1, MPI_INT, 0, mpicomm);
     // printf("#%d: s_ui_bcast: %d\n", mpirank, *a);
