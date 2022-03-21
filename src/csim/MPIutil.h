@@ -24,7 +24,7 @@ typedef struct {
     CTYPE *(*get_workarea)(ITYPE *dim_work, ITYPE *num_work);
     void (*release_workarea)();
     void (*barrier)();
-    void (*wait)(UINT count);
+    void (*mpi_wait)(UINT count);
     void (*m_DC_allgather)(void *sendbuf, void *recvbuf, int count);
     void (*m_DC_sendrecv)(
         void *sendbuf, void *recvbuf, int count, int pair_rank);

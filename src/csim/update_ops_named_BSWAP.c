@@ -200,7 +200,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
 
                 const UINT rtgt_offset_index =
                     ((rank >> tgt_outer_rank_gap) ^ step) & offset_mask;
-                m->wait(2);
+                m->mpi_wait(2);
                 _scatter(state, recv_buf[buf_idx], i, num_elem_block,
                     rtgt_offset_index, rtgt_blk_dim, act_bs);
                 buf_idx ^= 1;
@@ -268,7 +268,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                         state +
                         (rtgt_offset_index ^ (j << act_bs)) * rtgt_blk_dim +
                         dim_work * k;
-                    m->wait(2);  // wait 2 async comm
+                    m->mpi_wait(2);  // wait 2 async comm
 #if defined(__ARM_FEATURE_SVE)
                     memcpy_sve(
                         (double*)si, (double*)(buf[buf_idx]), dim_work * 2);
