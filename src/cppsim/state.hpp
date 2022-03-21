@@ -660,8 +660,8 @@ public:
                     (size_t)(sizeof(CPPCTYPE) * _dim));
             } else {
                 // load multicpu to cpu
-                mpiutil->m_DC_allgather(
-                    _state->data_cpp(), this->data_cpp(), _dim / mpiutil->get_size());
+                mpiutil->m_DC_allgather(_state->data_cpp(), this->data_cpp(),
+                    _dim / mpiutil->get_size());
             }
         } else {
             if (this->get_device_name() == "multi-cpu") {

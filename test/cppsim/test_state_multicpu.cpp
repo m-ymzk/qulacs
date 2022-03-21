@@ -301,7 +301,8 @@ TEST(StateTest_multicpu, LoadState) {
                 abs(state.data_cpp()[i] - state_single_ref.data_cpp()[i]), 0,
                 eps)
                 << "idx: " << i << " stete: " << state.data_cpp()[i]
-                << " stete(ref): " << state_single_ref.data_cpp()[i + offs] << std::endl;
+                << " stete(ref): " << state_single_ref.data_cpp()[i + offs]
+                << std::endl;
     }
 
     // cpu -> multi-cpu
@@ -317,7 +318,8 @@ TEST(StateTest_multicpu, LoadState) {
                             state_single_ref.data_cpp()[i + offs]),
                 0, eps)
                 << "idx: " << i << " stete: " << state.data_cpp()[i]
-                << " stete(ref): " << state_single_ref.data_cpp()[i + offs] << std::endl;
+                << " stete(ref): " << state_single_ref.data_cpp()[i + offs]
+                << std::endl;
     }
 
     // multi-cpu -> cpu
@@ -329,18 +331,20 @@ TEST(StateTest_multicpu, LoadState) {
 
         // Checking
         for (ITYPE i = 0; i < inner_dim; ++i)
-            ASSERT_NEAR(abs(state_multi_ref.data_cpp()[i] -
-                            state.data_cpp()[i + offs]),
+            ASSERT_NEAR(
+                abs(state_multi_ref.data_cpp()[i] - state.data_cpp()[i + offs]),
                 0, eps)
-                << "rank: " << m->get_rank() << " idx: " << i + offs << " stete: " << state.data_cpp()[i + offs]
-                << " stete(ref): " << state_multi_ref.data_cpp()[i] << std::endl; 
+                << "rank: " << m->get_rank() << " idx: " << i + offs
+                << " stete: " << state.data_cpp()[i + offs]
+                << " stete(ref): " << state_multi_ref.data_cpp()[i]
+                << std::endl;
     }
 
     // multi-cpu -> multi-cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
         state_multi_ref.set_Haar_random_state();
 
-        QuantumState state(n,1);
+        QuantumState state(n, 1);
         state.load(&state_multi_ref);
 
         // Checking
