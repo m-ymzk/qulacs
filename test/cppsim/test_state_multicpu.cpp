@@ -331,7 +331,9 @@ TEST(StateTest_multicpu, LoadState) {
         for (ITYPE i = 0; i < inner_dim; ++i)
             ASSERT_NEAR(abs(state_multi_ref.data_cpp()[i] -
                             state.data_cpp()[i + offs]),
-                0, eps);
+                0, eps)
+                << "rank: " << m->get_rank() << " idx: " << i + offs << " stete: " << state.data_cpp()[i + offs]
+                << " stete(ref): " << state_multi_ref.data_cpp()[i]; 
     }
     // multi-cpu -> multi-cpu
     for (UINT repeat = 0; repeat < 10; ++repeat) {
