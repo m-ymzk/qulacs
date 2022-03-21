@@ -131,3 +131,31 @@ std::ostream& operator<<(std::ostream& stream, const QuantumGateBase* gate) {
     stream << *gate;
     return stream;
 }
+
+void QuantumGateBase::rewrite_qubits_index(const std::vector<UINT>& qubit_table) {
+    // target qubits
+    UINT num_target_qubits = _target_qubit_list.size();
+    for (UINT i = 0; i < num_target_qubits; i++) {
+        auto &qubit_info = this->_target_qubit_list[i];
+        UINT log_idx = qubit_info.index();
+        UINT phy_idx = qubit_table[log_idx];
+        if (log_idx != phy_idx) {
+            this->_target_qubit_list[i] = TargetQubitInfo(phy_idx,
+                                                          qubit_info.is_commute_X() * FLAG_X_COMMUTE +
+                                                          qubit_info.is_commute_Y() * FLAG_Y_COMMUTE +
+                                                          qubit_info.is_commute_Z() * FLAG_Z_COMMUTE);
+        }
+    }
+
+    // control qubits
+    UINT num_control_qubits = _control_qubit_list.size();
+    for (UINT i = 0; i < num_control_qubits; i++) {
+        auto &qubit_info = this->_control_qubit_list[i];
+        UINT log_idx = qubit_info.index();
+        UINT phy_idx = qubit_table[log_idx];
+        if (log_idx != phy_idx) {
+            this->_control_qubit_list[i] = ControlQubitInfo(phy_idx,
+                                                            qubit_info.control_value());
+        }
+    }
+}

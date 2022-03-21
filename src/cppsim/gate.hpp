@@ -247,4 +247,6 @@ public:
      */
     friend DllExport std::ostream& operator<<(
         std::ostream& os, const QuantumGateBase* gate);
+
+    void rewrite_qubits_index(const std::vector<UINT>& qubit_table);
 };

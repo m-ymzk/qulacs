@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
-#include <csim/update_ops.h>
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+
+#include <csim/update_ops.h>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_matrix.hpp>
@@ -10,7 +12,6 @@
 #include <cppsim/pauli_operator.hpp>
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
-#include <functional>
 
 #include "../util/util.h"
 
@@ -265,6 +266,56 @@ TEST(GateTest_multicpu, SingleQubitUnitaryGate) {
         }
     }
 }
+
+#if 0 // must be set random seed in Instrument gate
+TEST(GateTest_multicpu, MeasurementGate) {
+    UINT n = 8;
+    const ITYPE dim = 1ULL << n;
+    double eps = _EPS;
+
+    QuantumState state_ref(n);
+    QuantumState state(n, 1);
+
+    MPIutil m = get_mpiutil();
+    const ITYPE inner_dim = dim >> state.outer_qc;
+    const ITYPE offs = inner_dim * m->get_rank();
+
+    for (UINT target = 0; target < n; ++target) {
+        for (UINT classical = 0; classical < n; ++classical) {
+            if (target == classical) continue;
+            state_ref.set_Haar_random_state(2022);
+            state.load(&state_ref);
+
+            for (ITYPE i = 0; i < inner_dim; ++i) {
+                ASSERT_NEAR(real(state.data_cpp()[i]),
+                    real(state_ref.data_cpp()[(i + offs) % dim]), eps)
+                    << "rank: " << m->get_rank() << ", " << target << ", "
+                    << classical;
+                ASSERT_NEAR(imag(state.data_cpp()[i]),
+                    imag(state_ref.data_cpp()[(i + offs) % dim]), eps)
+                    << "rank: " << m->get_rank() << ", " << target << ", "
+                    << classical;
+            }
+
+            // update state
+            auto measurement = gate::Measurement(target, classical);
+            measurement->update_quantum_state(&state_ref);
+            measurement->update_quantum_state(&state);
+
+            for (ITYPE i = 0; i < inner_dim; ++i) {
+                ASSERT_NEAR(real(state.data_cpp()[i]),
+                    real(state_ref.data_cpp()[(i + offs) % dim]), eps)
+                    << "rank: " << m->get_rank() << ", " << target << ", "
+                    << classical;
+                ASSERT_NEAR(imag(state.data_cpp()[i]),
+                    imag(state_ref.data_cpp()[(i + offs) % dim]), eps)
+                    << "rank: " << m->get_rank() << ", " << target << ", "
+                    << classical;
+            }
+        }
+    }
+}
+#endif
 
 void _ApplyTwoQubitGate(UINT n, UINT control, UINT target,
     std::function<QuantumGateBase*(UINT, UINT)>,
@@ -1347,15 +1398,19 @@ TEST(GateTest_multicpu, ProbabilisticGate) {
     auto gate1 = gate::X(0);
     auto gate2 = gate::X(1);
     auto gate3 = gate::X(2);
-    auto prob_gate = gate::Probabilistic({ 0.25,0.25,0.25 }, { gate1, gate2,
-gate2 }); QuantumState s(3, 1); s.set_computational_basis(0);
+    auto prob_gate =
+        gate::Probabilistic({0.25, 0.25, 0.25}, {gate1, gate2, gate2});
+    QuantumState s(3, 1);
+    s.set_computational_basis(0);
     prob_gate->update_quantum_state(&s);
     delete gate1;
     delete gate2;
     delete gate3;
     delete prob_gate;
 }
+*/
 
+#if 0  // need to use dense matrix-gate(double target)
 TEST(GateTest_multicpu, CPTPGate) {
     auto gate1 = gate::merge(gate::P0(0), gate::P0(1));
     auto gate2 = gate::merge(gate::P0(0), gate::P1(1));
@@ -1388,11 +1443,14 @@ TEST(GateTest_multicpu, InstrumentGate) {
     UINT res2 = s.get_classical_value(1);
     delete Inst;
 }
+#endif
 
 TEST(GateTest_multicpu, AdaptiveGate) {
     auto x = gate::X(0);
-    auto adaptive = gate::Adaptive(x, [](const std::vector<UINT>& vec) { return
-vec[2] == 1; }); QuantumState s(1, 1); s.set_computational_basis(0);
+    auto adaptive = gate::Adaptive(
+        x, [](const std::vector<UINT>& vec) { return vec[2] == 1; });
+    QuantumState s(1, 1);
+    s.set_computational_basis(0);
     s.set_classical_value(2, 1);
     adaptive->update_quantum_state(&s);
     s.set_classical_value(2, 0);
@@ -1412,36 +1470,33 @@ TEST(GateTest_multicpu, GateAdd) {
     auto a4 = gate::add(g3, g4);
     auto a5 = gate::add(gate::P0(0), gate::P1(0));
     auto a6 = gate::add(gate::merge(gate::P0(0), gate::P0(1)),
-gate::merge(gate::P1(0), gate::P1(1)));
+        gate::merge(gate::P1(0), gate::P1(1)));
     // TODO assert matrix element
 }
 
-
 TEST(GateTest_multicpu, RandomUnitaryGate) {
-        double eps = 1e-14;
-        for (UINT qubit_count = 1; qubit_count < 5; ++qubit_count) {
-                ITYPE dim = 1ULL << qubit_count;
-                std::vector<UINT> target_qubit_list;
-                for (UINT i = 0; i < qubit_count; ++i) {
-                        target_qubit_list.push_back(i);
-                }
-                auto gate = gate::RandomUnitary(target_qubit_list);
-                ComplexMatrix cm;
-                gate->set_matrix(cm);
-                auto eye = cm*cm.adjoint();
-                for (int i = 0; i < dim; ++i) {
-                        for (int j = 0; j < dim; ++j) {
-                                if (i == j) {
-                                        ASSERT_NEAR(abs(eye(i, j)), 1, eps);
-                                }
-                                else {
-                                        ASSERT_NEAR(abs(eye(i,j)), 0, eps);
-                                }
-                        }
-                }
+    double eps = 1e-14;
+    for (UINT qubit_count = 1; qubit_count < 5; ++qubit_count) {
+        ITYPE dim = 1ULL << qubit_count;
+        std::vector<UINT> target_qubit_list;
+        for (UINT i = 0; i < qubit_count; ++i) {
+            target_qubit_list.push_back(i);
         }
+        auto gate = gate::RandomUnitary(target_qubit_list);
+        ComplexMatrix cm;
+        gate->set_matrix(cm);
+        auto eye = cm * cm.adjoint();
+        for (int i = 0; i < dim; ++i) {
+            for (int j = 0; j < dim; ++j) {
+                if (i == j) {
+                    ASSERT_NEAR(abs(eye(i, j)), 1, eps);
+                } else {
+                    ASSERT_NEAR(abs(eye(i, j)), 0, eps);
+                }
+            }
+        }
+    }
 }
-*/
 
 /*
 TEST(GateTest_multicpu, ReversibleBooleanGate) {

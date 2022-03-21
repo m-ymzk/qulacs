@@ -153,12 +153,14 @@ mpi_tag1, mpi_tag2); MPI_Sendrecv(&a, 1, MPI_DOUBLE, pair_rank, mpi_tag1, &ret,
 }
 */
 
-static int s_i_bcast(int a) {
-    int ret = a;
-    // if (mpirank == 0) printf("#%d: s_ui_bcast(result): %d\n", mpirank, a);
-    MPI_Bcast(&ret, 1, MPI_INT, 0, mpicomm);
-    // printf("#%d: s_ui_bcast: %d\n", mpirank, ret);
-    return ret;
+static void s_u_bcast(uint *a) {
+    // printf("#%d: s_u_bcast(result): %d\n", mpirank, *a);
+    MPI_Bcast(a, 1, MPI_INT, 0, mpicomm);
+    // printf("#%d: s_ui_bcast: %d\n", mpirank, *a);
+}
+
+static void s_D_bcast(double *a) {
+    MPI_Bcast(a, 1, MPI_DOUBLE, 0, mpicomm);
 }
 /*
 static void send_osstr(char *sendbuf, int len) {
@@ -196,7 +198,8 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(m_I_allreduce)
     REGISTER_METHOD_POINTER(s_D_allgather)
     REGISTER_METHOD_POINTER(s_D_allreduce)
-    REGISTER_METHOD_POINTER(s_i_bcast)
+    REGISTER_METHOD_POINTER(s_u_bcast)
+    REGISTER_METHOD_POINTER(s_D_bcast)
     // mpiutil->s_D_send_next_rank = s_D_send_next_rank; // single, Double,
     // Send_Next_Rank mpiutil->recv_osstr = recv_osstr; mpiutil->send_osstr =
     // send_osstr;

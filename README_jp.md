@@ -21,7 +21,9 @@
 
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumCircuit
-  - QuantumCircuitOptimizer (supports only block_size=1 or optimize_light)
+  - QuantumCircuitOptimizer
+    - optimizer (supports only block_size=1)
+    - optimize_light
   - QuantumState
       - Constructor
       - copy
@@ -43,11 +45,11 @@
       - U1 / U2 / U3
       - DenseMatrix(single target)
       - DiagonalMatrix(single target)
+      - Measurement
       - to_matrix_gate
 
 - 3月末版対応予定の関数・機能
   - gate
-      - Measurement
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
@@ -151,6 +153,16 @@
     - 他のgate等の操作と同様に、必ず全ランクでcallすること。
     - seedを指定しない場合でも、rank0での乱数値が全ランクで共有(bcast)され、seedとして使用される。
     - seedを指定する場合、全ランクで共通の値を指定すること。
+
+  - QuantumCircuitOptimizerの自動FusedSWAPゲート挿入
+    - optimize(circuit, block_size, swap_level=0)
+      - swap_level = 0
+        - SWAP/FusedSWAPゲートの挿入なし
+      - swap_level = 1
+        - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
+    - optimize(circuit, swap_level=0)
+      - swap_level = 0
+        - SWAP/FusedSWAPゲートの挿入なし
 
 <hr>
 
