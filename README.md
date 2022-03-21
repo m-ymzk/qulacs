@@ -1,4 +1,4 @@
-# mpi-qulacs General info
+# mpiQulacs General info
 
 ## Base
 - qulacs v0.3.0
@@ -7,7 +7,7 @@
 
 ## Functionality
 - Quantum state generation & gate simulation with multi-process and multi-nodes
-- MPI-Qulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
+- mpiQulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
   - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
   - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=1$ constant）
 - Please also see Limitation
@@ -20,10 +20,17 @@
 - Unsupported gates/functions may cause severe error.
 - "device=gpu" not supported
 
-- The following items are supported. MPI-Qulacs does not support any other items.
+- The following items are supported. mpiQulacs does not support any other items.
+  - QuantumCircuit
+  - QuantumCircuitOptimizer
+      - optimize (supports only block_size=1)
+      - optimize_light
   - QuantumState
       - Constructor
+      - copy
       - get_device_name
+      - get_vector
+      - normalize
       - sampling
       - set_computational_basis
       - set_Haar_random_state
@@ -38,23 +45,17 @@
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
       - DenseMatrix(single target)
+      - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
+      - Measurement
+      - to_matrix_gate
 
 - To be supported after March (T.B.D.)
   - gate
-      - Measurement
       - Pauli
       - PauliRotation
-      - DenseMatrix(single control, single target)
-      - DiagonalMatrix(with control)
-      - to_matrix_gate
-  - Observable
-  - QuantumCircuit
   - QuantumState
-      - normalize
-      - copy
       - load
-      - get_vector
   - ParametricQuantumCircuit
   - PauliOperator
 
@@ -70,6 +71,7 @@
       - CPTP
       - Instrument
       - Adaptive
+  - Observable
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
@@ -121,7 +123,7 @@
         | -------- | -------- |
         | "cpu"   | state vector generated in a cpu |
         | "multi-cpu" | state vector generated in multi cpu |
-        | ("gpu") | Not supported in mpi-qulacs |
+        | ("gpu") | Not supported in mpiQulacs |
 
     - state.to_string()
       Output state info
@@ -152,12 +154,22 @@
     - Even if a seed is not specified, the random value in rank0 is shared (bcast) and used as a seed.
     - If you specify a seed, use the same one in all ranks.
 
+  - Automatic FusedSWAP gate insertion of QuantumCircuitOptimizer
+    - optimize(circuit, block_size, swap_level=0)
+      - swap_level = 0
+        - No SWAP/FusedSWAP gate insertion
+      - swap_level = 1
+        - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
+    - optimize(circuit, swap_level=0)
+      - swap_level = 0
+        - No SWAP/FusedSWAP gate insertion
+
 <hr>
 
 ## build/install
 ### use python3-venv (qenv)
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ python3 -m venv qenv
 $ . ./qenv/bin/activate
 $ pip install -U pip wheel (*1)
@@ -181,7 +193,7 @@ $ pytest
         - configure-option: --with-openib
 ```shell
 <lib. build>
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ . ./setenv
 $ ./script/build_mpicc.sh
 
@@ -202,16 +214,16 @@ $ mpirun -n 4 mpiqtest -1 20 0
 
 ### fcc/FCC
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ ./script/build_fcc.sh
 
 <c++ program sample>
-$ cd [mpi-qulacs]/ict
+$ cd [mpiQulacs]/ict
 $ usefcc=1 make
 $ mpirun -n 4 mpiqtest -1 20 0
 
 <python script sample>
-$ cd [mpi-qulacs]/ict/python
+$ cd [mpiQulacs]/ict/python
 $ mpirun -n 4 python test.py -n 20
 ```
 

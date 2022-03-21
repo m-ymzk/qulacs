@@ -1,4 +1,4 @@
-# mpi-qulacs 概説
+# mpiQulacs 概説
 
 ## Base
 - qulacs v0.3.0
@@ -20,9 +20,16 @@
 - device=gpuは、対応しない
 
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
+  - QuantumCircuit
+  - QuantumCircuitOptimizer
+    - optimizer (supports only block_size=1)
+    - optimize_light
   - QuantumState
       - Constructor
+      - copy
       - get_device_name
+      - get_vector
+      - normalize
       - sampling
       - set_computational_basis
       - set_Haar_random_state
@@ -38,22 +45,16 @@
       - U1 / U2 / U3
       - DenseMatrix(single target)
       - DiagonalMatrix(single target)
+      - Measurement
+      - to_matrix_gate
 
 - 3月末版対応予定の関数・機能
   - gate
-      - Measurement
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
-      - DiagonalMatrix(with control)
-      - to_matrix_gate
-  - Observable
-  - QuantumCircuit
   - QuantumState
-      - normalize
-      - copy
       - load
-      - get_vector
   - ParametricQuantumCircuit
   - PauliOperator
 
@@ -69,6 +70,7 @@
       - CPTP
       - Instrument
       - Adaptive
+  - Observable
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
@@ -120,7 +122,7 @@
         | -------- | -------- |
         | "cpu"   | ノード内に作成されたstate vector |
         | "multi-cpu" | 分散配置されたstate vector |
-        | ("gpu") | mpi-qulacsではサポートしない |
+        | ("gpu") | mpiQulacsではサポートしない |
 
     - state.to_string()
       state情報を出力
@@ -152,12 +154,22 @@
     - seedを指定しない場合でも、rank0での乱数値が全ランクで共有(bcast)され、seedとして使用される。
     - seedを指定する場合、全ランクで共通の値を指定すること。
 
+  - QuantumCircuitOptimizerの自動FusedSWAPゲート挿入
+    - optimize(circuit, block_size, swap_level=0)
+      - swap_level = 0
+        - SWAP/FusedSWAPゲートの挿入なし
+      - swap_level = 1
+        - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
+    - optimize(circuit, swap_level=0)
+      - swap_level = 0
+        - SWAP/FusedSWAPゲートの挿入なし
+
 <hr>
 
 ## build/install
 ### use python3-venv (qenv)
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ python3 -m venv qenv
 $ . ./qenv/bin/activate
 $ pip install -U pip wheel (*1)
@@ -181,7 +193,7 @@ $ pytest
         - configure-option: --with-openib
 ```shell
 <lib. build>
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ . ./setenv
 $ ./script/build_mpicc.sh
 
@@ -202,16 +214,16 @@ $ mpirun -n 4 mpiqtest -1 20 0
 
 ### fcc/FCC
 ```shell
-$ cd [mpi-qulacs]
+$ cd [mpiQulacs]
 $ ./script/build_fcc.sh
 
 <c++ program sample>
-$ cd [mpi-qulacs]/ict
+$ cd [mpiQulacs]/ict
 $ usefcc=1 make
 $ mpirun -n 4 mpiqtest -1 20 0
 
 <python script sample>
-$ cd [mpi-qulacs]/ict/python
+$ cd [mpiQulacs]/ict/python
 $ mpirun -n 4 python test.py -n 20
 ```
 
