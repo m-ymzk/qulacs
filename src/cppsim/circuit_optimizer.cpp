@@ -310,7 +310,12 @@ std::vector<UINT> QuantumCircuitOptimizer::get_comm_qubits(UINT gate_index) {
     auto& gate = circuit->gate_list[gate_index];
 
     // CZはouterのtarget_qubitを使用しても通信不要
-    if (gate->get_name() == "CZ") {
+    auto gate_name = gate->get_name();
+    if (gate_name == "I" ||
+        gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
+        gate_name == "Projection-0" || gate_name == "Projection-1" ||
+        gate_name == "S" || gate_name == "Sdag" ||
+        gate_name == "T" || gate_name == "Tdag") {
         return std::vector<UINT>();
     }
     
