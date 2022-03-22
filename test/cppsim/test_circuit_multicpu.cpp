@@ -980,7 +980,8 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
                 gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
                 gate_name == "Projection-0" || gate_name == "Projection-1" ||
                 gate_name == "S" || gate_name == "Sdag" ||
-                gate_name == "T" || gate_name == "Tdag") {
+                gate_name == "T" || gate_name == "Tdag" ||
+                gate_name == "DiagonalMatrix") {
                 continue;
             }
             auto t_index_list = gate->get_target_index_list();
@@ -1167,6 +1168,29 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_nocomm_6qubits) {
         }
         _ApplyOptimizer(&circuit, 0, 1, 0);
     }
+    // U1, U2, U3ゲートはtargetでouter qubitを使わなければFSWAP不要
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        for (UINT i = 0; i < inner_qc; i++) {
+            circuit.add_U1_gate(i, random.uniform()*3.14159);
+            circuit.add_U2_gate(i, random.uniform()*3.14159, random.uniform()*3.14159);
+            circuit.add_U3_gate(i, random.uniform()*3.14159, random.uniform()*3.14159, random.uniform()*3.14159);
+        }
+        _ApplyOptimizer(&circuit, 0, 1, 0);
+    }
+    // DenseMatrixゲートはtargetでouter qubitを使わなければFSWAP不要
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        for (UINT i = 0; i < inner_qc; i++) {
+            std::vector<UINT> target{i};
+            ComplexMatrix mat = get_eigen_matrix_random_single_qubit_unitary();
+            auto DenseMatrix_gate = gate::DenseMatrix(target, mat);
+            circuit.add_gate(DenseMatrix_gate);
+        }
+        _ApplyOptimizer(&circuit, 0, 1, 0);
+    }
 
 
 
@@ -1226,6 +1250,18 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_nocomm_6qubits) {
             circuit.add_Sdag_gate(i);
             circuit.add_T_gate(i);
             circuit.add_Tdag_gate(i);
+        }
+        _ApplyOptimizer(&circuit, 0, 1, 0);
+    }
+    // DiagonalMatrixゲートは全てのパターンでFSWAP不要
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        for (UINT i = 0; i < n; i++) {
+            std::vector<UINT> target{i};
+            ComplexVector diag = get_eigen_diagonal_matrix_random_multi_qubit_unitary(1);
+            auto DiagonalMatrix_gate = gate::DiagonalMatrix(target, diag);
+            circuit.add_gate(DiagonalMatrix_gate);
         }
         _ApplyOptimizer(&circuit, 0, 1, 0);
     }

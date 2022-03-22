@@ -315,7 +315,8 @@ std::vector<UINT> QuantumCircuitOptimizer::get_comm_qubits(UINT gate_index) {
         gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
         gate_name == "Projection-0" || gate_name == "Projection-1" ||
         gate_name == "S" || gate_name == "Sdag" ||
-        gate_name == "T" || gate_name == "Tdag") {
+        gate_name == "T" || gate_name == "Tdag" ||
+        gate_name == "DiagonalMatrix") {
         return std::vector<UINT>();
     }
     
