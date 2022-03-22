@@ -648,8 +648,8 @@ public:
             return;
         }
 
+        this->_classical_register = _state->classical_register;
         if (_state->get_device_name() == "gpu") {
-            this->_classical_register = _state->classical_register;
             auto ptr = _state->duplicate_data_cpp();
             memcpy(this->data_cpp(), ptr, (size_t)(sizeof(CPPCTYPE) * _dim));
             free(ptr);
