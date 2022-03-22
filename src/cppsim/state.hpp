@@ -641,10 +641,6 @@ public:
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
     virtual void load(const QuantumStateBase* _state) {
-        // std::cout << "#debug: QuantumStateCpu::load(const QuantumStateBase*):
-        // load qubit:" << this->qubit_count << ", "
-        //    	<< _state->qubit_count << ", " << _state->outer_qc << ", " <<
-        //    _state->inner_qc << ", " << std::endl;
         if (_state->qubit_count != this->qubit_count) {
             std::cerr << "Error: QuantumStateCpu::load(const "
                          "QuantumStateBase*): invalid qubit count"
@@ -664,11 +660,8 @@ public:
                     (size_t)(sizeof(CPPCTYPE) * _dim));
             } else {
                 // load multicpu to cpu
-                std::cerr << "#debug: QuantumStateCpu::load multicpu to cpu is "
-                             "just implemented!!, now testing"
-                          << __FILE__ << ":" << __LINE__ << std::endl;
-                mpiutil->m_DC_allgather(
-                    _state->data_cpp(), this->data_cpp(), _dim);
+                mpiutil->m_DC_allgather(_state->data_cpp(), this->data_cpp(),
+                    _dim / mpiutil->get_size());
             }
         } else {
             if (this->get_device_name() == "multi-cpu") {

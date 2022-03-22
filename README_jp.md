@@ -27,6 +27,7 @@
   - QuantumState
       - Constructor
       - copy
+      - load
       - get_device_name
       - get_vector
       - normalize
@@ -53,8 +54,6 @@
       - Pauli
       - PauliRotation
       - DenseMatrix(single control, single target)
-  - QuantumState
-      - load
   - ParametricQuantumCircuit
   - PauliOperator
 
