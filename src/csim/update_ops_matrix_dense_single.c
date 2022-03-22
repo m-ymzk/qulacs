@@ -212,6 +212,37 @@ static inline void MatrixVectorProduct2x2(SV_PRED pg, SV_FTYPE in00r,
     SV_FTYPE mat02i, SV_FTYPE mat13r, SV_FTYPE mat13i, SV_FTYPE *out01r,
     SV_FTYPE *out01i);
 
+// clang-format off
+/*
+ * This function performs multiplication of a 2x2 matrix and four vectors
+ *
+ *            2x2 matrix                           four vectors
+ * [ x_00 + iy_00, x_01+iy_01]   [ a_0+ib_0 ][ c_0+id_0 ][ e_0+if_0 ][ g_0+ih_0 ]
+ * [ x_10 + iy_10, x_11+iy_11] * [ a_1+ib_1 ][ c_1+id_1 ][ e_1+if_1 ][ g_1+ih_1 ]
+ *
+ * params
+ * - pg: All 1's predecate register 
+ * - in00r: An SVE register has the real part of the first component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ a_0, c_0, e_0, g_0, a_0, c_0, e_0, g_0]
+ * - in00i: An SVE register has the imag. part of the first component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ b_0, d_0, f_0, h_0, b_0, d_0, f_0, h_0]
+ * - in11r: An SVE register has the real part of the second component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ a_1, c_1, e_1, g_1, a_1, c_1, e_1, g_1]
+ * - in11i: An SVE register has the imag. part of the second component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ b_1, d_1, f_1, h_1, b_1, d_1, f_1, h_1]
+ * - mat02r: An SVE register has the real part of the first column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_00, x_00, x_00, x_00, x_10, x_10, x_10, x_10]
+ * - mat02i: An SVE register has the imag. part of the first column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_00, y_00, y_00, y_00, y_10, y_10, y_10, y_10]
+ * - mat13r: An SVE register has the real part of the second column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_01, x_01, x_01, x_01, x_11, x_11, x_11, x_11]
+ * - mat13i: An SVE register has the imag. part of the second column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_01, y_01, y_01, y_01, y_11, y_11, y_11, y_11]
+ * - out*: SVE register store results of matrix-vector products
+ *
+ */
+// clang-format on
+
 static inline void MatrixVectorProduct2x2(SV_PRED pg, SV_FTYPE in00r,
     SV_FTYPE in00i, SV_FTYPE in11r, SV_FTYPE in11i, SV_FTYPE mat02r,
     SV_FTYPE mat02i, SV_FTYPE mat13r, SV_FTYPE mat13i, SV_FTYPE *out01r,
