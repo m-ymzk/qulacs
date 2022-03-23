@@ -2279,7 +2279,7 @@ void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
 
     }else{
         if(target1_is_outer){
-            // Add one swap gates before and after a double-target dense-gate operation
+            // Add a swap gate before and after a double-target dense-gate operation
             UINT act_target_qubit_index1 = (target_qubit_index2 == (inner_qc -1) ) ? inner_qc - 2 : inner_qc - 1 ;
             SWAP_gate_mpi(target_qubit_index1, act_target_qubit_index1, state, dim, inner_qc);
     
@@ -2288,7 +2288,7 @@ void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
     
             SWAP_gate_mpi(act_target_qubit_index1, target_qubit_index1, state, dim, inner_qc);
         }else{
-            // Add one swap gates before and after a double-target dense-gate operation
+            // Add a swap gate before and after a double-target dense-gate operation
             UINT act_target_qubit_index2 = (target_qubit_index1 == (inner_qc -1) ) ? inner_qc - 2 : inner_qc - 1 ;
             SWAP_gate_mpi(target_qubit_index2, act_target_qubit_index2, state, dim, inner_qc);
     
