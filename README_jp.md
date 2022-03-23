@@ -7,7 +7,7 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=1$ ）
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=2$ ）
 - A64FXの512bit-SVE命令に最適化されている
 - 対応関数及び範囲は、制限事項を参照
 

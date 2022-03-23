@@ -9,7 +9,7 @@
 - Quantum state generation & gate simulation with multi-process and multi-nodes
 - mpiQulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
   - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
-  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=1$ constant）
+  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=2$ constant）
 - Please also see Limitation
 
 <hr>
