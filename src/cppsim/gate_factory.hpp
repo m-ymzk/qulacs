@@ -30,7 +30,7 @@ namespace gate {
  * CNOT,CX      :   CNOT \<control\> \<target\>, or CX \<control\> \<target\>
  * CZ           :   CZ \<control\> \<target\>
  * SWAP         :   SWAP \<target1\> \<target2\>
- * BSWAP        :   BSWAP \<target1\> \<target2\> \<numqubits\>
+ * FusedSWAP    :   FusedSWAP \<target1\> \<target2\> \<numqubits\>
  * U1           :   U1 \<index\> \<angle1\>
  * U2           :   U2 \<index\> \<angle1\> \<angle2\>
  * U3           :   U3 \<index\> \<angle1\> \<angle2\> \<angle3\>
@@ -263,13 +263,13 @@ DllExport QuantumGateBase* CZ(
 DllExport QuantumGateBase* SWAP(UINT qubit_index1, UINT qubit_index2);
 
 /**
- * \~japanese-en BSWAPゲートを作成する
+ * \~japanese-en FusedSWAPゲートを作成する
  *
  * @param[in] qubit_index1 ターゲットとなる量子ビットの添え字
  * @param[in] qubit_index2 ターゲットとなる量子ビットの添え字
  * @return 作成されたゲートのインスタンス
  */
-DllExport QuantumGateBase* BSWAP(
+DllExport QuantumGateBase* FusedSWAP(
     UINT qubit_index1, UINT qubit_index2, UINT num_qubits);
 
 /**

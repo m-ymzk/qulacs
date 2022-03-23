@@ -479,17 +479,17 @@ DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
  * \~japanese-en
  * BlockSWAP演算を作用させて状態を更新。
  *
- * (2xn)量子ビット演算、BSWAP演算を作用させて状態を更新。num_qubits個の２つの量子ビットに対して対称に作用する（インデックスを入れ替えても同じ作用）。
+ * (2xn)量子ビット演算、FusedSWAP演算を作用させて状態を更新。num_qubits個の２つの量子ビットに対して対称に作用する（インデックスを入れ替えても同じ作用）。
  * @param[in] target_qubit_index_0 作用する量子ビットの最初のインデックス
  * @param[in] target_qubit_index_1 作用する量子ビットの最初のインデックス
  * @param[in] num_qubits 作用する量子ビット数
  * @param[in,out] state 量子状態
  * @param[in] dim 次元
  */
-DllExport void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
+DllExport void FusedSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT num_qubits, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
-DllExport void BSWAP_gate_mpi(UINT target_qubit_index_0,
+DllExport void FusedSWAP_gate_mpi(UINT target_qubit_index_0,
     UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim,
     UINT inner_qc);
 #endif

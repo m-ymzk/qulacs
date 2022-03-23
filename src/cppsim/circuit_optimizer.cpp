@@ -392,7 +392,7 @@ void QuantumCircuitOptimizer::add_swap_gate(UINT idx0, UINT idx1, UINT width, Qu
     if (width == 1) {
         circuit->add_gate(gate::SWAP(idx0, idx1), gate_pos);
     } else {
-        circuit->add_gate(gate::BSWAP(idx0, idx1, width), gate_pos);
+        circuit->add_gate(gate::FusedSWAP(idx0, idx1, width), gate_pos);
     }
     qt.fswap(idx0, idx1, width);
 }

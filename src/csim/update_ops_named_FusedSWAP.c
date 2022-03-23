@@ -22,9 +22,9 @@
 #endif
 #endif
 
-void BSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
+void FusedSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT blk_qubits, CTYPE* state, ITYPE dim) {
-    // printf("#call BSWAP_gate(%d, %d, %d)\n", target_qubit_index_0,
+    // printf("#call FusedSWAP_gate(%d, %d, %d)\n", target_qubit_index_0,
     // target_qubit_index_1, blk_qubits);
     // fflush(stdout);
     for (UINT i = 0; i < blk_qubits; ++i) {
@@ -67,9 +67,9 @@ static inline void _scatter(CTYPE* state, const CTYPE* t_recv, const UINT i,
     }
 }
 
-void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
+void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT blk_qubits, CTYPE* state, ITYPE dim, UINT inner_qc) {
-    // printf("#call BSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0,
+    // printf("#call FusedSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0,
     // target_qubit_index_1, blk_qubits); fflush(stdout);
     if (blk_qubits == 0) return;
 #if 0
@@ -131,7 +131,7 @@ void BSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         return;
     }
 
-    /*  BSWAP main */
+    /*  FusedSWAP main */
     /* All remained swaps are pairs of inner and outer */
 
     const MPIutil m = get_mpiutil();
