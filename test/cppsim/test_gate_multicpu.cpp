@@ -373,13 +373,13 @@ TEST(GateTest_multicpu, ApplySWAPGate_10qubit_all) {
 TEST(GateTest_multicpu, ApplySWAPGate_corner) {
     Random random;
     random.set_seed(2022);
-    _ApplyTwoQubitGateSWAP(
+    _ApplyTwoQubitGate(
         2, 0, 1, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
-    _ApplyTwoQubitGateSWAP(
+    _ApplyTwoQubitGate(
         2, 1, 0, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
-    _ApplyTwoQubitGateSWAP(
+    _ApplyTwoQubitGate(
         5, 4, 3, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
-    _ApplyTwoQubitGateSWAP(
+    _ApplyTwoQubitGate(
         5, 3, 4, gate::SWAP, get_eigen_matrix_full_qubit_SWAP);
 }
 

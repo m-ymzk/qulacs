@@ -87,7 +87,7 @@ public:
 
         UINT log_nodes = std::log2(mpisize);
         if (use_multi_cpu &&
-            ((qubit_count_ - log_nodes) > 1)) {  // minimum inner_qc=2
+            (qubit_count_ > (log_nodes + 1))) {  // minimum inner_qc=2
             this->_inner_qc = qubit_count_ - log_nodes;
             this->_outer_qc = log_nodes;
         } else {
@@ -627,15 +627,20 @@ public:
                 (size_t)(sizeof(CPPCTYPE) * _dim));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
-            return new_state;
-        } else {  // copy (single)cpu -> multicpu
+        } else if ( new_state->_outer_qc > 0) { // copy (single)cpu -> multicpu
             ITYPE offs = (_dim / mpiutil->get_size()) * mpiutil->get_rank();
             memcpy(new_state->data_cpp(), _state_vector + offs,
                 (size_t)(sizeof(CPPCTYPE) * _dim / mpiutil->get_size()));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
             return new_state;
+        } else {  // copy (single)cpu -> cpu
+            memcpy(new_state->data_cpp(), _state_vector,
+                (size_t)(sizeof(CPPCTYPE) * _dim));
+            for (UINT i = 0; i < _classical_register.size(); ++i)
+                new_state->set_classical_value(i, _classical_register[i]);
         }
+        return new_state;
     }
     /**
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。

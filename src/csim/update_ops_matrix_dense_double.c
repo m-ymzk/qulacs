@@ -2257,8 +2257,9 @@ void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
 
     UINT target1_is_outer = (target_qubit_index1 >= inner_qc) ? 1 : 0;
     UINT target2_is_outer = (target_qubit_index2 >= inner_qc) ? 1 : 0;
+    UINT outer_targets = target1_is_outer + target2_is_outer;
 
-    if (inner_qc <= 2){
+    if (inner_qc < 2){
         fprintf(stderr, "#ERROR: inner_qc < 2 is not supported (double-target dense-gate).\n");
         return;
     }
