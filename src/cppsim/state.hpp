@@ -87,7 +87,7 @@ public:
 
         UINT log_nodes = std::log2(mpisize);
         if (use_multi_cpu &&
-            (qubit_count_ > log_nodes)) {  // minimum inner_qc=1
+            ((qubit_count_ - log_nodes) > 1)) {  // minimum inner_qc=2
             this->_inner_qc = qubit_count_ - log_nodes;
             this->_outer_qc = log_nodes;
         } else {
