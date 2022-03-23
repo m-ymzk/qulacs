@@ -67,7 +67,7 @@ def build_circuit(args, size):
             else:
                 pend_pair.append(physical_qubits)
 
-        # add SWAP gate for BSWAP
+        # add SWAP gate for FusedSWAP
         work_qubit = inner_qc - outer_qc
         for s in range(outer_qc):
             if done_ug[work_qubit + s] == 0:
@@ -83,7 +83,7 @@ def build_circuit(args, size):
         if vb > 1 and rank == 0: print("#3 block_swap(", work_qubit,", ", inner_qc,", ", outer_qc, ")")
         if outer_qc > 0:
             block_swap(work_qubit, inner_qc, outer_qc, done_ug, qubit_table)
-            circuit.add_BSWAP_gate(work_qubit, inner_qc, outer_qc)
+            circuit.add_FusedSWAP_gate(work_qubit, inner_qc, outer_qc)
         if vb > 1 and rank == 0: print("#: qubit_table=", qubit_table)
 
         # add random_unitary_gate for qubits that were originally outside.
