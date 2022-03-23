@@ -440,7 +440,7 @@ void _ApplyTwoQubitGate(UINT n, UINT control, UINT target,
     }
 }
 
-void _ApplyBSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
+void _ApplyFusedSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
     const ITYPE dim = 1ULL << n;
     double eps = _EPS;
 
@@ -464,10 +464,10 @@ void _ApplyBSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
             auto swap_gate = gate::SWAP(control + i, target + i);
             swap_gate->update_quantum_state(&state_ref);
         }
-        //// BSWAP
-        // printf("call gate::BSWAP(%d, %d, %d)\n", control, target,
+        //// FusedSWAP
+        // printf("call gate::FusedSWAP(%d, %d, %d)\n", control, target,
         // block_size);
-        auto bswap_gate = gate::BSWAP(control, target, block_size);
+        auto bswap_gate = gate::FusedSWAP(control, target, block_size);
         bswap_gate->update_quantum_state(&state);
 
 #if 0
@@ -484,12 +484,12 @@ void _ApplyBSWAPGate(UINT n, UINT control, UINT target, UINT block_size) {
             ASSERT_NEAR(abs(state.data_cpp()[i] -
                             state_ref.data_cpp()[(i + offs) % dim]),
                 0, eps)
-                << "[rank:" << m->get_rank() << "] BSWAP(" << control << ","
+                << "[rank:" << m->get_rank() << "] FusedSWAP(" << control << ","
                 << target << "," << block_size << ") diff at " << i;
     }
 }
 
-TEST(GateTest_multicpu, ApplyBSWAPGate_10qubit_all) {
+TEST(GateTest_multicpu, ApplyFusedSWAPGate_10qubit_all) {
     UINT n = 10;
     for (UINT c = 0; c < n; ++c) {
         for (UINT t = 0; t < n; ++t) {
@@ -497,7 +497,7 @@ TEST(GateTest_multicpu, ApplyBSWAPGate_10qubit_all) {
             UINT max_bs =
                 std::min((c < t) ? (t - c) : (c - t), std::min(n - c, n - t));
             for (UINT bs = 1; bs <= max_bs; ++bs) {
-                _ApplyBSWAPGate(n, c, t, bs);
+                _ApplyFusedSWAPGate(n, c, t, bs);
             }
         }
     }
