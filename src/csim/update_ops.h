@@ -1187,6 +1187,12 @@ void double_qubit_dense_matrix_gate_simd(UINT target_qubit_index1,
 void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+#ifdef _USE_MPI
+DllExport void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim, UINT inner_qc);
+#endif // #ifdef _USE_MPI
+
 /**
  * \~english
  * Apply a multi-qubit arbitrary gate.
