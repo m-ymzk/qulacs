@@ -38,10 +38,10 @@ static MPI_Request *get_request() {
     return ret;
 }
 
-static void wait(UINT count) {
+static void mpi_wait(UINT count) {
     if (mpireq_cnt < count) {
         fprintf(stderr,
-            "wait count(=%d) is over incompleted requests(=%d), %s, %d\n",
+            "mpi_wait count(=%d) is over incompleted requests(=%d), %s, %d\n",
             count, mpireq_cnt, __FILE__, __LINE__);
         exit(1);
     }
@@ -153,7 +153,7 @@ mpi_tag1, mpi_tag2); MPI_Sendrecv(&a, 1, MPI_DOUBLE, pair_rank, mpi_tag1, &ret,
 }
 */
 
-static void s_u_bcast(uint *a) {
+static void s_u_bcast(UINT *a) {
     // printf("#%d: s_u_bcast(result): %d\n", mpirank, *a);
     MPI_Bcast(a, 1, MPI_INT, 0, mpicomm);
     // printf("#%d: s_ui_bcast: %d\n", mpirank, *a);
@@ -190,7 +190,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(get_workarea)
     REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
-    REGISTER_METHOD_POINTER(wait)
+    REGISTER_METHOD_POINTER(mpi_wait)
     REGISTER_METHOD_POINTER(m_DC_allgather)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
     REGISTER_METHOD_POINTER(m_DC_sendrecv_replace)
