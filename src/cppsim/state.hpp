@@ -815,10 +815,14 @@ public:
         std::vector<ITYPE> result;
         double sum = 0.;
         auto ptr = this->data_cpp();
-        stacked_prob.push_back(0.);
+        // resize
+        stacked_prob.resize(this->dim + 1);
+        result.resize(sampling_count);
+
+        stacked_prob[0] = 0.;
         for (UINT i = 0; i < this->dim; ++i) {
             sum += norm(ptr[i]);
-            stacked_prob.push_back(sum);
+            stacked_prob[i+1] = sum;
         }
 
 #ifdef _USE_MPI
@@ -846,7 +850,7 @@ public:
             auto ite =
                 std::lower_bound(stacked_prob.begin(), stacked_prob.end(), r);
             auto index = std::distance(stacked_prob.begin(), ite) - 1;
-            result.push_back(index);
+            result[count] = index;
         }
 
 #ifdef _USE_MPI
