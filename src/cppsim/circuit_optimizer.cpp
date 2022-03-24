@@ -179,8 +179,8 @@ target_qubits);
 }
 */
 
-void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit, UINT swap_level) {
-    this->circuit = circuit;
+void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap_level) {
+    this->circuit = circuit_;
 
     if (swap_level >= 1) {
         std::cerr
