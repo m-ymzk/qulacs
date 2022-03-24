@@ -39,7 +39,8 @@ typedef struct {
     // void (*send_osstr)(char* sendbuf, int len);
     // void (*recv_osstr)(char* recvbuf, int len);
     // double (*s_D_send_next_rank)(double a);
-} * MPIutil;
+} MPIutil_;
+typedef MPIutil_* MPIutil;
 
 MPIutil get_mpiutil(void);
 
