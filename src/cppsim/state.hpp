@@ -472,7 +472,7 @@ public:
     virtual void set_Haar_random_state() override {
         UINT seed = random.int32();
 #ifdef _USE_MPI
-        if (this->outer_qc > 0) mpiutil->s_u_bcast(&seed);
+        if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif  //#ifdef _USE_MPI
         set_Haar_random_state(seed);
     }
@@ -801,9 +801,7 @@ public:
     virtual std::vector<ITYPE> sampling(UINT sampling_count) override {
         UINT seed = rand();
 #ifdef _USE_MPI
-        if (mpiutil->get_size() > 1) {
-            mpiutil->s_u_bcast(&seed);
-        }
+        if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif
         return this->sampling(sampling_count, seed);
     }

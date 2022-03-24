@@ -47,13 +47,15 @@ TEST(StateTest_multicpu, Sampling) {
     state_mul.set_computational_basis(100);
     auto res1_ref = state_ref.sampling(num_sampling, 2021);
     auto res1_mul = state_mul.sampling(num_sampling, 2021);
+	ASSERT_EQ(res1_ref.size(), res1_mul.size());
     for (ITYPE i = 0; i < num_sampling; ++i) {
         ASSERT_EQ(res1_ref[i], res1_mul[i]);
     }
     state_ref.set_computational_basis(1000);
     state_mul.set_computational_basis(1000);
-    auto res2_ref = state_ref.sampling(num_sampling, 2022);
-    auto res2_mul = state_mul.sampling(num_sampling, 2022);
+    auto res2_ref = state_ref.sampling(num_sampling);
+    auto res2_mul = state_mul.sampling(num_sampling);
+	ASSERT_EQ(res2_ref.size(), res2_mul.size());
     for (ITYPE i = 0; i < num_sampling; ++i) {
         ASSERT_EQ(res2_ref[i], res2_mul[i]);
     }
