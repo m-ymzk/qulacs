@@ -46,8 +46,8 @@ def first_rotation(circuit, nqubits, inner_qc, outer_qc):
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        if debug and rank == 0: print('FusedSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
     for k in outer_qubits:
@@ -70,8 +70,8 @@ def mid_rotation(circuit, nqubits, inner_qc, outer_qc):
         circuit.add_RZ_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        if debug and rank == 0: print('FusedSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
     for k in outer_qubits:
@@ -94,8 +94,8 @@ def last_rotation(circuit, nqubits, inner_qc, outer_qc):
         circuit.add_RX_gate(k_phy, np.random.rand())
 
     if use_bswap and outer_qc > 0:
-        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        if debug and rank == 0: print('FusedSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
     for k in outer_qubits:
@@ -109,8 +109,8 @@ def entangler(circuit, nqubits, pairs, inner_qc, outer_qc):
 
     for a, b in pairs:
         if use_bswap and get_act_idx(b, inner_qc, outer_qc) >= inner_qc:
-            if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-            circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+            if debug and rank == 0: print('FusedSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+            circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
             swapped = not swapped
 
         a_phy = get_act_idx(a, inner_qc, outer_qc)
@@ -136,8 +136,8 @@ def build_circuit(nqubits, depth, pairs, commsize):
 
     # recover if swapped
     if use_bswap and outer_qc > 0 and swapped:
-        if debug and rank == 0: print('BSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
-        circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+        if debug and rank == 0: print('FusedSWAP {} {} {}'.format(inner_qc - outer_qc, inner_qc, outer_qc))
+        circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         swapped = not swapped
 
     assert swapped is False

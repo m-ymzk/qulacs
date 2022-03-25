@@ -972,10 +972,10 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
         }
 #endif
 
-        // check if all target qubits are inner except for SWAP, BSWAP, CZ gate
+        // check if all target qubits are inner except for SWAP, FusedSWAP, CZ gate
         for (auto& gate : circuit->gate_list) {
             auto gate_name = gate->get_name();
-            if (gate_name == "SWAP" || gate_name == "BSWAP" ||
+            if (gate_name == "SWAP" || gate_name == "FusedSWAP" ||
                 gate_name == "I" ||
                 gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
                 gate_name == "Projection-0" || gate_name == "Projection-1" ||
@@ -990,10 +990,10 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv, UINT
             }
         }
 
-        // check the number of SWAP and BSWAP is the same with expected.
+        // check the number of SWAP and FusedSWAP is the same with expected.
         UINT num_outer_swap_gates = 0;
         for (auto& gate : circuit->gate_list) {
-            if (gate->get_name() == "SWAP" || gate->get_name() == "BSWAP") {
+            if (gate->get_name() == "SWAP" || gate->get_name() == "FusedSWAP") {
                 auto t_index_list = gate->get_target_index_list();
                 for (auto idx : t_index_list) {
                     if (idx >= state.inner_qc) {
