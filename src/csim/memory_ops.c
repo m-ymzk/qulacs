@@ -73,7 +73,7 @@ void memcpy_sve(double* Out, double* In, ITYPE Num) {
             ITYPE end_index =
                 block_size * (thread_id + 1) +
                 (residual > (thread_id + 1) ? (thread_id + 1) : residual);
-            end_index = (end_index < 0) ? 0 : end_index;
+            // end_index = (end_index < 0) ? 0 : end_index;
 #else
             UINT thread_id = 0;
             ITYPE start_index = 0;
