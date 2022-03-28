@@ -65,7 +65,7 @@ class TestQuantumCircuit(unittest.TestCase):
     def setUp(self):
         self.n = 4
         self.dim = 2**self.n
-        self.state = qulacs.QuantumState(self.n)
+        self.state = qulacs.QuantumState(self.n, True)
         self.circuit = qulacs.QuantumCircuit(self.n)
 
     def tearDown(self):
@@ -81,7 +81,10 @@ class TestQuantumCircuit(unittest.TestCase):
         vector_ans = np.zeros(self.dim)
         vector_ans[0] = np.sqrt(0.5)
         vector_ans[3] = np.sqrt(0.5)
-        self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check make bell state")
+        if self.state.get_device_name() == 'multi-cpu':
+            vector_ans = vector_ans[self.dim // mpisize * mpirank:self.dim // mpisize * (mpirank + 1)]
+        if mpirank == 0:
+            self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check make bell state")
 
 
 class TestPointerHandling(unittest.TestCase):
@@ -133,7 +136,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import merge, add, to_matrix_gate, Probabilistic, CPTP, Instrument, Adaptive
         from scipy.sparse import lil_matrix
         qc = QuantumCircuit(3)
-        qs = QuantumState(3)
+        qs = QuantumState(3, True)
         ref = QuantumState(3)
         sparse_mat = lil_matrix((4, 4))
         sparse_mat[0, 0] = 1
@@ -184,7 +187,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import ParametricRX, ParametricRY, ParametricRZ, ParametricPauliRotation
         from scipy.sparse import lil_matrix
         qc = ParametricQuantumCircuit(3)
-        qs = QuantumState(3)
+        qs = QuantumState(3, True)
         ref = QuantumState(3)
         sparse_mat = lil_matrix((4, 4))
         sparse_mat[0, 0] = 1
@@ -297,10 +300,10 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs import QuantumState
         from qulacs.gate import StateReflection
         n = 5
-        s1 = QuantumState(n)
+        s1 = QuantumState(n, True)
 
         def gen_gate():
-            s2 = QuantumState(n)
+            s2 = QuantumState(n, True)
             gate = StateReflection(s2)
             del s2
             return gate
@@ -315,7 +318,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import SparseMatrix
         from scipy.sparse import lil_matrix
         n = 5
-        state = QuantumState(n)
+        state = QuantumState(n, True)
         matrix = lil_matrix((4, 4), dtype=np.complex128)
         matrix[0, 0] = 1 + 1.j
         matrix[1, 1] = 1. + 1.j
