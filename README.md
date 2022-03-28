@@ -25,6 +25,7 @@
   - QuantumCircuitOptimizer
       - optimize (supports only block_size=1)
       - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
@@ -45,18 +46,13 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
+      - Pauli
+      - PauliRotation
       - DenseMatrix(single target)
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
       - to_matrix_gate
-
-- To be supported after March (T.B.D.)
-  - gate
-      - Pauli
-      - PauliRotation
-  - ParametricQuantumCircuit
-  - PauliOperator
 
 ## Additional info
 - To be supported after April (T.B.D.)
@@ -71,6 +67,7 @@
       - Instrument
       - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
@@ -159,7 +156,7 @@
         - No SWAP/FusedSWAP gate insertion
       - swap_level = 1
         - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
-    - optimize(circuit, swap_level=0)
+    - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
 

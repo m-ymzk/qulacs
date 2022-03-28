@@ -22,8 +22,9 @@
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumCircuit
   - QuantumCircuitOptimizer
-    - optimizer (supports only block_size=1)
-    - optimize_light
+      - optimizer (supports only block_size=1)
+      - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
@@ -44,18 +45,13 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
+      - Pauli
+      - PauliRotation
       - DenseMatrix(single target)
+      - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
       - to_matrix_gate
-
-- 3月末版対応予定の関数・機能
-  - gate
-      - Pauli
-      - PauliRotation
-      - DenseMatrix(single control, single target)
-  - ParametricQuantumCircuit
-  - PauliOperator
 
 ## 注意事項
 - 4月以降の版で順次対応予定の関数・機能
@@ -70,6 +66,7 @@
       - Instrument
       - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
