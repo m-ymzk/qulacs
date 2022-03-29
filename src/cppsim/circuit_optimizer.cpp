@@ -179,8 +179,8 @@ target_qubits);
 }
 */
 
-void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit, UINT swap_level) {
-    this->circuit = circuit;
+void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap_level) {
+    this->circuit = circuit_;
 
     if (swap_level >= 1) {
         std::cerr
@@ -310,7 +310,13 @@ std::vector<UINT> QuantumCircuitOptimizer::get_comm_qubits(UINT gate_index) {
     auto& gate = circuit->gate_list[gate_index];
 
     // CZはouterのtarget_qubitを使用しても通信不要
-    if (gate->get_name() == "CZ") {
+    auto gate_name = gate->get_name();
+    if (gate_name == "I" ||
+        gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
+        gate_name == "Projection-0" || gate_name == "Projection-1" ||
+        gate_name == "S" || gate_name == "Sdag" ||
+        gate_name == "T" || gate_name == "Tdag" ||
+        gate_name == "DiagonalMatrix") {
         return std::vector<UINT>();
     }
     
@@ -386,7 +392,7 @@ void QuantumCircuitOptimizer::add_swap_gate(UINT idx0, UINT idx1, UINT width, Qu
     if (width == 1) {
         circuit->add_gate(gate::SWAP(idx0, idx1), gate_pos);
     } else {
-        circuit->add_gate(gate::BSWAP(idx0, idx1, width), gate_pos);
+        circuit->add_gate(gate::FusedSWAP(idx0, idx1, width), gate_pos);
     }
     qt.fswap(idx0, idx1, width);
 }

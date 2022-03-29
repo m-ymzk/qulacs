@@ -1372,7 +1372,7 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_low(
             target_qubit_index1, target_qubit_index2, mat, vec, dim);
-    } else if ((dim >= (numComplexInVec << 1)) && (numComplexInVec == 4) &&
+    } else if ((dim > (numComplexInVec << 1)) && (numComplexInVec == 4) &&
                ((target_qubit_index1 < 2) || (target_qubit_index2 < 2))) {
         assert(sizeof(ETYPE) == sizeof(double));
         double_qubit_dense_matrix_gate_sve_middle(
@@ -2250,3 +2250,56 @@ void double_qubit_dense_matrix_gate_simd(UINT target_qubit_index1,
     }
 }
 #endif
+
+#ifdef _USE_MPI
+void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
+    UINT target_qubit_index2, const CTYPE mat[16], CTYPE* state, ITYPE dim, UINT inner_qc) {
+
+    UINT target1_is_outer = (target_qubit_index1 >= inner_qc) ? 1 : 0;
+    UINT target2_is_outer = (target_qubit_index2 >= inner_qc) ? 1 : 0;
+    UINT outer_targets = target1_is_outer + target2_is_outer;
+
+    if (inner_qc < 2){
+        fprintf(stderr, "#ERROR: inner_qc < 2 is not supported (double-target dense-gate).\n");
+        return;
+    }
+
+    ITYPE local_dim = 1ULL << inner_qc;
+    if(outer_targets == 2){
+        // Add two swap gates before and after a double-target dense-gate operation
+        UINT act_target_qubit_index1 = inner_qc - 1 ;
+        UINT act_target_qubit_index2 = inner_qc - 2 ;
+        SWAP_gate_mpi(target_qubit_index1, act_target_qubit_index1, state, dim, inner_qc);
+        SWAP_gate_mpi(target_qubit_index2, act_target_qubit_index2, state, dim, inner_qc);
+
+        double_qubit_dense_matrix_gate_c(act_target_qubit_index1, act_target_qubit_index2,
+            mat, state, local_dim);
+
+        SWAP_gate_mpi(act_target_qubit_index1, target_qubit_index1, state, dim, inner_qc);
+        SWAP_gate_mpi(act_target_qubit_index2, target_qubit_index2, state, dim, inner_qc);
+
+    }else{
+        if(target1_is_outer){
+            // Add a swap gate before and after a double-target dense-gate operation
+            UINT act_target_qubit_index1 = (target_qubit_index2 == (inner_qc -1) ) ? inner_qc - 2 : inner_qc - 1 ;
+            SWAP_gate_mpi(target_qubit_index1, act_target_qubit_index1, state, dim, inner_qc);
+    
+            double_qubit_dense_matrix_gate_c(act_target_qubit_index1, target_qubit_index2,
+                mat, state, local_dim);
+    
+            SWAP_gate_mpi(act_target_qubit_index1, target_qubit_index1, state, dim, inner_qc);
+        }else{
+            // Add a swap gate before and after a double-target dense-gate operation
+            UINT act_target_qubit_index2 = (target_qubit_index1 == (inner_qc -1) ) ? inner_qc - 2 : inner_qc - 1 ;
+            SWAP_gate_mpi(target_qubit_index2, act_target_qubit_index2, state, dim, inner_qc);
+    
+            double_qubit_dense_matrix_gate_c(target_qubit_index1, act_target_qubit_index2,
+                mat, state, local_dim);
+    
+            SWAP_gate_mpi(act_target_qubit_index2, target_qubit_index2, state, dim, inner_qc);
+        }
+    }
+
+}
+#endif // #ifdef _USE_MPI
+

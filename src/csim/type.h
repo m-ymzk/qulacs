@@ -92,7 +92,6 @@ inline static SV_ITYPE SvindexI(UINT base, UINT step) {
 }
 
 #else  // #if defined(_SINGLE_PRECISION)
-
 typedef svfloat64_t SV_FTYPE
     __attribute__((arm_sve_vector_bits(__ARM_FEATURE_SVE_BITS)));
 typedef svuint64_t SV_ITYPE

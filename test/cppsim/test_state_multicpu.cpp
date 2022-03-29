@@ -47,13 +47,15 @@ TEST(StateTest_multicpu, Sampling) {
     state_mul.set_computational_basis(100);
     auto res1_ref = state_ref.sampling(num_sampling, 2021);
     auto res1_mul = state_mul.sampling(num_sampling, 2021);
+	ASSERT_EQ(res1_ref.size(), res1_mul.size());
     for (ITYPE i = 0; i < num_sampling; ++i) {
         ASSERT_EQ(res1_ref[i], res1_mul[i]);
     }
     state_ref.set_computational_basis(1000);
     state_mul.set_computational_basis(1000);
-    auto res2_ref = state_ref.sampling(num_sampling, 2022);
-    auto res2_mul = state_mul.sampling(num_sampling, 2022);
+    auto res2_ref = state_ref.sampling(num_sampling);
+    auto res2_mul = state_mul.sampling(num_sampling);
+	ASSERT_EQ(res2_ref.size(), res2_mul.size());
     for (ITYPE i = 0; i < num_sampling; ++i) {
         ASSERT_EQ(res2_ref[i], res2_mul[i]);
     }
@@ -270,6 +272,87 @@ TEST(StateTest_multicpu, CopyState) {
         for (ITYPE i = 0; i < inner_dim; ++i)
             ASSERT_NEAR(
                 abs(state_multi_ref.data_cpp()[i] - state->data_cpp()[i]), 0,
+                eps);
+    }
+}
+
+TEST(StateTest_multicpu, LoadState) {
+    const UINT n = 6;
+    const ITYPE dim = 1ULL << n;
+    double eps = _EPS;
+
+    Random random;
+    QuantumState state_single_ref(n);
+    QuantumState state_multi_ref(n, 1);
+
+    MPIutil m = get_mpiutil();
+    const ITYPE inner_dim = dim >> state_multi_ref.outer_qc;
+    const ITYPE offs =
+        (state_multi_ref.outer_qc != 0) * inner_dim * m->get_rank();
+
+    // cpu -> cpu
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        state_single_ref.set_Haar_random_state();
+
+        QuantumState state(n);
+        state.load(&state_single_ref);
+
+        // Checking
+        for (ITYPE i = 0; i < dim; ++i)
+            ASSERT_NEAR(
+                abs(state.data_cpp()[i] - state_single_ref.data_cpp()[i]), 0,
+                eps)
+                << "idx: " << i << " stete: " << state.data_cpp()[i]
+                << " stete(ref): " << state_single_ref.data_cpp()[i + offs]
+                << std::endl;
+    }
+
+    // cpu -> multi-cpu
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        state_single_ref.set_Haar_random_state();
+
+        QuantumState state(n, 1);
+        state.load(&state_single_ref);
+
+        // Checking
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(abs(state.data_cpp()[i] -
+                            state_single_ref.data_cpp()[i + offs]),
+                0, eps)
+                << "idx: " << i << " stete: " << state.data_cpp()[i]
+                << " stete(ref): " << state_single_ref.data_cpp()[i + offs]
+                << std::endl;
+    }
+
+    // multi-cpu -> cpu
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        state_multi_ref.set_Haar_random_state();
+
+        QuantumState state(n);
+        state.load(&state_multi_ref);
+
+        // Checking
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state_multi_ref.data_cpp()[i] - state.data_cpp()[i + offs]),
+                0, eps)
+                << "rank: " << m->get_rank() << " idx: " << i + offs
+                << " stete: " << state.data_cpp()[i + offs]
+                << " stete(ref): " << state_multi_ref.data_cpp()[i]
+                << std::endl;
+    }
+
+    // multi-cpu -> multi-cpu
+    for (UINT repeat = 0; repeat < 10; ++repeat) {
+        state_multi_ref.set_Haar_random_state();
+
+        QuantumState state(n, 1);
+        state.load(&state_multi_ref);
+
+        // Checking
+        for (ITYPE i = 0; i < inner_dim; ++i)
+            ASSERT_NEAR(
+                abs(state_multi_ref.data_cpp()[i] - state.data_cpp()[i]), 0,
                 eps);
     }
 }

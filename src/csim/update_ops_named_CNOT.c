@@ -101,6 +101,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
             ITYPE basis_index = ((state_index & mid_mask) << 1) +
                                 ((state_index & high_mask) << 2) + control_mask;
             CTYPE temp = state[basis_index];
+#if defined(__ARM_FEATURE_SVE)
 #ifdef __aarch64__
             if (5 <= control_qubit_index && control_qubit_index <= 8) {
 // L1 prefetch
@@ -123,6 +124,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf + 1], 1, 2);
             }
 #endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
             state[basis_index] = state[basis_index + 1];
             state[basis_index + 1] = temp;
         }
@@ -134,6 +136,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 ((state_index & high_mask) << 2) + control_mask;
             ITYPE basis_index_1 = basis_index_0 + target_mask;
             CTYPE temp = state[basis_index_0];
+#if defined(__ARM_FEATURE_SVE)
 #ifdef __aarch64__
             if (5 <= target_qubit_index && target_qubit_index <= 8) {
 // L2 prefetch
@@ -151,9 +154,11 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
             }
 #endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
             state[basis_index_0] = state[basis_index_1];
             state[basis_index_1] = temp;
         }
+#if defined(__ARM_FEATURE_SVE)
 #ifdef __aarch64__
     } else if ((5 <= control_qubit_index && control_qubit_index <= 8) ||
                (5 <= target_qubit_index && target_qubit_index <= 8)) {
@@ -264,6 +269,7 @@ void CNOT_gate_single_unroll(UINT control_qubit_index, UINT target_qubit_index,
             }
         }
 #endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
     } else {
         // a,a+1 is swapped to a^m, a^m+1, respectively
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
@@ -365,6 +371,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 ((state_index & high_mask) << 2) + control_mask;
             ITYPE basis_index_1 = basis_index_0 + target_mask;
             CTYPE temp = state[basis_index_0];
+#if defined(__ARM_FEATURE_SVE)
 #ifdef __aarch64__
             if (5 <= target_qubit_index && target_qubit_index <= 8) {
 // L2 prefetch
@@ -382,6 +389,7 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
             }
 #endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
             state[basis_index_0] = state[basis_index_1];
             state[basis_index_1] = temp;
         }
@@ -447,6 +455,8 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 ITYPE basis_index_1 = basis_index_0 + target_mask;
                 CTYPE temp0 = state[basis_index_0];
                 CTYPE temp1 = state[basis_index_0 + 1];
+#if defined(__ARM_FEATURE_SVE)
+#ifdef __aarch64__
 // L1 prefetch
 #undef _PRF_L1_ITR
 #define _PRF_L1_ITR 4
@@ -473,6 +483,8 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
+#endif // #ifdef __aarch64__
+#endif // #if defined(__ARM_FEATURE_SVE)
 
                 state[basis_index_0] = state[basis_index_1];
                 state[basis_index_0 + 1] = state[basis_index_1 + 1];

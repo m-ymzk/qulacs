@@ -26,19 +26,19 @@ def build_circuit(args, mpisize, pairs):
     #if rank==0: print("#inner, outer, depth=", inner_qc, outer_qc, depth)
 
     circuit = QuantumCircuit(nqubits)
-    USE_BSWAP=True
-    if USE_BSWAP:
+    USE_FusedSWAP=True
+    if USE_FusedSWAP:
         for _ in range(depth):
             for i in range(inner_qc):
                 circuit.add_H_gate(i)
             if outer_qc != 0:
-                circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+                circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
             for i in range(outer_qc):
                 circuit.add_H_gate(inner_qc - outer_qc + i)
             #if (outer_qc!=0):
-            #circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+            #circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
         if (outer_qc != 0) & (depth % 2 == 1):
-            circuit.add_BSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+            circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
 
     else:
         for _ in range(depth):

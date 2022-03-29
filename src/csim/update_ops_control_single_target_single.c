@@ -569,6 +569,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
     }
 }
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 static inline void MatrixVectorProduct2x2Half(SV_PRED pg, SV_FTYPE mat0r,
     SV_FTYPE mat0i, SV_FTYPE mat1r, SV_FTYPE mat1i, SV_FTYPE input02r,
     SV_FTYPE input02i, SV_FTYPE input13r, SV_FTYPE input13i,
@@ -591,6 +592,7 @@ static inline void MatrixVectorProduct2x2Half(SV_PRED pg, SV_FTYPE mat0r,
     *result01r = svmsb_x(pg, input13i, mat1i, *result01r);
     *result01i = svmad_x(pg, input13i, mat1r, *result01i);
 }
+#endif
 
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
     CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag) {

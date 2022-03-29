@@ -7,7 +7,7 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=1$ ）
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=2$ ）
 - A64FXの512bit-SVE命令に最適化されている
 - 対応関数及び範囲は、制限事項を参照
 
@@ -22,11 +22,13 @@
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumCircuit
   - QuantumCircuitOptimizer
-    - optimizer (supports only block_size=1)
-    - optimize_light
+      - optimizer (supports only block_size=1)
+      - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
+      - load
       - get_device_name
       - get_vector
       - normalize
@@ -43,20 +45,13 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
+      - Pauli
+      - PauliRotation
       - DenseMatrix(single target)
+      - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
       - to_matrix_gate
-
-- 3月末版対応予定の関数・機能
-  - gate
-      - Pauli
-      - PauliRotation
-      - DenseMatrix(single control, single target)
-  - QuantumState
-      - load
-  - ParametricQuantumCircuit
-  - PauliOperator
 
 ## 注意事項
 - 4月以降の版で順次対応予定の関数・機能
@@ -71,6 +66,7 @@
       - Instrument
       - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state

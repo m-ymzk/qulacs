@@ -105,9 +105,9 @@ public:
 };
 
 /**
- * \~japanese-en BSWAPゲート
+ * \~japanese-en FusedSWAPゲート
  */
-class ClsBSWAPGate : public QuantumGate_NQubitpair {
+class ClsFusedSWAPGate : public QuantumGate_NQubitpair {
 public:
     /**
      * \~japanese-en コンストラクタ
@@ -116,17 +116,17 @@ public:
      * @param target_qubit_index2 もう一つのターゲット量子ビットの添え字の先頭
      * @param num_qubits ターゲット量子ビット数
      */
-    ClsBSWAPGate(
+    ClsFusedSWAPGate(
         UINT target_qubit_index1, UINT target_qubit_index2, UINT num_qubits) {
-        this->_update_func = BSWAP_gate;
+        this->_update_func = FusedSWAP_gate;
         // this->_update_func_dm = dm_SWAP_gate;
 #ifdef _USE_GPU
         // this->_update_func_gpu = SWAP_gate_host;
 #endif
 #ifdef _USE_MPI
-        this->_update_func_mpi = BSWAP_gate_mpi;
+        this->_update_func_mpi = FusedSWAP_gate_mpi;
 #endif
-        this->_name = "BSWAP";
+        this->_name = "FusedSWAP";
         this->_target_qubit_list.push_back(
             TargetQubitInfo(target_qubit_index1, 0));
         this->_target_qubit_list.push_back(

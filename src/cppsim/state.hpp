@@ -87,7 +87,7 @@ public:
 
         UINT log_nodes = std::log2(mpisize);
         if (use_multi_cpu &&
-            (qubit_count_ > log_nodes)) {  // minimum inner_qc=1
+            (qubit_count_ > (log_nodes + 1))) {  // minimum inner_qc=2
             this->_inner_qc = qubit_count_ - log_nodes;
             this->_outer_qc = log_nodes;
         } else {
@@ -472,7 +472,7 @@ public:
     virtual void set_Haar_random_state() override {
         UINT seed = random.int32();
 #ifdef _USE_MPI
-        if (this->outer_qc > 0) mpiutil->s_u_bcast(&seed);
+        if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif  //#ifdef _USE_MPI
         set_Haar_random_state(seed);
     }
@@ -627,24 +627,25 @@ public:
                 (size_t)(sizeof(CPPCTYPE) * _dim));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
-            return new_state;
-        } else {  // copy (single)cpu -> multicpu
+        } else if ( new_state->_outer_qc > 0) { // copy (single)cpu -> multicpu
             ITYPE offs = (_dim / mpiutil->get_size()) * mpiutil->get_rank();
             memcpy(new_state->data_cpp(), _state_vector + offs,
                 (size_t)(sizeof(CPPCTYPE) * _dim / mpiutil->get_size()));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
             return new_state;
+        } else {  // copy (single)cpu -> cpu
+            memcpy(new_state->data_cpp(), _state_vector,
+                (size_t)(sizeof(CPPCTYPE) * _dim));
+            for (UINT i = 0; i < _classical_register.size(); ++i)
+                new_state->set_classical_value(i, _classical_register[i]);
         }
+        return new_state;
     }
     /**
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
     virtual void load(const QuantumStateBase* _state) {
-        // std::cout << "#debug: QuantumStateCpu::load(const QuantumStateBase*):
-        // load qubit:" << this->qubit_count << ", "
-        //    	<< _state->qubit_count << ", " << _state->outer_qc << ", " <<
-        //    _state->inner_qc << ", " << std::endl;
         if (_state->qubit_count != this->qubit_count) {
             std::cerr << "Error: QuantumStateCpu::load(const "
                          "QuantumStateBase*): invalid qubit count"
@@ -664,11 +665,8 @@ public:
                     (size_t)(sizeof(CPPCTYPE) * _dim));
             } else {
                 // load multicpu to cpu
-                std::cerr << "#debug: QuantumStateCpu::load multicpu to cpu is "
-                             "just implemented!!, now testing"
-                          << __FILE__ << ":" << __LINE__ << std::endl;
-                mpiutil->m_DC_allgather(
-                    _state->data_cpp(), this->data_cpp(), _dim);
+                mpiutil->m_DC_allgather(_state->data_cpp(), this->data_cpp(),
+                    _dim / mpiutil->get_size());
             }
         } else {
             if (this->get_device_name() == "multi-cpu") {
@@ -803,9 +801,7 @@ public:
     virtual std::vector<ITYPE> sampling(UINT sampling_count) override {
         UINT seed = rand();
 #ifdef _USE_MPI
-        if (mpiutil->get_size() > 1) {
-            mpiutil->s_u_bcast(&seed);
-        }
+        if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif
         return this->sampling(sampling_count, seed);
     }
@@ -817,10 +813,14 @@ public:
         std::vector<ITYPE> result;
         double sum = 0.;
         auto ptr = this->data_cpp();
-        stacked_prob.push_back(0.);
+        // resize
+        stacked_prob.resize(this->dim + 1);
+        result.resize(sampling_count);
+
+        stacked_prob[0] = 0.;
         for (UINT i = 0; i < this->dim; ++i) {
             sum += norm(ptr[i]);
-            stacked_prob.push_back(sum);
+            stacked_prob[i+1] = sum;
         }
 
 #ifdef _USE_MPI
@@ -848,7 +848,7 @@ public:
             auto ite =
                 std::lower_bound(stacked_prob.begin(), stacked_prob.end(), r);
             auto index = std::distance(stacked_prob.begin(), ite) - 1;
-            result.push_back(index);
+            result[count] = index;
         }
 
 #ifdef _USE_MPI

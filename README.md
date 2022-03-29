@@ -9,7 +9,7 @@
 - Quantum state generation & gate simulation with multi-process and multi-nodes
 - mpiQulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
   - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
-  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=1$ constant）
+  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=2$ constant）
 - Please also see Limitation
 
 <hr>
@@ -25,9 +25,11 @@
   - QuantumCircuitOptimizer
       - optimize (supports only block_size=1)
       - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
+      - load
       - get_device_name
       - get_vector
       - normalize
@@ -44,20 +46,13 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
+      - Pauli
+      - PauliRotation
       - DenseMatrix(single target)
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
       - to_matrix_gate
-
-- To be supported after March (T.B.D.)
-  - gate
-      - Pauli
-      - PauliRotation
-  - QuantumState
-      - load
-  - ParametricQuantumCircuit
-  - PauliOperator
 
 ## Additional info
 - To be supported after April (T.B.D.)
@@ -72,6 +67,7 @@
       - Instrument
       - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
   - QuantumCircuitSimulator
   - state
@@ -160,7 +156,7 @@
         - No SWAP/FusedSWAP gate insertion
       - swap_level = 1
         - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
-    - optimize(circuit, swap_level=0)
+    - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
 
