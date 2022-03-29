@@ -853,7 +853,7 @@ public:
 
 #ifdef _USE_MPI
         if (_outer_qc > 0) {
-            UINT geta = mpirank * this->dim;
+            ITYPE geta = mpirank * this->dim;
             for (UINT i = 0; i < sampling_count; ++i) {
                 if (result[i] == -1ULL or result[i] == this->dim)
                     result[i] = 0ULL;
