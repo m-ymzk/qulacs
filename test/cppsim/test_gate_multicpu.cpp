@@ -1177,7 +1177,6 @@ TEST(GateTest_multicpu, RandomUnitaryMergeLarge) {
                 abs(state.data_cpp()[i] - test_state.data_cpp()[i]), 0, eps);
         }
 }
-*/
 
 TEST(GateTest_multicpu, U3MergeIBMQGate) {
     auto gate1 = gate::U3(0, 0.1, 0.1, 0.1);
@@ -1338,7 +1337,6 @@ mat_res << std::endl;
 }
 
 
-
 TEST(GateTest_multicpu, RandomControlMergeSmall) {
     UINT n = 4;
     ITYPE dim = 1ULL << n;
@@ -1381,7 +1379,6 @@ ASSERT_NEAR(abs(state.data_cpp()[i] - test_state_eigen[i]), 0, eps) << state <<
 "\n\n" << test_state_eigen << "\n";
     }
 }
-
 
 TEST(GateTest_multicpu, RandomControlMergeLarge) {
     UINT n = 4;
