@@ -7,7 +7,7 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=2$ ）
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 (N - k) <= log2(S) の場合は分散配置されない。ここで "S" はMPIランク数、 "N" は qubit数、 "k" は、1プロセスあたりの最少qubit数（定数 k = 2 ）
 - A64FXの512bit-SVE命令に最適化されている
 - 対応関数及び範囲は、制限事項を参照
 
@@ -22,7 +22,7 @@
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumCircuit
   - QuantumCircuitOptimizer
-      - optimizer (supports only block_size=1)
+      - optimize (supports only block_size=1)
       - optimize_light
   - ParametricQuantumCircuit
   - QuantumState
@@ -156,7 +156,7 @@
         - SWAP/FusedSWAPゲートの挿入なし
       - swap_level = 1
         - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
-    - optimize(circuit, swap_level=0)
+    - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - SWAP/FusedSWAPゲートの挿入なし
 
