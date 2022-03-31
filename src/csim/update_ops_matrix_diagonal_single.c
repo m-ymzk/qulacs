@@ -23,24 +23,8 @@
 #endif
 #endif
 
-// void single_qubit_diagonal_matrix_gate_old_single(UINT target_qubit_index,
-// const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim); void
-// single_qubit_diagonal_matrix_gate_old_parallel(UINT target_qubit_index, const
-// CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
-
 void single_qubit_diagonal_matrix_gate(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
-    // single_qubit_diagonal_matrix_gate_old_single(target_qubit_index,
-    // diagonal_matrix, state, dim);
-    // single_qubit_diagonal_matrix_gate_old_parallel(target_qubit_index,
-    // diagonal_matrix, state, dim);
-    // single_qubit_diagonal_matrix_gate_single_unroll(target_qubit_index,
-    // diagonal_matrix, state, dim);
-    // single_qubit_diagonal_matrix_gate_single_simd(target_qubit_index,
-    // diagonal_matrix, state, dim);
-    // single_qubit_diagonal_matrix_gate_parallel_simd(target_qubit_index,
-    // diagonal_matrix, state, dim);
-
 #ifdef _USE_SIMD
 #ifdef _OPENMP
     UINT threshold = 12;
@@ -484,28 +468,25 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
         single_qubit_diagonal_matrix_gate(
             target_qubit_index, diagonal_matrix, state, dim);
     } else {
+#ifdef _OPENMP
+        UINT threshold = 4;
+        UINT default_thread_count = omp_get_max_threads();
+        if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
+
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
 
+        _single_qubit_diagonal_matrix_gate_mpi(
+            diagonal_matrix, state, dim, (rank & pair_rank_bit) != 0);
 #ifdef _OPENMP
-        UINT threshold = 12;
-        if (dim < (((ITYPE)1) << threshold)) {
-            single_qubit_diagonal_matrix_gate_single_unroll_mpi(
-                diagonal_matrix, state, dim, (rank & pair_rank_bit) != 0);
-        } else {
-            single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
-                diagonal_matrix, state, dim, (rank & pair_rank_bit) != 0);
-        }
-#else
-        single_qubit_diagonal_matrix_gate_single_unroll_mpi(
-            diagonal_matrix, state, dim, rank & pair_rank_bit);
+        omp_set_num_threads(default_thread_count);
 #endif
     }
 }
 
-// flag: My qubit(target in outer_qubit) value.
-void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
+void _single_qubit_diagonal_matrix_gate_mpi(
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int isone) {
     // loop variables
     ITYPE state_index;
@@ -516,86 +497,32 @@ void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
     if (dim >= vec_len) {
         SV_PRED pg = Svptrue();  // this predicate register is all 1.
 
-        SV_FTYPE mat_real, mat_imag;
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
+        SV_FTYPE matr, mati;
 
-        mat_real = SvdupF(creal(diagonal_matrix[isone]));
-        mat_imag = SvdupF(cimag(diagonal_matrix[isone]));
+        matr = SvdupF(creal(diagonal_matrix[isone]));
+        mati = SvdupF(cimag(diagonal_matrix[isone]));
+
+#pragma omp parallel for
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[state_index]);
-            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
+            SV_FTYPE input0 = svld1(pg, (ETYPE *)&state[state_index]);
+            SV_FTYPE input1 =
+                svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
             // select odd or even elements from two vectors
-            cval_real = svuzp1(input0, input1);
-            cval_imag = svuzp2(input0, input1);
+            SV_FTYPE cvalr = svuzp1(input0, input1);
+            SV_FTYPE cvali = svuzp2(input0, input1);
 
             // perform complex multiplication
-            result_real = svmul_x(pg, cval_real, mat_real);
-            result_imag = svmul_x(pg, cval_imag, mat_real);
+            SV_FTYPE resultr = svmul_x(pg, cvalr, matr);
+            SV_FTYPE resulti = svmul_x(pg, cvali, matr);
 
-            result_real = svmsb_x(pg, cval_imag, mat_imag, result_real);
-            result_imag = svmad_x(pg, cval_real, mat_imag, result_imag);
-
-            // interleave elements from low halves of two vectors
-            output0 = svzip1(result_real, result_imag);
-            output1 = svzip2(result_real, result_imag);
-
-            // set values
-            svst1(pg, (ETYPE *)&state[state_index], output0);
-            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
-        }
-    } else
-#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    {
-        for (state_index = 0; state_index < dim; state_index += 2) {
-            state[state_index] *= diagonal_matrix[isone];
-            state[state_index + 1] *= diagonal_matrix[isone];
-        }
-    }
-}
-
-#ifdef _OPENMP
-void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
-    const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int isone) {
-    // loop variables
-    ITYPE state_index;
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    ITYPE vec_len =
-        getVecLength();  // length of SVE registers (# of 64-bit elements)
-
-    if (dim >= vec_len) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
-
-        SV_FTYPE mat_real, mat_imag;
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cval_real, cval_imag, result_real, result_imag;
-
-        mat_real = SvdupF(creal(diagonal_matrix[isone]));
-        mat_imag = SvdupF(cimag(diagonal_matrix[isone]));
-
-#pragma omp parallel for private(input0, input1, output0, output1, cval_real, \
-    cval_imag, result_real, result_imag) shared(pg, mat_real, mat_imag)
-        for (state_index = 0; state_index < dim; state_index += vec_len) {
-            // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[state_index]);
-            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
-
-            // select odd or even elements from two vectors
-            cval_real = svuzp1(input0, input1);
-            cval_imag = svuzp2(input0, input1);
-
-            // perform complex multiplication
-            result_real = svmul_x(pg, cval_real, mat_real);
-            result_imag = svmul_x(pg, cval_imag, mat_real);
-
-            result_real = svmsb_x(pg, cval_imag, mat_imag, result_real);
-            result_imag = svmad_x(pg, cval_real, mat_imag, result_imag);
+            resultr = svmsb_x(pg, cvali, mati, resultr);
+            resulti = svmad_x(pg, cvalr, mati, resulti);
 
             // interleave elements from low halves of two vectors
-            output0 = svzip1(result_real, result_imag);
-            output1 = svzip2(result_real, result_imag);
+            SV_FTYPE output0 = svzip1(resultr, resulti);
+            SV_FTYPE output1 = svzip2(resultr, resulti);
 
             // set values
             svst1(pg, (ETYPE *)&state[state_index], output0);
@@ -611,39 +538,4 @@ void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
         }
     }
 }
-#endif
 #endif  //#ifdef _USE_MPI
-
-/*
-
-void single_qubit_diagonal_matrix_gate_old_single(UINT target_qubit_index, const
-CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
-        // loop variables
-        const ITYPE loop_dim = dim;
-        ITYPE state_index;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // determin matrix pos
-                UINT bit_val = (state_index >> target_qubit_index) % 2;
-
-                // set value
-                state[state_index] *= diagonal_matrix[bit_val];
-        }
-}
-
-#ifdef _OPENMP
-void single_qubit_diagonal_matrix_gate_old_parallel(UINT target_qubit_index,
-const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
-        // loop variables
-        const ITYPE loop_dim = dim;
-        ITYPE state_index;
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // determin matrix pos
-                UINT bit_val = (state_index >> target_qubit_index) % 2;
-
-                // set value
-                state[state_index] *= diagonal_matrix[bit_val];
-        }
-}
-#endif
-*/

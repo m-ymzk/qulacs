@@ -828,9 +828,7 @@ void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
 #ifdef _USE_MPI
 DllExport void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, UINT inner_qc);
-void single_qubit_diagonal_matrix_gate_single_unroll_mpi(
-    const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int flag);
-void single_qubit_diagonal_matrix_gate_parallel_unroll_mpi(
+void _single_qubit_diagonal_matrix_gate_mpi(
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim, int flag);
 #endif
 
