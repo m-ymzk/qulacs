@@ -820,9 +820,7 @@ void single_qubit_diagonal_matrix_gate_single_simd(UINT target_qubit_index,
 void single_qubit_diagonal_matrix_gate_parallel_simd(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-void single_qubit_diagonal_matrix_gate_single_sve(UINT target_qubit_index,
-    const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
-void single_qubit_diagonal_matrix_gate_parallel_sve(UINT target_qubit_index,
+void single_qubit_diagonal_matrix_gate_sve(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_MPI
