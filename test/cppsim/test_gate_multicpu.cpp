@@ -11,7 +11,6 @@
 #include <cppsim/pauli_operator.hpp>
 #include <cppsim/state.hpp>
 #include <cppsim/utility.hpp>
-#include <csim/update_ops.h>
 
 #include "../util/util.h"
 
@@ -1452,7 +1451,6 @@ TEST(GateTest_multicpu, ProbabilisticGate) {
 }
 */
 
-#if 0  // need to use dense matrix-gate(double target)
 TEST(GateTest_multicpu, CPTPGate) {
     auto gate1 = gate::merge(gate::P0(0), gate::P0(1));
     auto gate2 = gate::merge(gate::P0(0), gate::P1(1));
@@ -1485,7 +1483,6 @@ TEST(GateTest_multicpu, InstrumentGate) {
     UINT res2 = s.get_classical_value(1);
     delete Inst;
 }
-#endif
 
 TEST(GateTest_multicpu, AdaptiveGate) {
     auto x = gate::X(0);
