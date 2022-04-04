@@ -2,6 +2,10 @@ from argparse import ArgumentParser
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
 import time
+from mpi4py import MPI
+mpicomm = MPI.COMM_WORLD
+mpirank = mpicomm.Get_rank()
+mpisize = mpicomm.Get_size()
 
 np.random.seed(seed=32)
 
@@ -17,28 +21,28 @@ def get_option():
             default=0, help='Define Output level. 0: time only, 1: Circuit info and time,2: All Gates') 
     return argparser.parse_args()
 
-def build_circuit(args, mpisize, pairs):
+def build_circuit(args, pairs):
     depth = args.depth
     vb = args.verbose
     nqubits = args.nqubits
-    outer_qc = int(np.log2(mpisize))
-    inner_qc = nqubits - outer_qc
-    #if rank==0: print("#inner, outer, depth=", inner_qc, outer_qc, depth)
+    global_qc = int(np.log2(mpisize))
+    local_qc = nqubits - global_qc
+    #if mpirank==0: print("#local, global, depth=", local_qc, global_qc, depth)
 
     circuit = QuantumCircuit(nqubits)
     USE_FusedSWAP=True
     if USE_FusedSWAP:
         for _ in range(depth):
-            for i in range(inner_qc):
+            for i in range(local_qc):
                 circuit.add_H_gate(i)
-            if outer_qc != 0:
-                circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-            for i in range(outer_qc):
-                circuit.add_H_gate(inner_qc - outer_qc + i)
-            #if (outer_qc!=0):
-            #circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
-        if (outer_qc != 0) & (depth % 2 == 1):
-            circuit.add_FusedSWAP_gate(inner_qc - outer_qc, inner_qc, outer_qc)
+            if global_qc != 0:
+                circuit.add_FusedSWAP_gate(local_qc - global_qc, local_qc, global_qc)
+            for i in range(global_qc):
+                circuit.add_H_gate(local_qc - global_qc + i)
+            #if (global_qc!=0):
+            #circuit.add_FusedSWAP_gate(local_qc - global_qc, local_qc, global_qc)
+        if (global_qc != 0) & (depth % 2 == 1):
+            circuit.add_FusedSWAP_gate(local_qc - global_qc, local_qc, global_qc)
 
     else:
         for _ in range(depth):
@@ -55,30 +59,25 @@ if __name__ == '__main__':
 
     mode = "hbench"
 
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    mpisize = comm.Get_size()
-
-    #if rank==0:
+    #if mpirank==0:
         #print('[ROI], mode, #qubits, avg of last 5 runs, std of last 5 runs, runtimes of 6 runs')
     constTimes = np.zeros(repeats)
     simTimes = np.zeros(repeats)
     st = QuantumState(n, use_multi_cpu=True)
     for i in range(repeats):
         constStart = time.perf_counter()
-        circuit = build_circuit(args, mpisize, pairs)
+        circuit = build_circuit(args, pairs)
         constTimes[i] = time.perf_counter() - constStart
 
-        comm.Barrier()
+        mpicomm.Barrier()
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
-        comm.Barrier()
+        mpicomm.Barrier()
         simTimes[i] = time.perf_counter() - simStart
         del circuit
     del st
 
-    if rank==0:
+    if mpirank==0:
         if repeats > 1:
             ctime_avg = np.average(constTimes[1:])
             ctime_std = np.std(constTimes[1:])
