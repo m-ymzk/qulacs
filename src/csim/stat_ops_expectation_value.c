@@ -174,7 +174,7 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(
 
 double expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
     const UINT* target_qubit_index_list, const UINT* Pauli_operator_type_list,
-    UINT target_qubit_index_count, const CTYPE* state, ITYPE dim) {
+    UINT target_qubit_index_count, const CTYPE* state, ITYPE dim, ITYPE outer_qc) {
     ITYPE bit_flip_mask = 0;
     ITYPE phase_flip_mask = 0;
     UINT global_phase_90rot_count = 0;
@@ -183,15 +183,34 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
         Pauli_operator_type_list, target_qubit_index_count, &bit_flip_mask,
         &phase_flip_mask, &global_phase_90rot_count, &pivot_qubit_index);
     double result;
-    if (bit_flip_mask == 0) {
-        result =
-            expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(
+#ifdef _USE_MPI
+    if (outer_qc > 0){
+       if (bit_flip_mask == 0) {
+            result = expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(
                 phase_flip_mask, state, dim);
-    } else {
-        result =
-            expectation_value_multi_qubit_Pauli_operator_XZ_mask_single_thread(
+        } else {
+            fprintf(stderr, "#ERROR: not implemented expectation_value_multi_qubit_Pauli_operator_XZ_mask"
+                " with outer_qc (file: %s, line: %d)\n", __FILE__, __LINE__);
+ 
+            result = expectation_value_multi_qubit_Pauli_operator_XZ_mask_single_thread(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                 pivot_qubit_index, state, dim);
+        }
+        MPIutil m = get_mpiutil();
+        m->s_D_allreduce(&result);
+    } else
+#endif
+    {
+        if (bit_flip_mask == 0) {
+            result =
+                expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(
+                    phase_flip_mask, state, dim);
+        } else {
+            result =
+                expectation_value_multi_qubit_Pauli_operator_XZ_mask_single_thread(
+                    bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
+                    pivot_qubit_index, state, dim);
+        }
     }
     return result;
 }

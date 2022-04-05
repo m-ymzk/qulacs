@@ -172,11 +172,11 @@ CPPCTYPE PauliOperator::get_expectation_value_single_thread(
                        state->device_number);
         } else {
             return _coef *
-                   expectation_value_multi_qubit_Pauli_operator_partial_list(
+                   expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
                        this->get_index_list().data(),
                        this->get_pauli_id_list().data(),
                        (UINT)this->get_index_list().size(), state->data_c(),
-                       state->dim);
+                       state->dim, state->outer_qc);
         }
 #else
         return _coef *
@@ -184,7 +184,7 @@ CPPCTYPE PauliOperator::get_expectation_value_single_thread(
                    this->get_index_list().data(),
                    this->get_pauli_id_list().data(),
                    (UINT)this->get_index_list().size(), state->data_c(),
-                   state->dim);
+                   state->dim, state->outer_qc);
 #endif
     } else {
         return _coef *
