@@ -29,7 +29,7 @@ DllExport double expectation_value_multi_qubit_Pauli_operator_whole_list(
     ITYPE dim);
 DllExport double expectation_value_multi_qubit_Pauli_operator_partial_list(
     const UINT* target_qubit_index_list, const UINT* Pauli_operator_type_list,
-    UINT target_qubit_index_count, const CTYPE* state, ITYPE dim);
+    UINT target_qubit_index_count, const CTYPE* state, ITYPE dim, ITYPE outer_qc);
 
 DllExport CTYPE transition_amplitude_multi_qubit_Pauli_operator_whole_list(
     const UINT* Pauli_operator_type_list, UINT qubit_count,

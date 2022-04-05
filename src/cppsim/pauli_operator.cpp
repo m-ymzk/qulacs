@@ -146,7 +146,7 @@ CPPCTYPE PauliOperator::get_expectation_value(
                    this->get_index_list().data(),
                    this->get_pauli_id_list().data(),
                    (UINT)this->get_index_list().size(), state->data_c(),
-                   state->dim);
+                   state->dim, state->outer_qc);
 #endif
     } else {
         return _coef *
