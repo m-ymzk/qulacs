@@ -774,8 +774,6 @@ TEST(CircuitTest_multicpu, SimpleExpansionZ_6qubit) {
     QuantumState state_ref(n, false);
     const ITYPE inner_dim = dim >> state.outer_qc;
 
-    QuantumCircuit circuit(n);
-
     for (ITYPE i = 0; i < n; ++i) {
         coef.push_back(-random.uniform());
         // coef.push_back(-1.);
@@ -789,19 +787,59 @@ TEST(CircuitTest_multicpu, SimpleExpansionZ_6qubit) {
     observable.add_operator(coef[4], "Z 4 I 1");
     observable.add_operator(coef[5], "Z 5 I 1");
 
-    num_repeats = (UINT)std::ceil(angle * (double)n * 100.);
-    circuit.add_observable_rotation_gate(observable, angle, num_repeats);
-
-    state_ref.set_computational_basis(0);
-    circuit.update_quantum_state(&state_ref);
-
+    state_ref.set_Haar_random_state(2022);
     state.load(&state_ref);
 
     res = observable.get_expectation_value(&state);
     res_ref = observable.get_expectation_value(&state_ref);
 
-    ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, 0.01);
+    ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps)
+    << "ref(real): " << res_ref.real() << " value(real): " << res.real() << std::endl;
 }
+
+TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
+    const UINT n = 6;
+    UINT num_repeats;
+    const UINT dim = 1ULL << n;
+    const double eps = 1e-14;
+
+    double angle;
+    std::vector<double> coef;
+
+    const UINT seed = 2022;
+    Random random;
+    random.set_seed(seed);
+
+    CPPCTYPE res;
+    CPPCTYPE res_ref;
+
+    Observable observable(n);
+
+    QuantumState state(n, true);
+    QuantumState state_ref(n, false);
+    const ITYPE inner_dim = dim >> state.outer_qc;
+
+    for (ITYPE i = 0; i < n; ++i) {
+        coef.push_back(-random.uniform());
+        // coef.push_back(-1.);
+    }
+
+    observable.add_operator(coef[0], "Z 0 Y 1");
+    observable.add_operator(coef[1], "Z 1 I 0");
+    observable.add_operator(coef[2], "X 2 Y 0");
+    observable.add_operator(coef[3], "Z 3 I 1");
+    observable.add_operator(coef[4], "Z 4 I 1");
+    observable.add_operator(coef[5], "X 5 I 1");
+
+    state_ref.set_Haar_random_state(2022);
+    state.load(&state_ref);
+
+    res = observable.get_expectation_value(&state);
+    res_ref = observable.get_expectation_value(&state_ref);
+
+    ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps);
+}
+
 
 TEST(CircuitTest_multicpu, SpecialGatesToString) {
     QuantumState state(1, 1);
