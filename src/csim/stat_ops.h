@@ -24,9 +24,6 @@ DllExport double marginal_prob(const UINT* sorted_target_qubit_index_list,
     const UINT* measured_value_list, UINT target_qubit_index_count,
     const CTYPE* state, ITYPE dim);
 
-DllExport double expectation_value_single_qubit_Pauli_operator(
-    UINT target_qubit_index, UINT Pauli_operator_type, const CTYPE* state,
-    ITYPE dim);
 DllExport double expectation_value_multi_qubit_Pauli_operator_whole_list(
     const UINT* Pauli_operator_type_list, UINT qubit_count, const CTYPE* state,
     ITYPE dim);

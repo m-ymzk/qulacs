@@ -7,92 +7,12 @@
 #include "stat_ops.h"
 #include "utility.h"
 
-double expectation_value_X_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim);
-double expectation_value_Y_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim);
-double expectation_value_Z_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim);
 double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     ITYPE phase_flip_mask, UINT global_phase_90rot_count,
     UINT pivot_qubit_index, const CTYPE* state, ITYPE dim);
 double expectation_value_multi_qubit_Pauli_operator_Z_mask(
     ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim);
 
-// calculate expectation value of X on target qubit
-double expectation_value_X_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim) {
-    const ITYPE loop_dim = dim / 2;
-    const ITYPE mask = 1ULL << target_qubit_index;
-    ITYPE state_index;
-    double sum = 0.;
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : sum)
-#endif
-    for (state_index = 0; state_index < loop_dim; ++state_index) {
-        ITYPE basis_0 =
-            insert_zero_to_basis_index(state_index, mask, target_qubit_index);
-        ITYPE basis_1 = basis_0 ^ mask;
-        sum += creal(conj(state[basis_0]) * state[basis_1]) * 2;
-    }
-    return sum;
-}
-
-// calculate expectation value of Y on target qubit
-double expectation_value_Y_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim) {
-    const ITYPE loop_dim = dim / 2;
-    const ITYPE mask = 1ULL << target_qubit_index;
-    ITYPE state_index;
-    double sum = 0.;
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : sum)
-#endif
-    for (state_index = 0; state_index < loop_dim; ++state_index) {
-        ITYPE basis_0 =
-            insert_zero_to_basis_index(state_index, mask, target_qubit_index);
-        ITYPE basis_1 = basis_0 ^ mask;
-        sum += cimag(conj(state[basis_0]) * state[basis_1]) * 2;
-    }
-    return sum;
-}
-
-// calculate expectation value of Z on target qubit
-double expectation_value_Z_Pauli_operator(
-    UINT target_qubit_index, const CTYPE* state, ITYPE dim) {
-    const ITYPE loop_dim = dim;
-    ITYPE state_index;
-    double sum = 0.;
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : sum)
-#endif
-    for (state_index = 0; state_index < loop_dim; ++state_index) {
-        int sign = 1 - 2 * ((state_index >> target_qubit_index) % 2);
-        sum += creal(conj(state[state_index]) * state[state_index]) * sign;
-    }
-    return sum;
-}
-
-// calculate expectation value for single-qubit pauli operator
-double expectation_value_single_qubit_Pauli_operator(UINT target_qubit_index,
-    UINT Pauli_operator_type, const CTYPE* state, ITYPE dim) {
-    if (Pauli_operator_type == 0) {
-        return state_norm_squared(state, dim);
-    } else if (Pauli_operator_type == 1) {
-        return expectation_value_X_Pauli_operator(
-            target_qubit_index, state, dim);
-    } else if (Pauli_operator_type == 2) {
-        return expectation_value_Y_Pauli_operator(
-            target_qubit_index, state, dim);
-    } else if (Pauli_operator_type == 3) {
-        return expectation_value_Z_Pauli_operator(
-            target_qubit_index, state, dim);
-    } else {
-        fprintf(
-            stderr, "invalid expectation value of pauli operator is called");
-        exit(1);
-    }
-}
 
 // calculate expectation value of multi-qubit Pauli operator on qubits.
 // bit-flip mask : the n-bit binary string of which the i-th element is 1 iff

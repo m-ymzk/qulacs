@@ -154,46 +154,6 @@ TEST(StatOperationTest, InnerProductTest) {
     release_quantum_state(buffer);
 }
 
-// single qubit expectation value
-TEST(StatOperationTest, SingleQubitExpectationValueTest) {
-    const UINT n = 6;
-    const ITYPE dim = 1ULL << n;
-    const UINT max_repeat = 10;
-    const double eps = 1e-14;
-
-    CTYPE* state = allocate_quantum_state(dim);
-    Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2);
-    Eigen::MatrixXcd pauli_op;
-    Identity << 1, 0, 0, 1;
-    X << 0, 1, 1, 0;
-    Z << 1, 0, 0, -1;
-    Y << 0, -1.i, 1.i, 0;
-
-    for (UINT rep = 0; rep < max_repeat; ++rep) {
-        initialize_Haar_random_state(state, dim);
-        ASSERT_NEAR(state_norm_squared(state, dim), 1, eps);
-        Eigen::VectorXcd test_state(dim);
-        for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
-
-        for (UINT target = 0; target < n; ++target) {
-            // single qubit expectation value check
-            target = rand_int(n);
-            UINT pauli = rand_int(3) + 1;
-            if (pauli == 0) pauli_op = Identity;
-            else if (pauli == 1) pauli_op = X;
-            else if (pauli == 2) pauli_op = Y;
-            else if (pauli == 3) pauli_op = Z;
-            std::complex<double> value = (test_state.adjoint()*get_expanded_eigen_matrix_with_identity(target, pauli_op, n)*test_state);
-            ASSERT_NEAR(value.imag(), 0, eps);
-            double test_expectation = value.real();
-            double expectation = expectation_value_single_qubit_Pauli_operator(target, pauli, state, dim);
-            ASSERT_NEAR(expectation, test_expectation, eps);
-        }
-    }
-    release_quantum_state(state);
-}
-
-
 // multi qubit expectation value whole
 TEST(StatOperationTest, MultiQubitExpectationValueWholeTest) {
     const UINT n = 6;
