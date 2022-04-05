@@ -51,6 +51,10 @@
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
+      - merge(max 2 qubit)
+      - CPTP
+      - Instrument
+      - Adaptive
       - to_matrix_gate
 
 ## 注意事項
@@ -62,12 +66,10 @@
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
       - merge
-      - CPTP
-      - Instrument
-      - Adaptive
   - Observable
   - PauliOperator
   - QuantumCircuitOptimizer
+      - optimize (block_size > 1)
   - QuantumCircuitSimulator
   - state
       - inner_product
@@ -108,9 +110,9 @@
           ノード内にstate vectorを作成する。（従来動作）
       - use_multi_cpu = true
           可能であれば分散してstate vectorを作成する。
-          qubits を内部で inner_qc + outer_qc に分割
-        - inner_qc: １ノード内のqubits
-        - outer_qc: 分散配置されたqubits (=log2(rank数))
+          qubits を内部で local_qc + global_qc に分割
+        - local_qc: １ノード内のqubits
+        - global_qc: 分散配置されたqubits (=log2(rank数))
     - state.get_device()
     state vectorの配置されているデバイスを返す。
 
@@ -127,7 +129,7 @@
         -- rank 0 --------------------------------------
          *** Quantum State ***
          * MPI rank / size : 0 / 2
-         * Qubit Count : 20 (inner / outer : 19 / 1 )
+         * Qubit Count : 20 (local / global : 19 / 1 )
          * Dimension   : 262144
          * state vector is too long, so the (128 x 2) elements are output.
          * State vector (rank 0):

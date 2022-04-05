@@ -357,7 +357,7 @@ public:
                 os << " * State vector: \n" << eigen_state << std::endl;
             } else {
                 os << " * Qubit Count : " << this->qubit_count
-                   << " (inner / outer : " << this->_inner_qc << " / "
+                   << " (local / global : " << this->_inner_qc << " / "
                    << this->outer_qc << " )" << std::endl;
                 os << " * Dimension   : " << this->dim * mpisize << std::endl;
                 if (dim_out < this->dim) {
