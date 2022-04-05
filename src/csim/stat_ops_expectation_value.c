@@ -7,6 +7,10 @@
 #include "stat_ops.h"
 #include "utility.h"
 
+#ifdef _USE_MPI
+#include "csim/MPIutil.h"
+#endif
+
 double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     ITYPE phase_flip_mask, UINT global_phase_90rot_count,
     UINT pivot_qubit_index, const CTYPE* state, ITYPE dim);
@@ -84,6 +88,8 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                 pivot_qubit_index, state, dim);
         }
+        MPIutil m = get_mpiutil();
+        m->s_D_allreduce(&result);
     } else
 #endif
     {
