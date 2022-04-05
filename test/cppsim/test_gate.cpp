@@ -3,7 +3,6 @@
 #include <cmath>
 #include <functional>
 
-#include <csim/update_ops.h>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_factory.hpp>
 #include <cppsim/gate_matrix.hpp>

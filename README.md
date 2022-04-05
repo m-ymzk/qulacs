@@ -52,6 +52,10 @@
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
+      - merge(max 2 qubit)
+      - CPTP
+      - Instrument
+      - Adaptive
       - to_matrix_gate
 
 ## Additional info
@@ -63,12 +67,10 @@
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
       - merge
-      - CPTP
-      - Instrument
-      - Adaptive
   - Observable
   - PauliOperator
   - QuantumCircuitOptimizer
+      - optimize (block_size > 1)
   - QuantumCircuitSimulator
   - state
       - inner_product
@@ -96,6 +98,7 @@
       - Probabilistic
       - ProbabilisticInstrument
       - CP
+      - merge(> 2qubit)
   - DensityMatrix (simulation)
   - GeneralQuantumOperator
   - QuantumGateBase
@@ -109,9 +112,9 @@
         -  Generate state vector in a node (same as the original)
       - use_multi_cpu = true
         -  Generate a state vector in multiple nodes if possible.
-        -  qubits are divided into inner_qc + outer_qc internally.
-            - inner_qc: qubits in one node
-            - outer_qc: qubits in multiple nodes (=log2(#rank))
+        -  qubits are divided into local_qc + global_qc internally.
+            - local_qc: qubits in one node
+            - global_qc: qubits in multiple nodes (=log2(#rank))
     - state.get_device()
       - return the list of devices having the state vector.
 
@@ -128,7 +131,7 @@
         -- rank 0 --------------------------------------
          *** Quantum State ***
          * MPI rank / size : 0 / 2
-         * Qubit Count : 20 (inner / outer : 19 / 1 )
+         * Qubit Count : 20 (local / global : 19 / 1 )
          * Dimension   : 262144
          * state vector is too long, so the (128 x 2) elements are output.
          * State vector (rank 0):
