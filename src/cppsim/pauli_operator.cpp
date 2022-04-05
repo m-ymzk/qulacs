@@ -146,7 +146,7 @@ CPPCTYPE PauliOperator::get_expectation_value(
                    this->get_index_list().data(),
                    this->get_pauli_id_list().data(),
                    (UINT)this->get_index_list().size(), state->data_c(),
-                   state->dim, state->outer_qc);
+                   state->dim, state->outer_qc, state->inner_qc);
 #endif
     } else {
         return _coef *
@@ -176,7 +176,7 @@ CPPCTYPE PauliOperator::get_expectation_value_single_thread(
                        this->get_index_list().data(),
                        this->get_pauli_id_list().data(),
                        (UINT)this->get_index_list().size(), state->data_c(),
-                       state->dim, state->outer_qc);
+                       state->dim, state->outer_qc, state->inner_qc);
         }
 #else
         return _coef *
@@ -184,7 +184,7 @@ CPPCTYPE PauliOperator::get_expectation_value_single_thread(
                    this->get_index_list().data(),
                    this->get_pauli_id_list().data(),
                    (UINT)this->get_index_list().size(), state->data_c(),
-                   state->dim, state->outer_qc);
+                   state->dim, state->outer_qc, state->inner_qc);
 #endif
     } else {
         return _coef *

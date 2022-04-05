@@ -191,7 +191,7 @@ TEST(StatOperationTest, MultiQubitExpectationValueWholeTest) {
             std::complex<double> value = (test_state.adjoint()*mat*test_state);
             ASSERT_NEAR(value.imag(), 0, eps);
             double test_expectation = value.real();
-            double expectation = expectation_value_multi_qubit_Pauli_operator_whole_list(pauli_whole.data(), n, state, dim);
+            double expectation = expectation_value_multi_qubit_Pauli_operator_whole_list(pauli_whole.data(), n, state, dim, 0, n);
             ASSERT_NEAR(expectation, test_expectation, eps);
         }
     }
@@ -236,7 +236,7 @@ TEST(StatOperationTest, MultiQubitExpectationValueZopWholeTest) {
 			std::complex<double> value = (test_state.adjoint()*mat*test_state);
 			ASSERT_NEAR(value.imag(), 0, eps);
 			double test_expectation = value.real();
-			double expectation = expectation_value_multi_qubit_Pauli_operator_whole_list(pauli_whole.data(), n, state, dim);
+			double expectation = expectation_value_multi_qubit_Pauli_operator_whole_list(pauli_whole.data(), n, state, dim, 0, n);
 			ASSERT_NEAR(expectation, test_expectation, eps);
 		}
 	}
@@ -289,7 +289,7 @@ TEST(StatOperationTest, MultiQubitExpectationValuePartialTest) {
             std::complex<double> value = (test_state.adjoint()*mat*test_state);
             ASSERT_NEAR(value.imag(), 0, eps);
             double test_expectation = value.real();
-            double expectation = expectation_value_multi_qubit_Pauli_operator_partial_list(pauli_index.data(), pauli_partial.data(), (UINT)pauli_index.size(), state,dim, 0);
+            double expectation = expectation_value_multi_qubit_Pauli_operator_partial_list(pauli_index.data(), pauli_partial.data(), (UINT)pauli_index.size(), state,dim, 0, n);
             ASSERT_NEAR(expectation, test_expectation, eps);
         }
     }
@@ -341,7 +341,7 @@ TEST(StatOperationTest, MultiQubitExpectationValueZopPartialTest) {
 			std::complex<double> value = (test_state.adjoint()*mat*test_state);
 			ASSERT_NEAR(value.imag(), 0, eps);
 			double test_expectation = value.real();
-			double expectation = expectation_value_multi_qubit_Pauli_operator_partial_list(pauli_index.data(), pauli_partial.data(), (UINT)pauli_index.size(), state, dim, 0);
+			double expectation = expectation_value_multi_qubit_Pauli_operator_partial_list(pauli_index.data(), pauli_partial.data(), (UINT)pauli_index.size(), state, dim, 0, n);
 			ASSERT_NEAR(expectation, test_expectation, eps);
 		}
 	}
