@@ -222,7 +222,7 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
 #ifdef _USE_MPI
     if (outer_qc > 0) {
         MPIutil m = get_mpiutil();
- 
+
         if (bit_flip_mask == 0) {
             result =
                 expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(

@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
     /* 
      * Prepare: 
      */
+    QuantumState state_ref(nqubits, false); // # of qubits, distirbution flag
     QuantumState state(nqubits, true); // # of qubits, distirbution flag
     QuantumCircuit circuit(nqubits);
 
@@ -93,13 +94,21 @@ int main(int argc, char *argv[]) {
     fapp_stop( "update_quantum_state", 0, 0 );
 #endif // #ifdef defined(__CLANG_FUJITSU)
 
-    std::cout << "#rank, " << rank
-              << ", nqubits, " << nqubits
-              << ", target-bit, " << target1
-              << ", target-bit, " << target2
-              << ", pre time[sec], " << tpre 
-              << ", avg. sim time[sec], " << tsim/numLoops
-              << std::endl << std::flush;
+    state_ref.load(&state);
+		Observable observable(nqubits);
+		observable.add_operator(-1., "Z 0 X 4");
+		auto res = observable.get_expectation_value(&state);
+		auto res_ref = observable.get_expectation_value(&state_ref);
+
+    std::cout << "rank: " << rank << " res_observable: " << res << " ref: " << res_ref << std::endl;
+
+    //std::cout << "#rank, " << rank
+    //          << ", nqubits, " << nqubits
+    //          << ", target-bit, " << target1
+    //          << ", target-bit, " << target2
+    //          << ", pre time[sec], " << tpre 
+    //          << ", avg. sim time[sec], " << tsim/numLoops
+    //          << std::endl << std::flush;
 
 #if 0
     // sampling
