@@ -750,16 +750,10 @@ copy_circuit;
                 }
         }
 }
+*/
 
-TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
-    CPPCTYPE J(0.0, 1.0);
-    Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2);
-    Identity << 1, 0, 0, 1;
-    X << 0, 1, 1, 0;
-    Y << 0, -J, J, 0;
-    Z << 1, 0, 0, -1;
-
-    const UINT n = 2;
+TEST(CircuitTest_multicpu, SimpleExpansionZ_6qubit) {
+    const UINT n = 6;
     UINT num_repeats;
     const UINT dim = 1ULL << n;
     const double eps = 1e-14;
@@ -767,154 +761,48 @@ TEST(CircuitTest_multicpu, SuzukiTrotterExpansion) {
     double angle;
     std::vector<double> coef;
 
-    const UINT seed = 1918;
+    const UINT seed = 2022;
     Random random;
     random.set_seed(seed);
 
     CPPCTYPE res;
-    CPPCTYPE test_res;
+    CPPCTYPE res_ref;
 
-    Observable diag_observable(n), non_diag_observable(n), observable(n);
-    Eigen::MatrixXcd test_observable;
+    Observable observable(n);
 
-    QuantumState state(n, 1);
-    Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
+    QuantumState state(n, true);
+    QuantumState state_ref(n, false);
+    const ITYPE inner_dim = dim >> state.outer_qc;
 
     QuantumCircuit circuit(n);
-    Eigen::MatrixXcd test_circuit;
 
-    for (ITYPE i = 0; i < 6; ++i){
+    for (ITYPE i = 0; i < n; ++i){
         coef.push_back(-random.uniform());
         // coef.push_back(-1.);
     }
-    angle = 2 * PI * random.uniform();
-
-
+    
+    // Z only
     observable.add_operator(coef[0], "Z 0 I 1");
-    observable.add_operator(coef[1], "X 0 Y 1");
-    observable.add_operator(coef[2], "Z 0 Z 1");
-    observable.add_operator(coef[3], "Z 0 X 1");
-    observable.add_operator(coef[4], "Y 0 X 1");
-    observable.add_operator(coef[5], "I 0 Z 1");
-
-    test_observable = coef[0] * get_expanded_eigen_matrix_with_identity(0, Z,
-n); test_observable += coef[1] * kronecker_product(Y, X); test_observable +=
-coef[2] * kronecker_product(Z, Z); test_observable += coef[3] *
-kronecker_product(X, Z); test_observable += coef[4] * kronecker_product(X, Y);
-    test_observable += coef[5] * get_expanded_eigen_matrix_with_identity(1, Z,
-n);
+    observable.add_operator(coef[1], "Z 1 I 0");
+    observable.add_operator(coef[2], "Z 2 I 1");
+    observable.add_operator(coef[3], "Z 3 I 1");
+    observable.add_operator(coef[4], "Z 4 I 1");
+    observable.add_operator(coef[5], "Z 5 I 1");
 
     num_repeats = (UINT) std::ceil(angle * (double)n* 100.);
-    // circuit.add_diagonal_observable_rotation_gate(diag_observable, angle);
     circuit.add_observable_rotation_gate(observable, angle, num_repeats);
 
-    test_circuit = J * angle * test_observable;
-    test_circuit = test_circuit.exp();
-
-    state.set_computational_basis(0);
-    test_state(0) = 1.;
-
-    res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-
-    circuit.update_quantum_state(&state);
-    test_state = test_circuit * test_state;
+    state_ref.set_computational_basis(0);
+    circuit.update_quantum_state(&state_ref);
+    
+    state.load(&state_ref);
 
     res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-    ASSERT_NEAR(abs(test_res.real() - res.real())/ test_res.real(), 0, 0.01);
+    res_ref = observable.get_expectation_value(&state_ref);
 
-
-    state.set_Haar_random_state(seed);
-    for (ITYPE i = 0; i < inner_dim; ++i) test_state[i] = state.data_cpp()[i];
-
-    test_state = test_circuit * test_state;
-    circuit.update_quantum_state(&state);
-
-    res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-    ASSERT_NEAR(abs(test_res.real() - res.real())/ test_res.real(), 0, 0.01);
-}
-
-
-TEST(CircuitTest_multicpu, RotateDiagonalObservable){
-    CPPCTYPE J(0.0, 1.0);
-    Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2);
-    Identity << 1, 0, 0, 1;
-    X << 0, 1, 1, 0;
-    Y << 0, -J, J, 0;
-    Z << 1, 0, 0, -1;
-
-    const UINT n = 2;
-    const UINT dim = 1ULL << n;
-    const double eps = 1e-14;
-
-    double angle, coef1, coef2;
-    Random random;
-
-    CPPCTYPE res;
-    CPPCTYPE test_res;
-
-    Observable observable(n);
-    Eigen::MatrixXcd test_observable;
-
-    QuantumState state(n, 1);
-    Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-
-    QuantumCircuit circuit(n);
-    Eigen::MatrixXcd test_circuit;
-
-    coef1 = -random.uniform();
-    coef2 = -random.uniform();
-    angle = 2 * PI * random.uniform();
-
-
-    observable.add_operator(coef1, "Z 0");
-    observable.add_operator(coef2, "Z 0 Z 1");
-
-    test_observable = coef1 * get_expanded_eigen_matrix_with_identity(0, Z, n);
-    test_observable += coef2 * kronecker_product(Z, Z);
-
-    circuit.add_diagonal_observable_rotation_gate(observable, angle);
-    test_circuit = (J * angle * test_observable).exp();
-
-    state.set_computational_basis(0);
-    test_state(0) = 1.;
-
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
-state.data_cpp()[i]), 0, eps);
-
-    circuit.update_quantum_state(&state);
-    test_state = test_circuit * test_state;
-
-    res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
-state.data_cpp()[i]), 0, eps); ASSERT_NEAR(abs(test_res.real() -
-res.real())/test_res.real(), 0, 0.01); ASSERT_NEAR(res.imag(), 0, eps);
-    ASSERT_NEAR(test_res.imag(), 0, eps);
-
-
-    state.set_Haar_random_state(2022);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state.data_cpp()[i];
-
-    res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-
-    test_state = test_circuit * test_state;
-    circuit.update_quantum_state(&state);
-
-    res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
-
-    // for (ITYPE i = 0; i < dim; ++i) ASSERT_NEAR(abs(test_state[i] -
-state.data_cpp()[i]), 0, eps); ASSERT_NEAR(abs(test_res.real() -
-res.real())/test_res.real(), 0, 0.01); ASSERT_NEAR(res.imag(), 0, eps);
-    ASSERT_NEAR(test_res.imag(), 0, eps);
+    ASSERT_NEAR(abs(res_ref.real() - res.real())/ res_ref.real(), 0, 0.01);
 
 }
-*/
 
 TEST(CircuitTest_multicpu, SpecialGatesToString) {
     QuantumState state(1, 1);
