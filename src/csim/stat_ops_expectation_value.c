@@ -217,9 +217,15 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
     get_Pauli_masks_partial_list(target_qubit_index_list,
         Pauli_operator_type_list, target_qubit_index_count, &bit_flip_mask,
         &phase_flip_mask, &global_phase_90rot_count, &pivot_qubit_index);
+
     double result;
 #ifdef _USE_MPI
     if (outer_qc > 0) {
+        MPIutil m = get_mpiutil();
+        m->barrier();
+        printf("before local calc\n");
+        m->barrier();
+ 
         if (bit_flip_mask == 0) {
             result =
                 expectation_value_multi_qubit_Pauli_operator_Z_mask_single_thread(
@@ -230,8 +236,14 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list_single_thread(
                     bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                     pivot_qubit_index, state, dim, outer_qc, inner_qc);
         }
-        MPIutil m = get_mpiutil();
+        m->barrier();
+        printf("before allreduce\n");
+        m->barrier();
         m->s_D_allreduce(&result);
+        m->barrier();
+        printf("after allreduce\n");
+        m->barrier();
+ 
     } else
 #endif
     {
