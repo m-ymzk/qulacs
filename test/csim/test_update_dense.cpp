@@ -82,15 +82,8 @@ TEST(UpdateTest, SingleDenseMatrixTestScalarAvx) {
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 TEST(UpdateTest, SingleDenseMatrixSVE) {
-    test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve, 1);
-    test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_single_sve, 6);
-
-#ifdef _OPENMP
-    test_single_dense_matrix_gate(
-        single_qubit_dense_matrix_gate_parallel_sve, 1);
-    test_single_dense_matrix_gate(
-        single_qubit_dense_matrix_gate_parallel_sve, 6);
-#endif  //#ifdef _OPENMP
+    for (UINT i = 1; i <= 6; i++)
+        test_single_dense_matrix_gate(single_qubit_dense_matrix_gate_sve, i);
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
