@@ -16,7 +16,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     UINT pivot_qubit_index, const CTYPE* state, ITYPE dim, ITYPE outer_qc,
     ITYPE inner_qc);
 double expectation_value_multi_qubit_Pauli_operator_Z_mask(
-    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim);
+    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank, ITYPE inner_qc);
 
 // calculate expectation value of multi-qubit Pauli operator on qubits.
 // bit-flip mask : the n-bit binary string of which the i-th element is 1 iff
@@ -64,7 +64,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
 }
 
 double expectation_value_multi_qubit_Pauli_operator_Z_mask(
-    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim) {
+    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank, ITYPE inner_qc) {
     const ITYPE loop_dim = dim;
     ITYPE state_index;
     double sum = 0.;
@@ -72,7 +72,8 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
-        int bit_parity = count_population(state_index & phase_flip_mask) % 2;
+        ITYPE global_index = state_index + (rank << inner_qc);
+        int bit_parity = count_population(global_index & phase_flip_mask) % 2;
         int sign = 1 - 2 * bit_parity;
         sum += pow(cabs(state[state_index]), 2) * sign;
     }
@@ -93,9 +94,10 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
     double result;
 #ifdef _USE_MPI
     if (outer_qc > 0) {
+        MPIutil m = get_mpiutil();
         if (bit_flip_mask == 0) {
             result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
-                phase_flip_mask, state, dim);
+                phase_flip_mask, state, dim, m->get_rank(), inner_qc);
         } else {
             fprintf(stderr,
                 "#ERROR: not implemented "
@@ -107,14 +109,13 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                 pivot_qubit_index, state, dim, outer_qc, inner_qc);
         }
-        MPIutil m = get_mpiutil();
         m->s_D_allreduce(&result);
     } else
 #endif
     {
         if (bit_flip_mask == 0) {
             result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
-                phase_flip_mask, state, dim);
+                phase_flip_mask, state, dim, 0/*rank*/, inner_qc);
         } else {
             result = expectation_value_multi_qubit_Pauli_operator_XZ_mask(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
@@ -137,7 +138,7 @@ double expectation_value_multi_qubit_Pauli_operator_whole_list(
     double result;
     if (bit_flip_mask == 0) {
         result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
-            phase_flip_mask, state, dim);
+            phase_flip_mask, state, dim, 0/*rank*/, inner_qc);
     } else {
         result = expectation_value_multi_qubit_Pauli_operator_XZ_mask(
             bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
