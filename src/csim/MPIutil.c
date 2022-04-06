@@ -91,16 +91,15 @@ static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
         MPI_CXX_DOUBLE_COMPLEX, mpicomm);
 }
 
-static void m_DC_send(
-    void *sendbuf, int count, int pair_rank) {
+static void m_DC_send(void *sendbuf, int count, int pair_rank) {
     int tag0 = get_tag();
     MPI_Send(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm);
 }
 
-static void m_DC_recv(
-    void *recvbuf, int count, int pair_rank) {
+static void m_DC_recv(void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
-    MPI_Recv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm, &mpistat);
+    MPI_Recv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm,
+        &mpistat);
 }
 
 static void m_DC_sendrecv(
@@ -121,8 +120,8 @@ static void m_DC_sendrecv_replace(void *buf, int count, int pair_rank) {
     int tag0 = get_tag();
     int mpi_tag1 = tag0 + ((mpirank & pair_rank) << 1) + (mpirank > pair_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
-    MPI_Sendrecv_replace(buf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
-        pair_rank, mpi_tag2, mpicomm, &mpistat);
+    MPI_Sendrecv_replace(buf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank,
+        mpi_tag1, pair_rank, mpi_tag2, mpicomm, &mpistat);
 }
 
 static void m_DC_isendrecv(
@@ -133,10 +132,10 @@ static void m_DC_isendrecv(
     MPI_Request *send_request = get_request();
     MPI_Request *recv_request = get_request();
 
-    MPI_Isend(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1, mpicomm,
-        send_request);
-    MPI_Irecv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
-        recv_request);
+    MPI_Isend(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+        mpicomm, send_request);
+    MPI_Irecv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2,
+        mpicomm, recv_request);
 }
 
 static void m_I_allreduce(void *buf, UINT count) {
@@ -171,9 +170,7 @@ static void s_u_bcast(UINT *a) {
     // printf("#%d: s_ui_bcast: %d\n", mpirank, *a);
 }
 
-static void s_D_bcast(double *a) {
-    MPI_Bcast(a, 1, MPI_DOUBLE, 0, mpicomm);
-}
+static void s_D_bcast(double *a) { MPI_Bcast(a, 1, MPI_DOUBLE, 0, mpicomm); }
 /*
 static void send_osstr(char *sendbuf, int len) {
 }

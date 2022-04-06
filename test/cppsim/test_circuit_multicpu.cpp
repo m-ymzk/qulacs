@@ -794,7 +794,8 @@ TEST(CircuitTest_multicpu, SimpleExpansionZ_6qubit) {
     res_ref = observable.get_expectation_value(&state_ref);
 
     ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps)
-    << "ref(real): " << res_ref.real() << " value(real): " << res.real() << std::endl;
+        << "ref(real): " << res_ref.real() << " value(real): " << res.real()
+        << std::endl;
 }
 
 TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
@@ -838,9 +839,9 @@ TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
     res_ref = observable.get_expectation_value(&state_ref);
 
     ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps)
-    << "ref(real): " << res_ref.real() << " value(real): " << res.real() << std::endl;
+        << "ref(real): " << res_ref.real() << " value(real): " << res.real()
+        << std::endl;
 }
-
 
 TEST(CircuitTest_multicpu, SpecialGatesToString) {
     QuantumState state(1, 1);

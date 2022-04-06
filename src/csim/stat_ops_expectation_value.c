@@ -16,7 +16,8 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     UINT pivot_qubit_index, const CTYPE* state, ITYPE dim, ITYPE outer_qc,
     ITYPE inner_qc);
 double expectation_value_multi_qubit_Pauli_operator_Z_mask(
-    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank, ITYPE inner_qc);
+    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank,
+    ITYPE inner_qc);
 
 // calculate expectation value of multi-qubit Pauli operator on qubits.
 // bit-flip mask : the n-bit binary string of which the i-th element is 1 iff
@@ -39,44 +40,46 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     }
 
     if (comm_flag) {
-
         MPIutil m = get_mpiutil();
         int rank = m->get_rank();
         int pair_rank = rank ^ comm_flag;
 
-        ITYPE dim_work = dim; 
-        ITYPE num_work = 0; 
+        ITYPE dim_work = dim;
+        ITYPE num_work = 0;
         CTYPE* recvptr = m->get_workarea(&dim_work, &num_work);
         ITYPE inner_mask = dim - 1;
         ITYPE i, j;
 
         state_index = 0;
 
-        for(i = 0; i < num_work; ++i){
+        for (i = 0; i < num_work; ++i) {
             const CTYPE* sendptr = state + dim_work * i;
-    
-            if(rank < pair_rank){
+
+            if (rank < pair_rank) {
                 // recv
                 m->m_DC_recv(recvptr, dim_work, pair_rank);
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : sum)
 #endif
-                for(j = 0; j < dim_work; ++j){
+                for (j = 0; j < dim_work; ++j) {
                     ITYPE basis_1 = state_index + j + (pair_rank << inner_qc);
                     ITYPE basis_0 = basis_1 ^ bit_flip_mask;
-                    UINT sign_0 = count_population(basis_0 & phase_flip_mask) % 2;
-            
+                    UINT sign_0 =
+                        count_population(basis_0 & phase_flip_mask) % 2;
+
                     sum += creal(
-                        state[basis_0 & inner_mask] * conj(recvptr[basis_1 & (dim_work-1)]) *
-                        PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) % 4] * 2.0);
-        
+                        state[basis_0 & inner_mask] *
+                        conj(recvptr[basis_1 & (dim_work - 1)]) *
+                        PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) %
+                                    4] *
+                        2.0);
                 }
                 state_index += dim_work;
-            }else{
+            } else {
                 // send
                 m->m_DC_send(sendptr, dim_work, pair_rank);
             }
-        } 
+        }
 
     } else {
         const ITYPE loop_dim = dim / 2;
@@ -98,7 +101,8 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
 }
 
 double expectation_value_multi_qubit_Pauli_operator_Z_mask(
-    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank, ITYPE inner_qc) {
+    ITYPE phase_flip_mask, const CTYPE* state, ITYPE dim, int rank,
+    ITYPE inner_qc) {
     const ITYPE loop_dim = dim;
     ITYPE state_index;
     double sum = 0.;
@@ -143,7 +147,7 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
     {
         if (bit_flip_mask == 0) {
             result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
-                phase_flip_mask, state, dim, 0/*rank*/, inner_qc);
+                phase_flip_mask, state, dim, 0 /*rank*/, inner_qc);
         } else {
             result = expectation_value_multi_qubit_Pauli_operator_XZ_mask(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
@@ -166,7 +170,7 @@ double expectation_value_multi_qubit_Pauli_operator_whole_list(
     double result;
     if (bit_flip_mask == 0) {
         result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
-            phase_flip_mask, state, dim, 0/*rank*/, inner_qc);
+            phase_flip_mask, state, dim, 0 /*rank*/, inner_qc);
     } else {
         result = expectation_value_multi_qubit_Pauli_operator_XZ_mask(
             bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
