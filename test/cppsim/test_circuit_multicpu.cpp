@@ -824,12 +824,12 @@ TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
         // coef.push_back(-1.);
     }
 
-    observable.add_operator(coef[0], "Z 0 Y 1");
+    observable.add_operator(coef[0], "Z 0 Y 1 X 2 Y 3 Z 4 X 5");
     observable.add_operator(coef[1], "Z 1 I 0");
     observable.add_operator(coef[2], "X 2 Y 0");
     observable.add_operator(coef[3], "Z 3 I 1");
     observable.add_operator(coef[4], "Z 4 I 1");
-    observable.add_operator(coef[5], "X 5 I 1");
+    observable.add_operator(coef[5], "X 5 Y 1");
 
     state_ref.set_Haar_random_state(2022);
     state.load(&state_ref);
@@ -837,7 +837,8 @@ TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
     res = observable.get_expectation_value(&state);
     res_ref = observable.get_expectation_value(&state_ref);
 
-    ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps);
+    ASSERT_NEAR(abs(res_ref.real() - res.real()) / res_ref.real(), 0, eps)
+    << "ref(real): " << res_ref.real() << " value(real): " << res.real() << std::endl;
 }
 
 
