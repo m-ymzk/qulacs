@@ -29,7 +29,6 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     ITYPE phase_flip_mask, UINT global_phase_90rot_count,
     UINT pivot_qubit_index, const CTYPE* state, ITYPE dim, ITYPE outer_qc,
     ITYPE inner_qc) {
-    const ITYPE loop_dim = dim / 2;
     const ITYPE pivot_mask = 1ULL << pivot_qubit_index;
     ITYPE state_index;
     double sum = 0.;
@@ -40,12 +39,47 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     }
 
     if (comm_flag) {
-        fprintf(stderr,
-            "#ERROR: not implemented "
-            "expectation_value_multi_qubit_Pauli_operator_XZ_mask"
-            " with outer_qc (file: %s, line: %d)\n",
-            __FILE__, __LINE__);
+
+        MPIutil m = get_mpiutil();
+        int rank = m->get_rank();
+        int pair_rank = rank ^ comm_flag;
+
+        ITYPE dim_work = dim; 
+        ITYPE num_work = 0; 
+        CTYPE* recvptr = m->get_workarea(&dim_work, &num_work);
+        ITYPE inner_mask = dim - 1;
+        ITYPE i, j;
+
+        state_index = 0;
+
+        for(i = 0; i < num_work; ++i){
+            const CTYPE* sendptr = state + dim_work * i;
+    
+            if(rank < pair_rank){
+                // recv
+                m->m_DC_recv(recvptr, dim_work, pair_rank);
+#ifdef _OPENMP
+#pragma omp parallel for reduction(+ : sum)
+#endif
+                for(j = 0; j < dim_work; ++j){
+                    ITYPE basis_1 = state_index + j + (pair_rank << inner_qc);
+                    ITYPE basis_0 = basis_1 ^ bit_flip_mask;
+                    UINT sign_0 = count_population(basis_0 & phase_flip_mask) % 2;
+            
+                    sum += creal(
+                        state[basis_0 & inner_mask] * conj(recvptr[basis_1 & (dim_work-1)]) *
+                        PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) % 4] * 2.0);
+        
+                }
+                state_index += dim_work;
+            }else{
+                // send
+                m->m_DC_send(sendptr, dim_work, pair_rank);
+            }
+        } 
+
     } else {
+        const ITYPE loop_dim = dim / 2;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : sum)
 #endif
@@ -99,12 +133,6 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
             result = expectation_value_multi_qubit_Pauli_operator_Z_mask(
                 phase_flip_mask, state, dim, m->get_rank(), inner_qc);
         } else {
-            fprintf(stderr,
-                "#ERROR: not implemented "
-                "expectation_value_multi_qubit_Pauli_operator_XZ_mask"
-                " with outer_qc (file: %s, line: %d)\n",
-                __FILE__, __LINE__);
-
             result = expectation_value_multi_qubit_Pauli_operator_XZ_mask(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                 pivot_qubit_index, state, dim, outer_qc, inner_qc);
