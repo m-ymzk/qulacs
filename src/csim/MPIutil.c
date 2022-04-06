@@ -91,6 +91,18 @@ static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
         MPI_CXX_DOUBLE_COMPLEX, mpicomm);
 }
 
+static void m_DC_send(
+    void *sendbuf, int count, int pair_rank) {
+    int tag0 = get_tag();
+    MPI_Send(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm);
+}
+
+static void m_DC_recv(
+    void *recvbuf, int count, int pair_rank) {
+    int tag0 = get_tag();
+    MPI_Recv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm, &mpistat);
+}
+
 static void m_DC_sendrecv(
     void *sendbuf, void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
@@ -192,6 +204,8 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(mpi_wait)
     REGISTER_METHOD_POINTER(m_DC_allgather)
+    REGISTER_METHOD_POINTER(m_DC_send)
+    REGISTER_METHOD_POINTER(m_DC_recv)
     REGISTER_METHOD_POINTER(m_DC_sendrecv)
     REGISTER_METHOD_POINTER(m_DC_sendrecv_replace)
     REGISTER_METHOD_POINTER(m_DC_isendrecv)
