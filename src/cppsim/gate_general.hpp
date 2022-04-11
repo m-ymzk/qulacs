@@ -228,10 +228,10 @@ public:
         if (state->is_state_vector()) {
             double r = random.uniform();
 #ifdef _USE_MPI
-        if (state->outer_qc > 0) {
-            const MPIutil mpiutil = get_mpiutil();
-            mpiutil->s_D_bcast(&r);
-        }
+            if (state->outer_qc > 0) {
+                const MPIutil mpiutil = get_mpiutil();
+                mpiutil->s_D_bcast(&r);
+            }
 #endif
             double sum = 0.;
             double org_norm = state->get_squared_norm();
