@@ -116,3 +116,5 @@ std::string& rtrim(std::string& str) {
     str.erase(it.base(), str.end());
     return str;
 }
+
+sRandom* sRandom::s_pRandom = nullptr;
