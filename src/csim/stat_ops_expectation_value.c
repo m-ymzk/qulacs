@@ -77,7 +77,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 state_index += dim_work;
             } else {
                 // send
-                m->m_DC_send(sendptr, dim_work, pair_rank);
+                m->m_DC_send((void*)sendptr, dim_work, pair_rank);
             }
         }
 
