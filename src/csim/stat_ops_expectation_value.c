@@ -58,9 +58,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
             if (rank < pair_rank) {
                 // recv
                 m->m_DC_recv(recvptr, dim_work, pair_rank);
-#ifdef _OPENMP
 #pragma omp parallel for reduction(+ : sum)
-#endif
                 for (j = 0; j < dim_work; ++j) {
                     ITYPE basis_1 = state_index + j + (pair_rank << inner_qc);
                     ITYPE basis_0 = basis_1 ^ bit_flip_mask;
@@ -83,9 +81,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
 
     } else {
         const ITYPE loop_dim = dim / 2;
-#ifdef _OPENMP
 #pragma omp parallel for reduction(+ : sum)
-#endif
         for (state_index = 0; state_index < loop_dim; ++state_index) {
             ITYPE basis_0 = insert_zero_to_basis_index(
                 state_index, pivot_mask, pivot_qubit_index);
@@ -106,14 +102,67 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
     const ITYPE loop_dim = dim;
     ITYPE state_index;
     double sum = 0.;
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : sum)
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    ITYPE vec_len = getVecLength(); // # of double elements in a vector
+
+    if (loop_dim >= vec_len) {
+
+#pragma omp parallel private(state_index) reduction(+: sum)
+        {
+            SV_PRED pg = Svptrue();
+            SV_FTYPE sv_sum = SvdupF(0.0);
+            SV_ITYPE sv_offset = SvindexI(0, 1);
+            SV_ITYPE sv_phase_flip_mask = SvdupI(phase_flip_mask);
+
+#pragma omp for
+            for (state_index = 0; state_index < loop_dim; state_index += vec_len) {
+                ITYPE global_index = state_index + (rank << inner_qc);
+                // A
+                SV_ITYPE svidx = svadd_z(pg, SvdupI(global_index), sv_offset);
+                SV_ITYPE sv_bit_parity = svand_z(pg, svidx, sv_phase_flip_mask);
+                sv_bit_parity = svcnt_z(pg, sv_bit_parity);
+                sv_bit_parity = svand_z(pg, sv_bit_parity, SvdupI(1));
+                // B
+                SV_PRED pg_sign = svcmpeq(pg, sv_bit_parity, SvdupI(1));
+
+                // C
+                SV_FTYPE sv_val0 = svld1(pg, (ETYPE *)&state[state_index]);
+                SV_FTYPE sv_val1 = svld1(pg, (ETYPE *)&state[state_index+(vec_len>>1)]);
+
+                sv_val0 = svmul_z(pg, sv_val0, sv_val0);
+                sv_val1 = svmul_z(pg, sv_val1, sv_val1);
+
+                sv_val0 = svadd_z(pg, sv_val0, svext(sv_val0, sv_val0, 1));
+                sv_val1 = svadd_z(pg, sv_val1, svext(sv_val1, sv_val1, 1));
+
+                sv_val0 = svuzp1(sv_val0, sv_val1);
+                sv_val0 = svneg_m(sv_val0, pg_sign, sv_val0);
+
+                sv_sum = svadd_z(pg, sv_sum, sv_val0);
+            }
+
+            // TODO: supports 512-bit SVE engine only
+            // reduction
+            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 4));
+            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 2));
+            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 1));
+            sum = svlastb(svptrue_pat_b64(SV_VL1), sv_sum);
+
+        }
+    } else
 #endif
-    for (state_index = 0; state_index < loop_dim; ++state_index) {
-        ITYPE global_index = state_index + (rank << inner_qc);
-        int bit_parity = count_population(global_index & phase_flip_mask) % 2;
-        int sign = 1 - 2 * bit_parity;
-        sum += pow(cabs(state[state_index]), 2) * sign;
+    {
+#pragma omp parallel for reduction(+ : sum)
+        for (state_index = 0; state_index < loop_dim; ++state_index) {
+            ITYPE global_index = state_index + (rank << inner_qc);
+            // A
+            int bit_parity = count_population(global_index & phase_flip_mask) % 2;
+            // B
+            int sign = 1 - 2 * bit_parity;
+            // C
+            sum += pow(cabs(state[state_index]), 2) * sign;
+        }
     }
     return sum;
 }
