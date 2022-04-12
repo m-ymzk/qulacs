@@ -77,6 +77,10 @@ void Y_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void Y_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void Y_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void Y_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void Y_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Y_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 /**
  * \~english
