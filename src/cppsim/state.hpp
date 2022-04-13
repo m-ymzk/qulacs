@@ -627,7 +627,7 @@ public:
                 (size_t)(sizeof(CPPCTYPE) * _dim));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
-        } else if ( new_state->_outer_qc > 0) { // copy (single)cpu -> multicpu
+        } else if (new_state->_outer_qc > 0) {  // copy (single)cpu -> multicpu
             ITYPE offs = (_dim / mpiutil->get_size()) * mpiutil->get_rank();
             memcpy(new_state->data_cpp(), _state_vector + offs,
                 (size_t)(sizeof(CPPCTYPE) * _dim / mpiutil->get_size()));
@@ -820,7 +820,7 @@ public:
         stacked_prob[0] = 0.;
         for (UINT i = 0; i < this->dim; ++i) {
             sum += norm(ptr[i]);
-            stacked_prob[i+1] = sum;
+            stacked_prob[i + 1] = sum;
         }
 
 #ifdef _USE_MPI

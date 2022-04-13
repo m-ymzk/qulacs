@@ -44,21 +44,33 @@ void DllExport get_Pauli_matrix(
     ComplexMatrix& matrix, const std::vector<UINT>& pauli_id_list);
 
 /**
- * \~japanese-en 乱数を管理するクラス
+ * \~japanese-en 乱数を管理するクラス(singleton)
  */
-class Random {
+class sRandom {
 private:
     std::uniform_real_distribution<double> uniform_dist;
     std::normal_distribution<double> normal_dist;
     std::mt19937_64 mt;
 
-public:
-    /**
-     * \~japanese-en コンストラクタ
-     */
-    Random() : uniform_dist(0, 1), normal_dist(0, 1) {
+    static sRandom* s_pRandom;
+
+    sRandom() : uniform_dist(0, 1), normal_dist(0, 1) {
         std::random_device rd;
         mt.seed(rd());
+    }
+
+    explicit sRandom(ITYPE seed) : uniform_dist(0, 1), normal_dist(0, 1) {
+        mt.seed(seed);
+    }
+
+    sRandom(const sRandom&) {}
+    sRandom(sRandom&&) {}
+    ~sRandom() {}
+
+public:
+    static sRandom* getInstance() {
+        if (!s_pRandom) s_pRandom = new sRandom;
+        return s_pRandom;
     }
 
     /**
@@ -67,6 +79,7 @@ public:
      * @param seed シード値
      */
     void set_seed(uint64_t seed) { mt.seed(seed); }
+
     /**
      * \~japanese-en \f$[0,1)\f$の一様分布から乱数を生成する
      *
@@ -94,6 +107,59 @@ public:
      * @return 生成された乱数
      */
     unsigned long int32() { return mt() % ULONG_MAX; }
+};
+
+class Random {
+private:
+    sRandom* srandom = NULL;
+
+public:
+    /**
+     * \~japanese-en sRandom(singleton)を作成するコンストラクタ
+     */
+    Random() { srandom = sRandom::getInstance(); }
+
+    Random(ITYPE seed) {
+        srandom = sRandom::getInstance();
+        srandom->set_seed(seed);
+    }
+
+    /**
+     * \~japanese-en sRandom(singleton)を使用してシードを設定する
+     *
+     * @param seed シード値
+     */
+    void set_seed(uint64_t seed) { srandom->set_seed(seed); }
+
+    /**
+     * \~japanese-en
+     * sRandom(singleton)を使用して\f$[0,1)\f$の一様分布から乱数を生成する
+     *
+     * @return 生成された乱数
+     */
+    double uniform() { return srandom->uniform(); }
+
+    /**
+     * \~japanese-en
+     * sRandom(singleton)を使用して期待値0、分散1の正規分から乱数を生成する
+     *
+     * @return double 生成された乱数
+     */
+    double normal() { return srandom->normal(); }
+
+    /**
+     * \~japanese-en sRandom(singleton)を使用して64bit整数の乱数を生成する
+     *
+     * @return 生成された乱数
+     */
+    unsigned long long int64() { return srandom->int64(); }
+
+    /**
+     * \~japanese-en sRandom(singleton)を使用して32bit整数の乱数を生成する
+     *
+     * @return 生成された乱数
+     */
+    unsigned long int32() { return srandom->int32(); }
 };
 
 /**

@@ -88,7 +88,7 @@ class CMakeBuild(build_ext):
             cmake_args += ['-DCMAKE_CXX_COMPILER=' + gxx]
 
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j2']
+            build_args += ['--', '-j12']
 
         if self.opt_flags is not None:
             opt_flags = self.opt_flags
