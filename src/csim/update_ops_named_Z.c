@@ -71,7 +71,53 @@ void Z_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         for (state_index = 0; state_index < dim; ++state_index) {
             state[state_index] *= -1;
         }
-    } else {
+    }
+#if defined(__ARM_FEATURE_SVE)
+#ifdef __aarch64__
+    else if (4 <= target_qubit_index && target_qubit_index <= 11) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index = (state_index & mask_low) +
+                                ((state_index & mask_high) << 1) + mask;
+            ETYPE *restrict state_tmp = (ETYPE *)&state[basis_index];
+            // L1 prefetch
+#undef _PRF_L1_ITR
+#define _PRF_L1_ITR 4
+            ITYPE basis_pf_l1 =
+                ((state_index + 4 * _PRF_L1_ITR) & mask_low) +
+                (((state_index + 4 * _PRF_L1_ITR) & mask_high) << 1) + mask;
+
+            ETYPE *restrict state_l1pf = (ETYPE *)&state[basis_pf_l1];
+            __builtin_prefetch(&state_l1pf[0], 1, 3);
+            __builtin_prefetch(&state_l1pf[7], 1, 3);
+            // L2 prefetch
+#undef _PRF_L2_ITR
+#define _PRF_L2_ITR 64
+            ITYPE basis_pf_l2 =
+                ((state_index + 4 * _PRF_L2_ITR) & mask_low) +
+                (((state_index + 4 * _PRF_L2_ITR) & mask_high) << 1) + mask;
+
+            ETYPE *restrict state_l2pf = (ETYPE *)&state[basis_pf_l2];
+            __builtin_prefetch(&state_l2pf[0], 1, 2);
+            __builtin_prefetch(&state_l2pf[7], 1, 2);
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                state_tmp[i] *= -1;
+            }
+        }
+    } else if (target_qubit_index >= 2) {
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index = (state_index & mask_low) +
+                                ((state_index & mask_high) << 1) + mask;
+            ETYPE *restrict state_tmp = (ETYPE *)&state[basis_index];
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                state_tmp[i] *= -1;
+            }
+        }
+    }
+#endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
+    else {
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index = (state_index & mask_low) +
                                 ((state_index & mask_high) << 1) + mask;
@@ -99,35 +145,53 @@ void Z_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             state[state_index] *= -1;
         }
     }
+#if defined(__ARM_FEATURE_SVE)
 #ifdef __aarch64__
-    else if (5 <= target_qubit_index && target_qubit_index <= 9) {
+    else if (4 <= target_qubit_index && target_qubit_index <= 11) {
 #pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; state_index += 8) {
-            ITYPE basis_index_0 = (state_index & mask_low) +
-                                  ((state_index & mask_high) << 1) + mask;
-            ITYPE basis_index_1 = ((state_index + 2) & mask_low) +
-                                  (((state_index + 2) & mask_high) << 1) + mask;
-            ITYPE basis_index_2 = ((state_index + 4) & mask_low) +
-                                  (((state_index + 4) & mask_high) << 1) + mask;
-            ITYPE basis_index_3 = ((state_index + 6) & mask_low) +
-                                  (((state_index + 6) & mask_high) << 1) + mask;
-
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index = (state_index & mask_low) +
+                                ((state_index & mask_high) << 1) + mask;
+            ETYPE *restrict state_tmp = (ETYPE *)&state[basis_index];
             // L1 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
-            // L2 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
+#undef _PRF_L1_ITR
+#define _PRF_L1_ITR 4
+            ITYPE basis_pf_l1 =
+                ((state_index + 4 * _PRF_L1_ITR) & mask_low) +
+                (((state_index + 4 * _PRF_L1_ITR) & mask_high) << 1) + mask;
 
-            state[basis_index_0] *= -1;
-            state[basis_index_0 + 1] *= -1;
-            state[basis_index_1] *= -1;
-            state[basis_index_1 + 1] *= -1;
-            state[basis_index_2] *= -1;
-            state[basis_index_2 + 1] *= -1;
-            state[basis_index_3] *= -1;
-            state[basis_index_3 + 1] *= -1;
+            ETYPE *restrict state_l1pf = (ETYPE *)&state[basis_pf_l1];
+            __builtin_prefetch(&state_l1pf[0], 1, 3);
+            __builtin_prefetch(&state_l1pf[7], 1, 3);
+            // L2 prefetch
+#undef _PRF_L2_ITR
+#define _PRF_L2_ITR 64
+            ITYPE basis_pf_l2 =
+                ((state_index + 4 * _PRF_L2_ITR) & mask_low) +
+                (((state_index + 4 * _PRF_L2_ITR) & mask_high) << 1) + mask;
+
+            ETYPE *restrict state_l2pf = (ETYPE *)&state[basis_pf_l2];
+            __builtin_prefetch(&state_l2pf[0], 1, 2);
+            __builtin_prefetch(&state_l2pf[7], 1, 2);
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                state_tmp[i] *= -1;
+            }
+        }
+    } else if (target_qubit_index >= 2) {
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim; state_index += 4) {
+            ITYPE basis_index = (state_index & mask_low) +
+                                ((state_index & mask_high) << 1) + mask;
+            ETYPE *restrict state_tmp = (ETYPE *)&state[basis_index];
+#pragma omp simd
+            for (ITYPE i = 0; i < 8; ++i) {
+                state_tmp[i] *= -1;
+            }
         }
     }
-#endif
+#endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
     else {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
