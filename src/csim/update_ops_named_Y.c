@@ -35,7 +35,18 @@ void Y_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
     // Y_gate_parallel(target_qubit_index, state, dim);
     // return;
 
-#ifdef _USE_SIMD
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#ifdef _OPENMP
+    UINT threshold = 13;
+    if (dim < (((ITYPE)1) << threshold)) {
+        Y_gate_single_sve(target_qubit_index, state, dim);
+    } else {
+        Y_gate_parallel_sve(target_qubit_index, state, dim);
+    }
+#else
+    Y_gate_single_sve(target_qubit_index, state, dim);
+#endif
+#elif defined(_USE_SIMD)
 #ifdef _OPENMP
     UINT threshold = 13;
     if (dim < (((ITYPE)1) << threshold)) {
@@ -105,59 +116,7 @@ void Y_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
             state[basis_index] = -imag * state[basis_index + 1];
             state[basis_index + 1] = imag * temp0;
         }
-    }
-#ifdef __aarch64__
-    else if (6 <= target_qubit_index && target_qubit_index <= 8) {
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; state_index += 8) {
-            ITYPE basis_index_0 =
-                (state_index & mask_low) + ((state_index & mask_high) << 1);
-            ITYPE basis_index_1 = basis_index_0 + mask;
-            ITYPE basis_index_2 = ((state_index + 2) & mask_low) +
-                                  (((state_index + 2) & mask_high) << 1);
-            ITYPE basis_index_3 = basis_index_2 + mask;
-            ITYPE basis_index_4 = ((state_index + 4) & mask_low) +
-                                  (((state_index + 4) & mask_high) << 1);
-            ITYPE basis_index_5 = basis_index_4 + mask;
-            ITYPE basis_index_6 = ((state_index + 6) & mask_low) +
-                                  (((state_index + 6) & mask_high) << 1);
-            ITYPE basis_index_7 = basis_index_6 + mask;
-            CTYPE temp0 = state[basis_index_0];
-            CTYPE temp1 = state[basis_index_0 + 1];
-            CTYPE temp2 = state[basis_index_2];
-            CTYPE temp3 = state[basis_index_2 + 1];
-            CTYPE temp4 = state[basis_index_4];
-            CTYPE temp5 = state[basis_index_4 + 1];
-            CTYPE temp6 = state[basis_index_6];
-            CTYPE temp7 = state[basis_index_6 + 1];
-
-            // L1 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 2], 1, 3);
-            __builtin_prefetch(&state[basis_index_1 + mask * 2], 1, 3);
-            // L2 prefetch
-            __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 2);
-            __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 2);
-
-            state[basis_index_0] = -imag * state[basis_index_1];
-            state[basis_index_0 + 1] = -imag * state[basis_index_1 + 1];
-            state[basis_index_2] = -imag * state[basis_index_3];
-            state[basis_index_2 + 1] = -imag * state[basis_index_3 + 1];
-            state[basis_index_4] = -imag * state[basis_index_5];
-            state[basis_index_4 + 1] = -imag * state[basis_index_5 + 1];
-            state[basis_index_6] = -imag * state[basis_index_7];
-            state[basis_index_6 + 1] = -imag * state[basis_index_7 + 1];
-            state[basis_index_1] = imag * temp0;
-            state[basis_index_1 + 1] = imag * temp1;
-            state[basis_index_3] = imag * temp2;
-            state[basis_index_3 + 1] = imag * temp3;
-            state[basis_index_5] = imag * temp4;
-            state[basis_index_5 + 1] = imag * temp5;
-            state[basis_index_7] = imag * temp6;
-            state[basis_index_7 + 1] = imag * temp7;
-        }
-    }
-#endif
-    else {
+    } else {
 #pragma omp parallel for
         for (state_index = 0; state_index < loop_dim; state_index += 2) {
             ITYPE basis_index_0 =
@@ -173,6 +132,218 @@ void Y_gate_parallel_unroll(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
     }
 }
 #endif
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void Y_gate_single_sve(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
+    const ITYPE loop_dim = dim / 2;
+    const ITYPE mask = (1ULL << target_qubit_index);
+    const ITYPE mask_low = mask - 1;
+    const ITYPE mask_high = ~mask_low;
+    ITYPE state_index = 0;
+    const CTYPE imag = 1.i;
+    ITYPE vec_len = getVecLength();
+
+    if (mask >= (vec_len >> 1)) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE minus_even = svzip1(SvdupF(1.0), SvdupF(-1.0));
+        SV_FTYPE minus_odd = svzip1(SvdupF(-1.0), SvdupF(1.0));
+
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            SV_FTYPE input0, input1, output0, output1, cval_real, cval_imag;
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+
+            input0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+            input1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+
+            cval_real = svuzp1(input0, input1);
+            cval_imag = svuzp2(input0, input1);
+
+            output0 = svzip1(cval_imag, cval_real);
+            output1 = svzip2(cval_imag, cval_real);
+
+            output0 = svmul_x(pg, output0, minus_odd);
+            output1 = svmul_x(pg, output1, minus_even);
+
+            if (5 <= target_qubit_index && target_qubit_index <= 10) {
+                // L1 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
+                // L2 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
+            }
+
+            svst1(pg, (ETYPE*)&state[basis_index_0], output1);
+            svst1(pg, (ETYPE*)&state[basis_index_1], output0);
+        }
+    } else if (dim >= vec_len) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE minus_even = svzip1(SvdupF(1.0), SvdupF(-1.0));
+        SV_FTYPE minus_odd = svzip1(SvdupF(-1.0), SvdupF(1.0));
+        SV_FTYPE minus_half;
+        SV_ITYPE vec_shuffle_table;
+
+        minus_half = SvdupF(0.0);
+        ITYPE len = 0;
+        while (len < vec_len) {
+            for (ITYPE i = 0; i < (1ULL << target_qubit_index); ++i)
+                minus_half = svext(minus_half, minus_even, 2);
+            len += (1ULL << (target_qubit_index + 1));
+
+            for (ITYPE i = 0; i < (1ULL << target_qubit_index); ++i)
+                minus_half = svext(minus_half, minus_odd, 2);
+            len += (1ULL << (target_qubit_index + 1));
+        }
+
+        vec_shuffle_table = sveor_z(
+            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
+
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
+            SV_FTYPE input0, input1, output0, output1, cval_real, cval_imag,
+                shuffle0, shuffle1;
+
+            input0 = svld1(pg, (ETYPE*)&state[state_index]);
+            input1 = svld1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)]);
+
+            // shuffle
+            shuffle0 = svtbl(input0, vec_shuffle_table);
+            shuffle1 = svtbl(input1, vec_shuffle_table);
+
+            cval_real = svuzp1(shuffle0, shuffle1);
+            cval_imag = svuzp2(shuffle0, shuffle1);
+
+            output0 = svzip1(cval_imag, cval_real);
+            output1 = svzip2(cval_imag, cval_real);
+
+            shuffle0 = svmul_x(pg, output0, minus_half);
+            shuffle1 = svmul_x(pg, output1, minus_half);
+
+            svst1(pg, (ETYPE*)&state[state_index], shuffle0);
+            svst1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)], shuffle1);
+        }
+    } else {
+        for (state_index = 0; state_index < loop_dim; ++state_index) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            CTYPE temp = state[basis_index_0];
+            state[basis_index_0] = -imag * state[basis_index_1];
+            state[basis_index_1] = imag * temp;
+        }
+    }
+}
+
+#ifdef _OPENMP
+void Y_gate_parallel_sve(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
+    const ITYPE loop_dim = dim / 2;
+    const ITYPE mask = (1ULL << target_qubit_index);
+    const ITYPE mask_low = mask - 1;
+    const ITYPE mask_high = ~mask_low;
+    ITYPE state_index = 0;
+    const CTYPE imag = 1.i;
+    ITYPE vec_len = getVecLength();
+
+    if (mask >= (vec_len >> 1)) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE minus_even = svzip1(SvdupF(1.0), SvdupF(-1.0));
+        SV_FTYPE minus_odd = svzip1(SvdupF(-1.0), SvdupF(1.0));
+
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim;
+             state_index += (vec_len >> 1)) {
+            SV_FTYPE input0, input1, output0, output1, cval_real, cval_imag;
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+
+            input0 = svld1(pg, (ETYPE*)&state[basis_index_0]);
+            input1 = svld1(pg, (ETYPE*)&state[basis_index_1]);
+
+            cval_real = svuzp1(input0, input1);
+            cval_imag = svuzp2(input0, input1);
+
+            output0 = svzip1(cval_imag, cval_real);
+            output1 = svzip2(cval_imag, cval_real);
+
+            output0 = svmul_x(pg, output0, minus_odd);
+            output1 = svmul_x(pg, output1, minus_even);
+
+            if (5 <= target_qubit_index && target_qubit_index <= 10) {
+                // L1 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 4], 1, 3);
+                __builtin_prefetch(&state[basis_index_1 + mask * 4], 1, 3);
+                // L2 prefetch
+                __builtin_prefetch(&state[basis_index_0 + mask * 8], 1, 2);
+                __builtin_prefetch(&state[basis_index_1 + mask * 8], 1, 2);
+            }
+
+            svst1(pg, (ETYPE*)&state[basis_index_0], output1);
+            svst1(pg, (ETYPE*)&state[basis_index_1], output0);
+        }
+    } else if (dim >= vec_len) {
+        SV_PRED pg = Svptrue();
+        SV_FTYPE minus_even = svzip1(SvdupF(1.0), SvdupF(-1.0));
+        SV_FTYPE minus_odd = svzip1(SvdupF(-1.0), SvdupF(1.0));
+        SV_FTYPE minus_half;
+        SV_ITYPE vec_shuffle_table;
+
+        minus_half = SvdupF(0.0);
+        ITYPE len = 0;
+        while (len < vec_len) {
+            for (ITYPE i = 0; i < (1ULL << target_qubit_index); ++i)
+                minus_half = svext(minus_half, minus_even, 2);
+            len += (1ULL << (target_qubit_index + 1));
+
+            for (ITYPE i = 0; i < (1ULL << target_qubit_index); ++i)
+                minus_half = svext(minus_half, minus_odd, 2);
+            len += (1ULL << (target_qubit_index + 1));
+        }
+
+        vec_shuffle_table = sveor_z(
+            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
+
+#pragma omp parallel for
+        for (state_index = 0; state_index < dim; state_index += vec_len) {
+            SV_FTYPE input0, input1, output0, output1, cval_real, cval_imag,
+                shuffle0, shuffle1;
+
+            input0 = svld1(pg, (ETYPE*)&state[state_index]);
+            input1 = svld1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)]);
+
+            // shuffle
+            shuffle0 = svtbl(input0, vec_shuffle_table);
+            shuffle1 = svtbl(input1, vec_shuffle_table);
+
+            cval_real = svuzp1(shuffle0, shuffle1);
+            cval_imag = svuzp2(shuffle0, shuffle1);
+
+            output0 = svzip1(cval_imag, cval_real);
+            output1 = svzip2(cval_imag, cval_real);
+
+            shuffle0 = svmul_x(pg, output0, minus_half);
+            shuffle1 = svmul_x(pg, output1, minus_half);
+
+            svst1(pg, (ETYPE*)&state[state_index], shuffle0);
+            svst1(pg, (ETYPE*)&state[state_index + (vec_len >> 1)], shuffle1);
+        }
+    } else {
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim; ++state_index) {
+            ITYPE basis_index_0 =
+                (state_index & mask_low) + ((state_index & mask_high) << 1);
+            ITYPE basis_index_1 = basis_index_0 + mask;
+            CTYPE temp = state[basis_index_0];
+            state[basis_index_0] = -imag * state[basis_index_1];
+            state[basis_index_1] = imag * temp;
+        }
+    }
+}
+
+#endif  // #ifdef _OPENMP
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
 void Y_gate_single_simd(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
