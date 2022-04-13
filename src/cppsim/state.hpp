@@ -357,7 +357,7 @@ public:
                 os << " * State vector: \n" << eigen_state << std::endl;
             } else {
                 os << " * Qubit Count : " << this->qubit_count
-                   << " (inner / outer : " << this->_inner_qc << " / "
+                   << " (local / global : " << this->_inner_qc << " / "
                    << this->outer_qc << " )" << std::endl;
                 os << " * Dimension   : " << this->dim * mpisize << std::endl;
                 if (dim_out < this->dim) {
@@ -853,7 +853,7 @@ public:
 
 #ifdef _USE_MPI
         if (_outer_qc > 0) {
-            UINT geta = mpirank * this->dim;
+            ITYPE geta = mpirank * this->dim;
             for (UINT i = 0; i < sampling_count; ++i) {
                 if (result[i] == -1ULL or result[i] == this->dim)
                     result[i] = 0ULL;

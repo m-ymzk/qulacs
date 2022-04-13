@@ -7,7 +7,7 @@
 
 ## 機能
 - マルチプロセス、マルチノードで量子状態(state)生成、gateシミュレーション
-- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 ${N-k} \leqq log_2S$ の場合は分散配置されない。ここで $S$ はMPIランク数、 $N$ は qubit数、 $k$ は、1プロセスあたりの最少qubit数（定数 $k=2$ ）
+- state(QuantumState型)インスタンス生成時に、flag "use_multi_cpu=ture"とすることで、分散配置される。ただし、 (N - k) <= log2(S) の場合は分散配置されない。ここで "S" はMPIランク数、 "N" は qubit数、 "k" は、1プロセスあたりの最少qubit数（定数 k = 2 ）
 - A64FXの512bit-SVE命令に最適化されている
 - 対応関数及び範囲は、制限事項を参照
 
@@ -22,8 +22,9 @@
 - 動作確認済み機能は以下の通り。これ以外については現時点でMPI動作を保証しない。
   - QuantumCircuit
   - QuantumCircuitOptimizer
-    - optimizer (supports only block_size=1)
-    - optimize_light
+      - optimize (supports only block_size=1)
+      - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
@@ -44,18 +45,17 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
-      - DenseMatrix(single target)
-      - DiagonalMatrix(single target)
-      - Measurement
-      - to_matrix_gate
-
-- 3月末版対応予定の関数・機能
-  - gate
       - Pauli
       - PauliRotation
+      - DenseMatrix(single target)
       - DenseMatrix(single control, single target)
-  - ParametricQuantumCircuit
-  - PauliOperator
+      - DiagonalMatrix(single target)
+      - Measurement
+      - merge(max 2 qubit)
+      - CPTP
+      - Instrument
+      - Adaptive
+      - to_matrix_gate
 
 ## 注意事項
 - 4月以降の版で順次対応予定の関数・機能
@@ -66,11 +66,10 @@
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
       - merge
-      - CPTP
-      - Instrument
-      - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
+      - optimize (block_size > 1)
   - QuantumCircuitSimulator
   - state
       - inner_product
@@ -111,9 +110,9 @@
           ノード内にstate vectorを作成する。（従来動作）
       - use_multi_cpu = true
           可能であれば分散してstate vectorを作成する。
-          qubits を内部で inner_qc + outer_qc に分割
-        - inner_qc: １ノード内のqubits
-        - outer_qc: 分散配置されたqubits (=log2(rank数))
+          qubits を内部で local_qc + global_qc に分割
+        - local_qc: １ノード内のqubits
+        - global_qc: 分散配置されたqubits (=log2(rank数))
     - state.get_device()
     state vectorの配置されているデバイスを返す。
 
@@ -130,7 +129,7 @@
         -- rank 0 --------------------------------------
          *** Quantum State ***
          * MPI rank / size : 0 / 2
-         * Qubit Count : 20 (inner / outer : 19 / 1 )
+         * Qubit Count : 20 (local / global : 19 / 1 )
          * Dimension   : 262144
          * state vector is too long, so the (128 x 2) elements are output.
          * State vector (rank 0):
@@ -159,7 +158,7 @@
         - SWAP/FusedSWAPゲートの挿入なし
       - swap_level = 1
         - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
-    - optimize(circuit, swap_level=0)
+    - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - SWAP/FusedSWAPゲートの挿入なし
 

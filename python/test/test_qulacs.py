@@ -19,13 +19,13 @@ class TestQuantumState(unittest.TestCase):
         self.dim = 2**self.n
         self.state = qulacs.QuantumState(self.n, True)
         if self.state.get_device_name()=="multi-cpu":
-            self.inner_dim = self.dim // mpisize
-            self.outer_qc = int(math.log2(mpisize))
-            self.inner_qc = self.n - self.outer_qc
+            self.local_dim = self.dim // mpisize
+            self.global_qc = int(math.log2(mpisize))
+            self.local_qc = self.n - self.global_qc
         else:
-            self.inner_dim = self.dim
-            self.outer_qc = 0
-            self.inner_qc = self.n
+            self.local_dim = self.dim
+            self.global_qc = 0
+            self.local_qc = self.n
 
     def tearDown(self):
         del self.state
@@ -41,7 +41,7 @@ class TestQuantumState(unittest.TestCase):
         self.state.set_zero_state()
         vector = self.state.get_vector()
         if self.state.get_device_name()=="multi-cpu":
-            vector_ans = np.zeros(self.inner_dim)
+            vector_ans = np.zeros(self.local_dim)
         else:
             vector_ans = np.zeros(self.dim)
         vector_ans[0] = 1.
@@ -52,9 +52,9 @@ class TestQuantumState(unittest.TestCase):
         self.state.set_computational_basis(pos)
         vector = self.state.get_vector()
         if self.state.get_device_name()=="multi-cpu":
-            vector_ans = np.zeros(self.inner_dim)
-            if (pos >> self.inner_qc) == mpirank:
-                vector_ans[pos % self.inner_dim] = 1.
+            vector_ans = np.zeros(self.local_dim)
+            if (pos >> self.local_qc) == mpirank:
+                vector_ans[pos % self.local_dim] = 1.
         else:
             vector_ans = np.zeros(self.dim)
             vector_ans[pos] = 1.
@@ -65,7 +65,7 @@ class TestQuantumCircuit(unittest.TestCase):
     def setUp(self):
         self.n = 4
         self.dim = 2**self.n
-        self.state = qulacs.QuantumState(self.n)
+        self.state = qulacs.QuantumState(self.n, True)
         self.circuit = qulacs.QuantumCircuit(self.n)
 
     def tearDown(self):
@@ -81,7 +81,10 @@ class TestQuantumCircuit(unittest.TestCase):
         vector_ans = np.zeros(self.dim)
         vector_ans[0] = np.sqrt(0.5)
         vector_ans[3] = np.sqrt(0.5)
-        self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check make bell state")
+        if self.state.get_device_name() == 'multi-cpu':
+            vector_ans = vector_ans[self.dim // mpisize * mpirank:self.dim // mpisize * (mpirank + 1)]
+        if mpirank == 0:
+            self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check make bell state")
 
 
 class TestPointerHandling(unittest.TestCase):
@@ -133,7 +136,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import merge, add, to_matrix_gate, Probabilistic, CPTP, Instrument, Adaptive
         from scipy.sparse import lil_matrix
         qc = QuantumCircuit(3)
-        qs = QuantumState(3)
+        qs = QuantumState(3, True)
         ref = QuantumState(3)
         sparse_mat = lil_matrix((4, 4))
         sparse_mat[0, 0] = 1
@@ -184,7 +187,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import ParametricRX, ParametricRY, ParametricRZ, ParametricPauliRotation
         from scipy.sparse import lil_matrix
         qc = ParametricQuantumCircuit(3)
-        qs = QuantumState(3)
+        qs = QuantumState(3, True)
         ref = QuantumState(3)
         sparse_mat = lil_matrix((4, 4))
         sparse_mat[0, 0] = 1
@@ -297,10 +300,10 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs import QuantumState
         from qulacs.gate import StateReflection
         n = 5
-        s1 = QuantumState(n)
+        s1 = QuantumState(n, True)
 
         def gen_gate():
-            s2 = QuantumState(n)
+            s2 = QuantumState(n, True)
             gate = StateReflection(s2)
             del s2
             return gate
@@ -315,7 +318,7 @@ class TestPointerHandling(unittest.TestCase):
         from qulacs.gate import SparseMatrix
         from scipy.sparse import lil_matrix
         n = 5
-        state = QuantumState(n)
+        state = QuantumState(n, True)
         matrix = lil_matrix((4, 4), dtype=np.complex128)
         matrix[0, 0] = 1 + 1.j
         matrix[1, 1] = 1. + 1.j

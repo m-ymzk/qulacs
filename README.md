@@ -8,15 +8,15 @@
 ## Functionality
 - Quantum state generation & gate simulation with multi-process and multi-nodes
 - mpiQulacs distributes a state (QuantumState) when it is instantiated and flag "use_multi_cpu=true" is enabled.
-  - However, in the case ${N-k} \leqq log_2S$, the flag is ignored.
-  - $S$ is MPI rank, $N$ is the number of qubits, $k$ is the min number of qubit per process （$k=2$ constant）
+  - However, in the case "(N - k) <= log2(S)", the flag is ignored.
+  - "S" is MPI rank, "N" is the number of qubits, "k" is the min number of qubit per process （k = 2 constant）
 - Please also see Limitation
 
 <hr>
 
 ## Limitation
 
-- The number of MPI rank (WORLD_SIZE) should be $2^n$
+- The number of MPI rank (WORLD_SIZE) should be 2^n
 - Unsupported gates/functions may cause severe error.
 - "device=gpu" not supported
 
@@ -25,6 +25,7 @@
   - QuantumCircuitOptimizer
       - optimize (supports only block_size=1)
       - optimize_light
+  - ParametricQuantumCircuit
   - QuantumState
       - Constructor
       - copy
@@ -45,18 +46,17 @@
       - S / Sdag / T / Tdag
       - SqrtX / SqrtXdag / SqrtY / SqrtYdag
       - U1 / U2 / U3
+      - Pauli
+      - PauliRotation
       - DenseMatrix(single target)
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
+      - merge(max 2 qubit)
+      - CPTP
+      - Instrument
+      - Adaptive
       - to_matrix_gate
-
-- To be supported after March (T.B.D.)
-  - gate
-      - Pauli
-      - PauliRotation
-  - ParametricQuantumCircuit
-  - PauliOperator
 
 ## Additional info
 - To be supported after April (T.B.D.)
@@ -67,11 +67,10 @@
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
       - merge
-      - CPTP
-      - Instrument
-      - Adaptive
   - Observable
+  - PauliOperator
   - QuantumCircuitOptimizer
+      - optimize (block_size > 1)
   - QuantumCircuitSimulator
   - state
       - inner_product
@@ -99,6 +98,7 @@
       - Probabilistic
       - ProbabilisticInstrument
       - CP
+      - merge(> 2qubit)
   - DensityMatrix (simulation)
   - GeneralQuantumOperator
   - QuantumGateBase
@@ -112,9 +112,9 @@
         -  Generate state vector in a node (same as the original)
       - use_multi_cpu = true
         -  Generate a state vector in multiple nodes if possible.
-        -  qubits are divided into inner_qc + outer_qc internally.
-            - inner_qc: qubits in one node
-            - outer_qc: qubits in multiple nodes (=log2(#rank))
+        -  qubits are divided into local_qc + global_qc internally.
+            - local_qc: qubits in one node
+            - global_qc: qubits in multiple nodes (=log2(#rank))
     - state.get_device()
       - return the list of devices having the state vector.
 
@@ -131,7 +131,7 @@
         -- rank 0 --------------------------------------
          *** Quantum State ***
          * MPI rank / size : 0 / 2
-         * Qubit Count : 20 (inner / outer : 19 / 1 )
+         * Qubit Count : 20 (local / global : 19 / 1 )
          * Dimension   : 262144
          * state vector is too long, so the (128 x 2) elements are output.
          * State vector (rank 0):
@@ -159,7 +159,7 @@
         - No SWAP/FusedSWAP gate insertion
       - swap_level = 1
         - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
-    - optimize(circuit, swap_level=0)
+    - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
 

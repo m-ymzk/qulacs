@@ -498,117 +498,58 @@ void H_gate_mpi(
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
 
+#ifdef _OPENMP
+        UINT threshold = 13;
+        UINT default_thread_count = omp_get_max_threads();
+        if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
+
         CTYPE *si = state;
         for (UINT i = 0; i < (UINT)num_work; ++i) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
-#ifdef _OPENMP
-            UINT threshold = 13;
-            if (dim < (((ITYPE)1) << threshold)) {
-                H_gate_single_unroll_mpi(t, si, dim_work, rank & pair_rank_bit);
-            } else {
-                H_gate_parallel_unroll_mpi(
-                    t, si, dim_work, rank & pair_rank_bit);
-            }
-#else
-            H_gate_single_unroll_mpi(t, si, dim_work, rank & pair_rank_bit);
-#endif
+
+            _H_gate_mpi(t, si, dim_work, rank & pair_rank_bit);
+
             si += dim_work;
         }
-    }
-}
-
-void H_gate_single_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
-    const double sqrt2inv = 1. / sqrt(2.);
-    ITYPE state_index = 0;
-
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    ITYPE vec_len = getVecLength();
-    if (dim >= (vec_len >> 1)) {
-        SV_PRED pg = Svptrue();
-
-        SV_FTYPE factor = SvdupF(sqrt2inv);
-        SV_FTYPE input0, input1, output;
-
-        if (flag) {
-            for (state_index = 0; state_index < dim;
-                 state_index += (vec_len >> 1)) {
-                input0 = svld1(pg, (ETYPE *)&t[state_index]);
-                input1 = svld1(pg, (ETYPE *)&si[state_index]);
-
-                output = svsub_x(pg, input0, input1);
-                output = svmul_x(pg, output, factor);
-
-                svst1(pg, (ETYPE *)&si[state_index], output);
-            }
-        } else {
-            for (state_index = 0; state_index < dim;
-                 state_index += (vec_len >> 1)) {
-                input0 = svld1(pg, (ETYPE *)&si[state_index]);
-                input1 = svld1(pg, (ETYPE *)&t[state_index]);
-
-                output = svadd_x(pg, input0, input1);
-                output = svmul_x(pg, output, factor);
-
-                svst1(pg, (ETYPE *)&si[state_index], output);
-            }
-        }
-    } else
-#endif
-    {
-        for (state_index = 0; state_index < dim; state_index += 2) {
-            // flag: My qubit(target in outer_qubit) value.
-            if (flag) {
-                // state-value=0, t-value=1
-                si[state_index] = (t[state_index] - si[state_index]) * sqrt2inv;
-                si[state_index + 1] =
-                    (t[state_index + 1] - si[state_index + 1]) * sqrt2inv;
-            } else {
-                // state-value=1, t-value=0
-                si[state_index] = (si[state_index] + t[state_index]) * sqrt2inv;
-                si[state_index + 1] =
-                    (si[state_index + 1] + t[state_index + 1]) * sqrt2inv;
-            }
-        }
-    }
-}
-
 #ifdef _OPENMP
-void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
+        omp_set_num_threads(default_thread_count);
+#endif
+    }
+}
+
+void _H_gate_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
     const double sqrt2inv = 1. / sqrt(2.);
     ITYPE state_index = 0;
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+    CTYPE *s0, *s1;
+    s0 = (flag) ? t : si;
+    s1 = (flag) ? si : t;
+
     ITYPE vec_len = getVecLength();
+
     if (dim >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
         SV_FTYPE factor = SvdupF(sqrt2inv);
-        SV_FTYPE input0, input1, output;
 
-        if (flag) {
-#pragma omp parallel for private(input0, input1, output) shared(pg, factor)
-            for (state_index = 0; state_index < dim;
-                 state_index += (vec_len >> 1)) {
-                input0 = svld1(pg, (ETYPE *)&t[state_index]);
-                input1 = svld1(pg, (ETYPE *)&si[state_index]);
+#pragma omp parallel for
+        for (state_index = 0; state_index < dim;
+             state_index += (vec_len >> 1)) {
+            SV_FTYPE input0 = svld1(pg, (ETYPE *)&s0[state_index]);
+            SV_FTYPE input1 = svld1(pg, (ETYPE *)&s1[state_index]);
 
+            SV_FTYPE output;
+            if (flag)
                 output = svsub_x(pg, input0, input1);
-                output = svmul_x(pg, output, factor);
-
-                svst1(pg, (ETYPE *)&si[state_index], output);
-            }
-        } else {
-#pragma omp parallel for private(input0, input1, output) shared(pg, factor)
-            for (state_index = 0; state_index < dim;
-                 state_index += (vec_len >> 1)) {
-                input0 = svld1(pg, (ETYPE *)&si[state_index]);
-                input1 = svld1(pg, (ETYPE *)&t[state_index]);
-
+            else
                 output = svadd_x(pg, input0, input1);
-                output = svmul_x(pg, output, factor);
 
-                svst1(pg, (ETYPE *)&si[state_index], output);
-            }
+            output = svmul_x(pg, output, factor);
+
+            svst1(pg, (ETYPE *)&si[state_index], output);
         }
     } else
 #endif
@@ -630,52 +571,4 @@ void H_gate_parallel_unroll_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag) {
         }
     }
 }
-#endif  //#ifdef _OPENMP
 #endif  //#ifdef _USE_MPI
-
-/*
-#ifdef _OPENMP
-void H_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-        const ITYPE loop_dim = dim / 2;
-        const ITYPE mask = (1ULL << target_qubit_index);
-        const ITYPE mask_low = mask - 1;
-        const ITYPE mask_high = ~mask_low;
-        ITYPE state_index = 0;
-        const double sqrt2inv = 1. / sqrt(2.);
-        //std::cout << dim << std::endl;
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_index_0 = (state_index&mask_low) +
-((state_index&mask_high) << 1); ITYPE basis_index_1 = basis_index_0 + mask;
-                //std::cout << basis_index_0 << " " << basis_index_1 <<
-std::endl; CTYPE temp0 = state[basis_index_0]; CTYPE temp1 =
-state[basis_index_1]; state[basis_index_0] = (temp0 + temp1) *sqrt2inv;
-                state[basis_index_1] = (temp0 - temp1) *sqrt2inv;
-        }
-}
-#endif
-
-
-void H_gate_old_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-        single_qubit_dense_matrix_gate(target_qubit_index, HADAMARD_MATRIX,
-state, dim);
-}
-
-void H_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-        const ITYPE loop_dim = dim / 2;
-        const ITYPE mask = (1ULL << target_qubit_index);
-        const ITYPE mask_low = mask - 1;
-        const ITYPE mask_high = ~mask_low;
-        const double sqrt2inv = 1. / sqrt(2.);
-        ITYPE state_index = 0;
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                ITYPE basis_index_0 = (state_index&mask_low) +
-((state_index&mask_high) << 1); ITYPE basis_index_1 = basis_index_0 + mask;
-                CTYPE temp0 = state[basis_index_0];
-                CTYPE temp1 = state[basis_index_1];
-                state[basis_index_0] = (temp0 + temp1)*sqrt2inv;
-                state[basis_index_1] = (temp0 - temp1)*sqrt2inv;
-        }
-}
-
-*/
