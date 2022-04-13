@@ -37,7 +37,8 @@ void single_qubit_dense_matrix_gate(
     omp_set_num_threads(default_thread_count);
 #endif
 
-#elif _USE_SIMD
+#else  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#ifdef _USE_SIMD
 
 #ifdef _OPENMP
     UINT threshold = 13;
@@ -69,6 +70,7 @@ void single_qubit_dense_matrix_gate(
         target_qubit_index, matrix, state, dim);
 #endif  // #ifdef _OPENMP
 #endif  // #ifdef _USE_SIMD
+#endif  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 }
 
 void single_qubit_dense_matrix_gate_single(
@@ -634,7 +636,6 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index,
     }
 }
 
-#ifdef _OPENMP
 void _single_qubit_dense_matrix_gate_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -716,5 +717,4 @@ void _single_qubit_dense_matrix_gate_mpi(
         }
     }
 }
-#endif
 #endif  //#ifdef _USE_MPI
