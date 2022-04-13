@@ -806,3 +806,48 @@ TEST(CircuitTest, SpecialGatesToString) {
 	std::string s = c.to_string();
 }
 
+TEST(CircuitTest, FSWAPOptimize) {
+    UINT n = 6;
+    const ITYPE dim = 1ULL << n;
+	double eps = 1e-14;
+    Random random;
+
+    for (UINT block_size = 1; block_size <= n; block_size++) {
+        for (UINT t1 = 0; t1 < n; ++t1) {
+            for (UINT t2 = 0; t2 < n; ++t2) {
+                if (t1 == t2) continue;
+
+                UINT max_bs =
+                    std::min((t1 < t2) ? (t2 - t1) : (t1 - t2), std::min(n - t1, n - t2));
+
+                for (UINT bs = 1; bs <= max_bs; ++bs) {
+                    random.set_seed(2022);
+                    QuantumCircuit circuit(n);
+                    for (UINT i = 0; i < n; i++) {
+                        circuit.add_RX_gate(i, random.uniform()*3.14159);
+                    }
+                    circuit.add_FusedSWAP_gate(t1, t2, bs);
+                    for (UINT i = 0; i < n; i++) {
+                        circuit.add_RX_gate(i, random.uniform()*3.14159);
+                    }
+
+                    // compare update result with non-optimized one
+                    QuantumState state(n), opt_state(n);
+                    state.set_Haar_random_state();
+                    opt_state.load(&state);
+                    QuantumCircuit *opt_circuit = circuit.copy();
+                    QuantumCircuitOptimizer qco;
+                    qco.optimize(opt_circuit, block_size);
+
+                    circuit.update_quantum_state(&state);
+                    opt_circuit->update_quantum_state(&opt_state);
+                    for (ITYPE i = 0; i < dim; ++i) {
+                        ASSERT_NEAR(abs(state.data_cpp()[i] - opt_state.data_cpp()[i]),
+                                    0, eps);
+                    }
+                    delete opt_circuit;
+                }
+            }
+        }
+    }
+}

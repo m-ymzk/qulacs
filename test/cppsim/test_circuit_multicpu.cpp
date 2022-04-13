@@ -883,6 +883,20 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv,
 
 #if 0
         if (m->get_rank() == 0) {
+            for (auto& gate : circuit_ref->gate_list) {
+                auto t_index_list = gate->get_target_index_list();
+                auto c_index_list = gate->get_control_index_list();
+                std::cout << gate->get_name() << "(t:{" ;
+                for (auto idx : t_index_list) {
+                    std::cout << idx << ",";
+                }
+                std::cout << "}, c:{";
+                for (auto idx : c_index_list) {
+                    std::cout << idx << ",";
+                }
+                std::cout<< "})" << std::endl;
+            }
+            std::cout << "-----" << std::endl;
             for (auto& gate : circuit->gate_list) {
                 auto t_index_list = gate->get_target_index_list();
                 auto c_index_list = gate->get_control_index_list();
