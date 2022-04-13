@@ -636,7 +636,6 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index,
     }
 }
 
-#ifdef _OPENMP
 void _single_qubit_dense_matrix_gate_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -718,5 +717,4 @@ void _single_qubit_dense_matrix_gate_mpi(
         }
     }
 }
-#endif
 #endif  //#ifdef _USE_MPI
