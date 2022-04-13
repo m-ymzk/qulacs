@@ -90,6 +90,6 @@ if __name__ == '__main__':
             stime_std = 0.
 
         print('[qulacs] {}, mpisize {}, {} qubits, const= {} +- {}, sim= {} +- {}'.format(
-            mode, mpisize, n, ctime_avg, ctime_std, stime_avg, stime_std))
+            mode, mpisize, n, ctime_avg, ctime_std, stime_avg, stime_std), simTimes)
 
 #EOF
