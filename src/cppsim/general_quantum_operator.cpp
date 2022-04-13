@@ -68,27 +68,19 @@ CPPCTYPE GeneralQuantumOperator::get_expectation_value(
             << std::endl;
         return 0.;
     }
-    double sum_real = 0.;
-    double sum_imag = 0.;
-    CPPCTYPE tmp(0., 0.);
+    CPPCTYPE sum = 0;
     size_t n_terms = this->_operator_list.size();
 
     if (state->get_device_name() == "gpu") {
-        CPPCTYPE sum = 0;
         for (size_t i = 0; i < n_terms; ++i) {
             sum += _operator_list[i]->get_expectation_value(state);
         }
         return sum;
     } else {
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : sum_real, sum_imag) private(tmp)
-#endif
         for (size_t i = 0; i < n_terms; ++i) {
-            tmp = _operator_list[i]->get_expectation_value_single_thread(state);
-            sum_real += tmp.real();
-            sum_imag += tmp.imag();
+            sum += _operator_list[i]->get_expectation_value(state);
         }
-        return CPPCTYPE(sum_real, sum_imag);
+        return sum;
     }
 }
 
