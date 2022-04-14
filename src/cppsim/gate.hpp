@@ -145,7 +145,6 @@ public:
     void update_quantum_state(QuantumStateBase* state, UINT seed) {
 		Random random;
 		random.set_seed(seed);
-		std::cout << "# set seed " << seed << std::endl;
 		this->update_quantum_state(state);
 	}
     /**
