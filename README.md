@@ -52,11 +52,13 @@
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
-      - merge(max 2 qubit)
+      - merge(#qubits <= 2)
       - CPTP
       - Instrument
       - Adaptive
       - to_matrix_gate
+  - Observable
+  - PauliOperator
 
 ## Additional info
 - To be supported after April (T.B.D.)
@@ -66,9 +68,6 @@
       - DenseMatrix(double target)
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
-      - merge
-  - Observable
-  - PauliOperator
   - QuantumCircuitOptimizer
       - optimize (block_size > 1)
   - QuantumCircuitSimulator
@@ -163,6 +162,9 @@
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
 
+  - circuit.update_quantum_state(state, seed)
+    - Enables updating of the state vector with a random number of seeds
+
 <hr>
 
 ## build/install
@@ -203,12 +205,16 @@ $ mpirun -n 2 ../bin/csim_test
 $ mpirun -n 2 ../bin/cppsim_test
 $ mpirun -n 2 ../bin/vqcsim_test
 
-<sample>
+<sample:cpp>
 $ cd ict
 $ make
 $ mpirun -n 4 mpiqtest -1 20 0
 (USAGE: mpiqtest debug-flag n-qubits target-qubit)
 (USAGE: mpiqbench [start n-qubits] [end n-qubit])
+
+<sample:python>
+$ cd ict/python
+$ mpirun -n 4 --npernode 1 --hostfile hostfile ./job.sh python qulacsbench.py -n 20
 ```
 
 ### fcc/FCC
