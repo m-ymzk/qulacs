@@ -252,7 +252,8 @@ PYBIND11_MODULE(qulacs, m) {
     mstate.def("partial_trace", py::overload_cast<const DensityMatrix*, std::vector<UINT>>(&state::partial_trace), pybind11::return_value_policy::take_ownership, "Take partial trace", py::arg("state"), py::arg("target_traceout"));
 
     py::class_<QuantumGateBase>(m, "QuantumGateBase")
-        .def("update_quantum_state", &QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))
+        .def("update_quantum_state", (void (QuantumGateBase::*)(QuantumStateBase*))&QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))
+        .def("update_quantum_state", (void (QuantumGateBase::*)(QuantumStateBase*, unsigned int))&QuantumGateBase::update_quantum_state, "Update quantum state with seed", py::arg("state"), py::arg("seed"))
         .def("copy",&QuantumGateBase::copy, pybind11::return_value_policy::take_ownership, "Create copied instance")
         .def("to_string", &QuantumGateBase::to_string, "Get string representation")
         .def("get_matrix", [](const QuantumGateBase& gate) {
