@@ -266,7 +266,6 @@ TEST(GateTest_multicpu, SingleQubitUnitaryGate) {
     }
 }
 
-#if 0 // must be set random seed in Instrument gate
 TEST(GateTest_multicpu, MeasurementGate) {
     UINT n = 8;
     const ITYPE dim = 1ULL << n;
@@ -281,6 +280,7 @@ TEST(GateTest_multicpu, MeasurementGate) {
 
     for (UINT target = 0; target < n; ++target) {
         for (UINT classical = 0; classical < n; ++classical) {
+			UINT seed = target << 3 + classical + 3;
             if (target == classical) continue;
             state_ref.set_Haar_random_state(2022);
             state.load(&state_ref);
@@ -298,8 +298,8 @@ TEST(GateTest_multicpu, MeasurementGate) {
 
             // update state
             auto measurement = gate::Measurement(target, classical);
-            measurement->update_quantum_state(&state_ref);
-            measurement->update_quantum_state(&state);
+            measurement->update_quantum_state(&state, seed);
+            measurement->update_quantum_state(&state_ref, seed);
 
             for (ITYPE i = 0; i < inner_dim; ++i) {
                 ASSERT_NEAR(real(state.data_cpp()[i]),
@@ -314,7 +314,6 @@ TEST(GateTest_multicpu, MeasurementGate) {
         }
     }
 }
-#endif
 
 void _ApplyTwoQubitGate(UINT n, UINT control, UINT target,
     std::function<QuantumGateBase*(UINT, UINT)>,
@@ -1584,6 +1583,7 @@ std::cout << state.to_string() << std::endl;
 */
 /*
 }
+*/
 
 TEST(GateTest_multicpu, TestNoise) {
         const UINT n = 10;
@@ -1639,15 +1639,16 @@ TEST(GateTest_multicpu, DuplicateIndex) {
                 ASSERT_EQ(NULL, gate2);
         }
         {
-                auto gate1 = gate::PauliRotation({ 2,1,0,3,7,9,4 }, {
-0,0,0,0,0,0,0 }, 0.0); EXPECT_TRUE(gate1 != NULL); delete gate1; auto gate2 =
-gate::PauliRotation({ 0,1,3,1,5,6,2 }, { 0,0,0,0,0,0,0 }, 0.0); ASSERT_EQ(NULL,
-gate2);
+                auto gate1 = gate::PauliRotation({ 2,1,0,3,7,9,4 }, { 0,0,0,0,0,0,0 }, 0.0);
+			   	EXPECT_TRUE(gate1 != NULL);
+			   	delete gate1;
+			   	auto gate2 = gate::PauliRotation({ 0,1,3,1,5,6,2 }, { 0,0,0,0,0,0,0 }, 0.0);
+			   	ASSERT_EQ(NULL, gate2);
         }
         {
-                auto gate1 = gate::DenseMatrix({ 10, 13 },
-ComplexMatrix::Identity(4,4)); EXPECT_TRUE(gate1 != NULL); delete gate1; auto
-gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
+                auto gate1 = gate::DenseMatrix({ 10, 13 }, ComplexMatrix::Identity(4,4));
+			   	EXPECT_TRUE(gate1 != NULL); delete gate1;
+			   	auto gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
                 ASSERT_EQ(NULL, gate2);
         }
         {
@@ -1682,4 +1683,3 @@ gate2 = gate::DenseMatrix({ 21, 21 }, ComplexMatrix::Identity(4, 4));
                 ASSERT_EQ(NULL, gate2);
         }
 }
-*/
