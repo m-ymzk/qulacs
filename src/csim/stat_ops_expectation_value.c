@@ -61,7 +61,8 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 m->m_DC_recv(recvptr, dim_work, pair_rank);
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-                ITYPE vec_len = getVecLength();  // # of double elements in a vector
+                ITYPE vec_len =
+                    getVecLength();  // # of double elements in a vector
                 if (dim_work >= vec_len) {
                     // TODO: Currently supports only 512-bit SVE instructions
                     assert(vec_len == 16);
@@ -70,18 +71,19 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
 #pragma omp parallel reduction(+ : sum)
                     {
                         int img_flag = global_phase_90rot_count & 1;
-        
+
                         SV_PRED pg = Svptrue();
                         SV_PRED pg_conj_neg;
                         SV_ITYPE sv_idx_ofs = SvindexI(0, 1);
                         SV_ITYPE sv_img_ofs = SvindexI(0, 1);
-                        
+
                         sv_idx_ofs = svlsr_x(pg, sv_idx_ofs, 1);
-                        sv_idx_ofs = svadd_x(pg, sv_idx_ofs, SvdupI(pair_rank << inner_qc));
+                        sv_idx_ofs = svadd_x(
+                            pg, sv_idx_ofs, SvdupI(pair_rank << inner_qc));
 
                         sv_img_ofs = svand_x(pg, sv_img_ofs, SvdupI(1));
                         pg_conj_neg = svcmpeq(pg, sv_img_ofs, SvdupI(0));
-        
+
                         SV_FTYPE sv_sum = SvdupF(0.0);
                         SV_FTYPE sv_sign_base;
                         if (global_phase_90rot_count & 2)
@@ -92,8 +94,8 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
 #pragma omp for
                         for (j = 0; j < dim_work; j += (vec_len >> 1)) {
                             // A
-                            SV_ITYPE sv_basis1 =
-                                svadd_x(pg, SvdupI(state_index + j), sv_idx_ofs);
+                            SV_ITYPE sv_basis1 = svadd_x(
+                                pg, SvdupI(state_index + j), sv_idx_ofs);
                             // B
                             SV_ITYPE sv_basis0 =
                                 sveor_x(pg, sv_basis1, SvdupI(bit_flip_mask));
@@ -105,40 +107,47 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                             SV_FTYPE sv_sign = svneg_m(sv_sign_base,
                                 svcmpeq(pg, sv_popc, SvdupI(1)), sv_sign_base);
                             sv_sign = svmul_x(pg, sv_sign, SvdupF(2.0));
-        
+
                             // D
-                            sv_basis0 = svand_x(pg, sv_basis0, SvdupI(inner_mask));
-                            sv_basis0 = svmad_x(pg, sv_basis0, SvdupI(2), sv_img_ofs);
-                            sv_basis1 = svand_x(pg, sv_basis1, SvdupI(dim_work - 1));
-                            sv_basis1 = svmad_x(pg, sv_basis1, SvdupI(2), sv_img_ofs);
-                            SV_FTYPE sv_input0 =
-                                svld1_gather_index(pg, (ETYPE*)state, sv_basis0);
-                            SV_FTYPE sv_input1 =
-                                svld1_gather_index(pg, (ETYPE*)recvptr, sv_basis1);
-        
+                            sv_basis0 =
+                                svand_x(pg, sv_basis0, SvdupI(inner_mask));
+                            sv_basis0 =
+                                svmad_x(pg, sv_basis0, SvdupI(2), sv_img_ofs);
+                            sv_basis1 =
+                                svand_x(pg, sv_basis1, SvdupI(dim_work - 1));
+                            sv_basis1 =
+                                svmad_x(pg, sv_basis1, SvdupI(2), sv_img_ofs);
+                            SV_FTYPE sv_input0 = svld1_gather_index(
+                                pg, (ETYPE*)state, sv_basis0);
+                            SV_FTYPE sv_input1 = svld1_gather_index(
+                                pg, (ETYPE*)recvptr, sv_basis1);
+
                             if (img_flag) {  // calc imag. parts
-        
+
                                 SV_FTYPE sv_real = svtrn1(sv_input0, sv_input1);
                                 SV_FTYPE sv_imag = svtrn2(sv_input1, sv_input0);
-                                sv_imag = svneg_m(sv_imag, pg_conj_neg, sv_imag);
-        
-                                SV_FTYPE sv_result = svmul_x(pg, sv_real, sv_imag);
+                                sv_imag =
+                                    svneg_m(sv_imag, pg_conj_neg, sv_imag);
+
+                                SV_FTYPE sv_result =
+                                    svmul_x(pg, sv_real, sv_imag);
                                 sv_result = svmul_x(pg, sv_result, sv_sign);
                                 sv_sum = svsub_x(pg, sv_sum, sv_result);
-        
+
                             } else {  // calc real parts
-        
-                                SV_FTYPE sv_result = svmul_x(pg, sv_input0, sv_input1);
+
+                                SV_FTYPE sv_result =
+                                    svmul_x(pg, sv_input0, sv_input1);
                                 sv_result = svmul_x(pg, sv_result, sv_sign);
                                 sv_sum = svadd_x(pg, sv_sum, sv_result);
                             }
                         }
-        
+
                         // reduction
                         sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 4));
                         sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 2));
                         sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 1));
-        
+
                         sum += svlastb(svptrue_pat_b64(SV_VL1), sv_sum);
                     }
                 } else
@@ -146,17 +155,18 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 {
 #pragma omp parallel for reduction(+ : sum)
                     for (j = 0; j < dim_work; ++j) {
-                        ITYPE basis_1 = state_index + j + (pair_rank << inner_qc);
+                        ITYPE basis_1 =
+                            state_index + j + (pair_rank << inner_qc);
                         ITYPE basis_0 = basis_1 ^ bit_flip_mask;
                         UINT sign_0 =
                             count_population(basis_0 & phase_flip_mask) % 2;
-    
-                        sum += creal(
-                            state[basis_0 & inner_mask] *
-                            conj(recvptr[basis_1 & (dim_work - 1)]) *
-                            PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) %
-                                        4] *
-                            2.0);
+
+                        sum += creal(state[basis_0 & inner_mask] *
+                                     conj(recvptr[basis_1 & (dim_work - 1)]) *
+                                     PHASE_90ROT[(global_phase_90rot_count +
+                                                     sign_0 * 2) %
+                                                 4] *
+                                     2.0);
                     }
                 }
                 state_index += dim_work;
