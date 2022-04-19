@@ -89,69 +89,73 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
             assert(vec_len == 16);
             assert(sizeof(ETYPE)==sizeof(double));
  
-            int img_flag = global_phase_90rot_count & 1;
+#pragma omp parallel private(state_index) reduction(+: sum)
+            {
+                int img_flag = global_phase_90rot_count & 1;
 
-            SV_PRED pg = Svptrue();
-            SV_PRED pg_conj_neg;
-            SV_ITYPE sv_idx_ofs = SvindexI(0, 1);
-            SV_ITYPE sv_img_ofs = SvindexI(0, 1);
+                SV_PRED pg = Svptrue();
+                SV_PRED pg_conj_neg;
+                SV_ITYPE sv_idx_ofs = SvindexI(0, 1);
+                SV_ITYPE sv_img_ofs = SvindexI(0, 1);
    
-            sv_idx_ofs = svlsr_x(pg, sv_idx_ofs, 1);
-            sv_img_ofs = svand_x(pg, sv_img_ofs, SvdupI(1));
-            pg_conj_neg = svcmpeq(pg, sv_img_ofs, SvdupI(0));
+                sv_idx_ofs = svlsr_x(pg, sv_idx_ofs, 1);
+                sv_img_ofs = svand_x(pg, sv_img_ofs, SvdupI(1));
+                pg_conj_neg = svcmpeq(pg, sv_img_ofs, SvdupI(0));
 
-            SV_FTYPE sv_sum = SvdupF(0.0);
-            SV_FTYPE sv_sign_base;
-            if (global_phase_90rot_count & 2) sv_sign_base= SvdupF(-1.0);
-            else                              sv_sign_base= SvdupF( 1.0);
+                SV_FTYPE sv_sum = SvdupF(0.0);
+                SV_FTYPE sv_sign_base;
+                if (global_phase_90rot_count & 2) sv_sign_base= SvdupF(-1.0);
+                else                              sv_sign_base= SvdupF( 1.0);
 
-            for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
-                // A
-                SV_ITYPE sv_basis = svadd_x(pg, SvdupI(state_index), sv_idx_ofs);
-                SV_ITYPE sv_basis0 = svlsr_x(pg, sv_basis, pivot_qubit_index);
-                sv_basis0 = svlsl_x(pg, sv_basis0, pivot_qubit_index+1);
-                sv_basis0 = svadd_x(pg, sv_basis0, svand_x(pg, sv_basis, SvdupI(pivot_mask-1)));
-                // B
-                SV_ITYPE sv_basis1 = sveor_x(pg, sv_basis0, SvdupI(bit_flip_mask));
-                // C
-                SV_ITYPE sv_popc = svand_x(pg, sv_basis0, SvdupI(phase_flip_mask));
-                sv_popc = svcnt_z(pg, sv_popc);
-                sv_popc = svand_x(pg, sv_popc, SvdupI(1));
-                SV_FTYPE sv_sign = svneg_m(sv_sign_base, svcmpeq(pg, sv_popc, SvdupI(1)), sv_sign_base);
-                sv_sign = svmul_x(pg, sv_sign, SvdupF(2.0));
-                
-                sv_basis0 = svmad_x(pg, sv_basis0, SvdupI(2), sv_img_ofs);
-                sv_basis1 = svmad_x(pg, sv_basis1, SvdupI(2), sv_img_ofs);
-                SV_FTYPE sv_input0 = svld1_gather_index(pg, (ETYPE*)state, sv_basis0);
-                SV_FTYPE sv_input1 = svld1_gather_index(pg, (ETYPE*)state, sv_basis1);
-
-                if ( img_flag ){ // calc imag. parts
-
-                    SV_FTYPE sv_real = svtrn1(sv_input0, sv_input1); 
-                    SV_FTYPE sv_imag = svtrn2(sv_input1, sv_input0); 
-                    sv_imag = svneg_m(sv_imag, pg_conj_neg, sv_imag);
-
-                    SV_FTYPE sv_result = svmul_x(pg, sv_real, sv_imag);
-                    sv_result = svmul_x(pg, sv_result, sv_sign);
-                    sv_sum = svsub_x(pg, sv_sum, sv_result);
+#pragma omp for
+                for (state_index = 0; state_index < loop_dim; state_index += (vec_len>>1)) {
+                    // A
+                    SV_ITYPE sv_basis = svadd_x(pg, SvdupI(state_index), sv_idx_ofs);
+                    SV_ITYPE sv_basis0 = svlsr_x(pg, sv_basis, pivot_qubit_index);
+                    sv_basis0 = svlsl_x(pg, sv_basis0, pivot_qubit_index+1);
+                    sv_basis0 = svadd_x(pg, sv_basis0, svand_x(pg, sv_basis, SvdupI(pivot_mask-1)));
+                    // B
+                    SV_ITYPE sv_basis1 = sveor_x(pg, sv_basis0, SvdupI(bit_flip_mask));
+                    // C
+                    SV_ITYPE sv_popc = svand_x(pg, sv_basis0, SvdupI(phase_flip_mask));
+                    sv_popc = svcnt_z(pg, sv_popc);
+                    sv_popc = svand_x(pg, sv_popc, SvdupI(1));
+                    SV_FTYPE sv_sign = svneg_m(sv_sign_base, svcmpeq(pg, sv_popc, SvdupI(1)), sv_sign_base);
+                    sv_sign = svmul_x(pg, sv_sign, SvdupF(2.0));
                     
-                } else { // calc real parts
-                    
-                    SV_FTYPE sv_result = svmul_x(pg, sv_input0, sv_input1);
-                    sv_result = svmul_x(pg, sv_result, sv_sign);
-                    sv_sum = svadd_x(pg, sv_sum, sv_result);
+                    // D
+                    sv_basis0 = svmad_x(pg, sv_basis0, SvdupI(2), sv_img_ofs);
+                    sv_basis1 = svmad_x(pg, sv_basis1, SvdupI(2), sv_img_ofs);
+                    SV_FTYPE sv_input0 = svld1_gather_index(pg, (ETYPE*)state, sv_basis0);
+                    SV_FTYPE sv_input1 = svld1_gather_index(pg, (ETYPE*)state, sv_basis1);
+
+                    if ( img_flag ){ // calc imag. parts
+
+                        SV_FTYPE sv_real = svtrn1(sv_input0, sv_input1); 
+                        SV_FTYPE sv_imag = svtrn2(sv_input1, sv_input0); 
+                        sv_imag = svneg_m(sv_imag, pg_conj_neg, sv_imag);
+
+                        SV_FTYPE sv_result = svmul_x(pg, sv_real, sv_imag);
+                        sv_result = svmul_x(pg, sv_result, sv_sign);
+                        sv_sum = svsub_x(pg, sv_sum, sv_result);
+                        
+                    } else { // calc real parts
+                        
+                        SV_FTYPE sv_result = svmul_x(pg, sv_input0, sv_input1);
+                        sv_result = svmul_x(pg, sv_result, sv_sign);
+                        sv_sum = svadd_x(pg, sv_sum, sv_result);
+
+                    }
 
                 }
 
+                // reduction
+                sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 4));
+                sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 2));
+                sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 1));
+
+                sum = svlastb(svptrue_pat_b64(SV_VL1), sv_sum);
             }
-
-            // reduction
-            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 4));
-            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 2));
-            sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 1));
-
-            sum = svlastb(svptrue_pat_b64(SV_VL1), sv_sum);
-
         }else
 #endif
         {
@@ -165,6 +169,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 // C
                 UINT sign_0 = count_population(basis_0 & phase_flip_mask) % 2;
 
+                // D
                 sum += creal(
                     state[basis_0] * conj(state[basis_1]) *
                     PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) % 4] * 2.0);
