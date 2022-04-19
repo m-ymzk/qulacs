@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,11 +143,14 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
                 sv_sum = svadd_z(pg, sv_sum, sv_val0);
             }
 
-            // TODO: supports 512-bit SVE engine only
+            // TODO: Currently supports only 512-bit SVE instructions
             // reduction
+            assert(vec_len == 16);
+            assert(sizeof(ETYPE)==sizeof(double));
             sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 4));
             sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 2));
             sv_sum = svadd_z(pg, sv_sum, svext(sv_sum, sv_sum, 1));
+
             sum = svlastb(svptrue_pat_b64(SV_VL1), sv_sum);
 
         }
