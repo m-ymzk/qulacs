@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <unordered_set>
+#include <fstream>
 
 #include "circuit.hpp"
 #include "gate.hpp"
@@ -250,6 +251,10 @@ QuantumGateMatrix* QuantumCircuitOptimizer::merge_all(
     return current_gate;
 }
 
+
+static void print_dep(std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map);
+static void output_dep_dot(std::vector<QuantumGateBase*> gate_list,  std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map, const std::string& fname);
+static std::multimap<const QuantumGateBase*, const QuantumGateBase*> make_dep_map(QuantumCircuit *circuit);
 
 QuantumCircuitOptimizer::QubitTable::QubitTable(const UINT nc): _nc(nc),
                                                                 _p2l_table(nc), _l2p_table(nc),
@@ -662,6 +667,15 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
         return;
     }
 
+    // 依存解析
+    auto dep_map = make_dep_map(circuit);
+#ifndef NDEBUG
+    if (mpirank == 0) {
+        print_dep(dep_map);
+        output_dep_dot(circuit->gate_list, dep_map, "./circuit.dot");
+    }
+#endif
+
 #ifndef NDEBUG
     if (mpirank == 0) {
         std::cout << "insert_fswap" << std::endl;
@@ -693,4 +707,90 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
 
     //最初の順序に戻す
     add_swaps_to_reorder(qt);
+}
+
+
+static void print_dep(std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map) {
+    std::cout << "--- dependency info ---" << std::endl;
+    for (auto& dep : dep_map) {
+        std::cout << "  "  << dep.second->get_name() << "(" << (void*)(dep.second) << ")" \
+                  << " -> " << dep.first->get_name() << "(" << (void*)(dep.first) << ")" << std::endl;
+    }
+    std::cout << "-----------------------" << std::endl;
+}
+
+static void output_dep_dot(std::vector<QuantumGateBase*> gate_list,  std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map, const std::string& fname) {
+    std::ofstream fout;
+    fout.open(fname);
+
+    fout << "digraph {" << std::endl;
+    // ノード一覧を出す
+    // e.g. Node0x40000000 [shape=record, label="description"];
+
+    // アドレスを表示するために基数を16進に設定
+    fout << std::hex;
+
+    UINT g_idx = 0;
+    for (auto gate : gate_list) {
+        std::stringstream sout;
+        sout << g_idx << ": " << gate->get_name() << "(t:{";
+        auto t_index_list = gate->get_target_index_list();
+        auto c_index_list = gate->get_control_index_list();
+        for (auto q_idx : t_index_list) {
+            sout << q_idx << ",";
+        }
+        sout << "}, c:{";
+        for (auto q_idx : c_index_list) {
+            sout << q_idx << ",";
+        }
+        sout << "})";
+
+        fout << "  Node" << ((void*)gate) << " [shape=box, label=\"" << sout.str() << "\"];" << std::endl;
+
+        ++g_idx;
+    }
+
+    // エッジ一覧を出す
+    // e.g. NodeA -> NodeB;
+    for (auto& dep : dep_map) {
+        fout << "  Node"  << ((void*)dep.second) << " -> " << "Node" << ((void*)dep.first) << ";" << std::endl;
+    }
+    fout << "}" << std::endl;
+}
+
+static void add_depend_gates(std::multimap<const QuantumGateBase*, const QuantumGateBase*>& dep_map, std::unordered_set<const QuantumGateBase*>& checked_gates, const QuantumGateBase* g) {
+    // ゲートg、およびゲートgが依存しているゲートを再帰的に追加する
+    auto range = dep_map.equal_range(g);
+
+    checked_gates.insert(g);
+    for (auto it = range.first; it != range.second; ++it) {
+        add_depend_gates(dep_map, checked_gates, it->second);
+    }
+}
+
+static std::multimap<const QuantumGateBase*, const QuantumGateBase*> make_dep_map(QuantumCircuit *circuit) {
+    // key: depender, value: dependee.
+    // ゲートg1, ゲートg2があり、g1, g2の順に実行する必要があるとき
+    // (key:g2, value:g1)となる
+    std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map;
+
+    UINT num_gates = circuit->gate_list.size();
+
+    for (UINT i = 0; i < num_gates; i++) {
+        const QuantumGateBase* g = circuit->gate_list[i];
+        // 依存確認済みゲート集合
+        std::unordered_set<const QuantumGateBase*> checked_gates;
+
+        for (int j = i - 1; j >= 0; j--) {
+            const QuantumGateBase* g2 = circuit->gate_list[j];
+            if (checked_gates.find(g2) == checked_gates.end()) {
+                if (! g->is_commute(g2)) {
+                    dep_map.insert(std::make_pair(g, g2));
+                    add_depend_gates(dep_map, checked_gates, g2);
+                }
+            }
+        }
+    }
+
+    return dep_map;
 }
