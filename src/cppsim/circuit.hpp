@@ -114,6 +114,7 @@ public:
      * @param[in,out] state 作用する量子状態
      */
     void update_quantum_state(QuantumStateBase* state);
+    void update_quantum_state(QuantumStateBase* state, UINT seed);
 
     /**
      * \~japanese-en 量子回路の指定範囲のみを用いて量子状態をを更新する
@@ -125,6 +126,8 @@ public:
      */
     void update_quantum_state(
         QuantumStateBase* state, UINT start_index, UINT end_index);
+    void update_quantum_state(
+        QuantumStateBase* state, UINT start_index, UINT end_index, UINT seed);
 
     /////////////////////////////// CHECK PROPERTY OF QUANTUM CIRCUIT
 

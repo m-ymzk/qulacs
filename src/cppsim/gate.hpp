@@ -62,6 +62,7 @@
 
 #include "qubit_info.hpp"
 #include "type.hpp"
+#include "utility.hpp"
 
 //! Flgas for gate property: gate is Pauli
 #define FLAG_PAULI 0x01
@@ -141,6 +142,11 @@ public:
      * @param state 更新する量子状態
      */
     virtual void update_quantum_state(QuantumStateBase* state) = 0;
+    void update_quantum_state(QuantumStateBase* state, UINT seed) {
+		Random random;
+		random.set_seed(seed);
+		this->update_quantum_state(state);
+	}
     /**
      * \~japanese-en 自身のディープコピーを生成する
      *

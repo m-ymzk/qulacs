@@ -122,14 +122,16 @@ QuantumGateBase* SWAP(UINT qubit_index1, UINT qubit_index2) {
     }
     return new ClsSWAPGate(qubit_index1, qubit_index2);
 }
-QuantumGateBase* FusedSWAP(UINT qubit_index1, UINT qubit_index2, UINT num_qubits) {
+QuantumGateBase* FusedSWAP(
+    UINT qubit_index1, UINT qubit_index2, UINT num_qubits) {
     if (((qubit_index1 <= qubit_index2) &&
             (qubit_index1 + num_qubits > qubit_index2)) ||
         ((qubit_index2 <= qubit_index1) &&
             (qubit_index2 + num_qubits > qubit_index1))) {
-        std::cerr << "Error: gate::FusedSWAP(UINT, UINT, UINT): two indices have "
-                     "the same value."
-                  << std::endl;
+        std::cerr
+            << "Error: gate::FusedSWAP(UINT, UINT, UINT): two indices have "
+               "the same value."
+            << std::endl;
         return NULL;
     }
     return new ClsFusedSWAPGate(qubit_index1, qubit_index2, num_qubits);

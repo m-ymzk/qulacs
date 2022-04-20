@@ -51,7 +51,13 @@
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
+      - merge(qubits <= 2)
+      - CPTP
+      - Instrument
+      - Adaptive
       - to_matrix_gate
+  - Observable
+  - PauliOperator
 
 ## 注意事項
 - 4月以降の版で順次対応予定の関数・機能
@@ -61,13 +67,8 @@
       - DenseMatrix(double target)
       - DenseMatrix(multi control, single target)
       - DiagonalMatrix(multi target)
-      - merge
-      - CPTP
-      - Instrument
-      - Adaptive
-  - Observable
-  - PauliOperator
   - QuantumCircuitOptimizer
+      - optimize (block_size > 1)
   - QuantumCircuitSimulator
   - state
       - inner_product
@@ -108,9 +109,9 @@
           ノード内にstate vectorを作成する。（従来動作）
       - use_multi_cpu = true
           可能であれば分散してstate vectorを作成する。
-          qubits を内部で inner_qc + outer_qc に分割
-        - inner_qc: １ノード内のqubits
-        - outer_qc: 分散配置されたqubits (=log2(rank数))
+          qubits を内部で local_qc + global_qc に分割
+        - local_qc: １ノード内のqubits
+        - global_qc: 分散配置されたqubits (=log2(rank数))
     - state.get_device()
     state vectorの配置されているデバイスを返す。
 
@@ -127,7 +128,7 @@
         -- rank 0 --------------------------------------
          *** Quantum State ***
          * MPI rank / size : 0 / 2
-         * Qubit Count : 20 (inner / outer : 19 / 1 )
+         * Qubit Count : 20 (local / global : 19 / 1 )
          * Dimension   : 262144
          * state vector is too long, so the (128 x 2) elements are output.
          * State vector (rank 0):
@@ -159,6 +160,9 @@
     - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - SWAP/FusedSWAPゲートの挿入なし
+
+  - circuit.update_quantum_state(state, seed)
+    - 乱数の種を指定して状態ベクトルの更新処理を行います
 
 <hr>
 
@@ -200,12 +204,16 @@ $ mpirun -n 2 ../bin/csim_test
 $ mpirun -n 2 ../bin/cppsim_test
 $ mpirun -n 2 ../bin/vqcsim_test
 
-<sample>
+<sample:cpp>
 $ cd ict
 $ make
 $ mpirun -n 4 mpiqtest -1 20 0
 (USAGE: mpiqtest debug-flag n-qubits target-qubit)
 (USAGE: mpiqbench [start n-qubits] [end n-qubit])
+
+<sample:python>
+$ cd ict/python
+$ mpirun -n 4 --npernode 1 --hostfile hostfile ./job.sh python qulacsbench.py -n 20
 ```
 
 ### fcc/FCC

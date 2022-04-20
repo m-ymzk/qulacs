@@ -5,4 +5,8 @@ export UCX_IB_MLX5_DEVX=no
 export OMP_PROC_BIND=TRUE
 
 ### activate qenv
-. ${HOME}/mpi-qulacs/qenv/bin/activate
+export QHOME=`git rev-parse --show-toplevel`
+export VENV_PATH=${QHOME}/qenv
+#. ${VENV_PATH}/bin/activate
+
+export LOG_FILE="./log_0413"

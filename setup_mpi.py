@@ -8,7 +8,7 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-_VERSION = '1.0.0'
+_VERSION = '1.1.0'
 
 project_name = 'mpiQulacs'
 
@@ -88,7 +88,7 @@ class CMakeBuild(build_ext):
             cmake_args += ['-DCMAKE_CXX_COMPILER=' + gxx]
 
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j2']
+            build_args += ['--', '-j12']
 
         if self.opt_flags is not None:
             opt_flags = self.opt_flags

@@ -22,32 +22,26 @@
 #include <x86intrin.h>
 #endif
 #endif
-// void single_qubit_dense_matrix_gate_old_single(UINT target_qubit_index, const
-// CTYPE matrix[4], CTYPE *state, ITYPE dim); void
-// single_qubit_dense_matrix_gate_old_parallel(UINT target_qubit_index, const
-// CTYPE matrix[4], CTYPE *state, ITYPE dim); void
-// single_qubit_dense_matrix_gate_single(UINT target_qubit_index, const CTYPE
-// matrix[4], CTYPE *state, ITYPE dim); void
-// single_qubit_dense_matrix_gate_parallel(UINT target_qubit_index, const CTYPE
-// matrix[4], CTYPE *state, ITYPE dim);
 
 void single_qubit_dense_matrix_gate(
     UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
-    // single_qubit_dense_matrix_gate_old_single(target_qubit_index, matrix,
-    // state, dim);
-    // single_qubit_dense_matrix_gate_old_parallel(target_qubit_index, matrix,
-    // state, dim); single_qubit_dense_matrix_gate_single(target_qubit_index,
-    // matrix, state, dim);
-    // single_qubit_dense_matrix_gate_single_unroll(target_qubit_index, matrix,
-    // state, dim);
-    // single_qubit_dense_matrix_gate_single_simd(target_qubit_index, matrix,
-    // state, dim);
-    // single_qubit_dense_matrix_gate_parallel_simd(target_qubit_index, matrix,
-    // state, dim); return;
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+// ARMV8.2-A + SVE
+#ifdef _OPENMP
+    UINT threshold = 13;
+    UINT default_thread_count = omp_get_max_threads();
+    if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
+    single_qubit_dense_matrix_gate_sve(target_qubit_index, matrix, state, dim);
+#ifdef _OPENMP
+    omp_set_num_threads(default_thread_count);
+#endif
+
+#else  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+#ifdef _USE_SIMD
 
 #ifdef _OPENMP
     UINT threshold = 13;
-#ifdef _USE_SIMD
     if (dim < (((ITYPE)1) << threshold)) {
         single_qubit_dense_matrix_gate_single_simd(
             target_qubit_index, matrix, state, dim);
@@ -55,15 +49,15 @@ void single_qubit_dense_matrix_gate(
         single_qubit_dense_matrix_gate_parallel_simd(
             target_qubit_index, matrix, state, dim);
     }
-#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)  // #ifdef _USE_SIMD
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_dense_matrix_gate_single_sve(
-            target_qubit_index, matrix, state, dim);
-    } else {
-        single_qubit_dense_matrix_gate_parallel_sve(
-            target_qubit_index, matrix, state, dim);
-    }
-#else                                                  // #ifdef _USE_SIMD
+#else   // #ifdef _USE_SIMD
+    single_qubit_dense_matrix_gate_single_simd(
+        target_qubit_index, matrix, state, dim);
+#endif  // #ifdef _OPENMP
+
+#else  // #ifdef _USE_SIMD
+
+#ifdef _OPENMP
+    UINT threshold = 13;
     if (dim < (((ITYPE)1) << threshold)) {
         single_qubit_dense_matrix_gate_single(
             target_qubit_index, matrix, state, dim);
@@ -71,23 +65,12 @@ void single_qubit_dense_matrix_gate(
         single_qubit_dense_matrix_gate_parallel(
             target_qubit_index, matrix, state, dim);
     }
-#endif                                                 // #ifdef _USE_SIMD
-
-#else  // #ifdef _OPENMP
-
-#ifdef _USE_SIMD
-    single_qubit_dense_matrix_gate_single_simd(
-        target_qubit_index, matrix, state, dim);
-#elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)  // #ifdef _USE_SIMD
-    single_qubit_dense_matrix_gate_single_sve(
-        target_qubit_index, matrix, state, dim);
-#else                                                  // #ifdef _USE_SIMD
-    // single_qubit_dense_matrix_gate_single_unroll(target_qubit_index,
-    // matrix, state, dim);
+#else   // #ifdef _OEPNMP
     single_qubit_dense_matrix_gate_single(
         target_qubit_index, matrix, state, dim);
-#endif                                                 // #ifdef _USE_SIMD
-#endif                                                 // #ifdef _OPENMP
+#endif  // #ifdef _OPENMP
+#endif  // #ifdef _USE_SIMD
+#endif  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 }
 
 void single_qubit_dense_matrix_gate_single(
@@ -226,167 +209,61 @@ void single_qubit_dense_matrix_gate_parallel_unroll(
 #endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-void single_qubit_dense_matrix_gate_single_sve(
-    UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
-    const ITYPE loop_dim = dim / 2;
-    const ITYPE mask = (1ULL << target_qubit_index);
-    const ITYPE mask_low = mask - 1;
-    const ITYPE mask_high = ~mask_low;
 
-    ITYPE state_index = 0;
-    ITYPE vec_len =
-        getVecLength();  // length of SVE registers (# of 64-bit elements)
+static inline void MatrixVectorProduct2x2(SV_PRED pg, SV_FTYPE in00r,
+    SV_FTYPE in00i, SV_FTYPE in11r, SV_FTYPE in11i, SV_FTYPE mat02r,
+    SV_FTYPE mat02i, SV_FTYPE mat13r, SV_FTYPE mat13i, SV_FTYPE *out01r,
+    SV_FTYPE *out01i);
 
-    if (mask >= (vec_len >> 1)) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
+// clang-format off
+/*
+ * This function performs multiplication of a 2x2 matrix and four vectors
+ *
+ *            2x2 matrix                           four vectors
+ * [ x_00 + iy_00, x_01+iy_01]   [ a_0+ib_0 ][ c_0+id_0 ][ e_0+if_0 ][ g_0+ih_0 ]
+ * [ x_10 + iy_10, x_11+iy_11] * [ a_1+ib_1 ][ c_1+id_1 ][ e_1+if_1 ][ g_1+ih_1 ]
+ *
+ * params
+ * - pg: All 1's predecate register 
+ * - in00r: An SVE register has the real part of the first component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ a_0, c_0, e_0, g_0, a_0, c_0, e_0, g_0]
+ * - in00i: An SVE register has the imag. part of the first component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ b_0, d_0, f_0, h_0, b_0, d_0, f_0, h_0]
+ * - in11r: An SVE register has the real part of the second component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ a_1, c_1, e_1, g_1, a_1, c_1, e_1, g_1]
+ * - in11i: An SVE register has the imag. part of the second component in each vector
+ *   - e.g.) 512-bit SVE & FP64: [ b_1, d_1, f_1, h_1, b_1, d_1, f_1, h_1]
+ * - mat02r: An SVE register has the real part of the first column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_00, x_00, x_00, x_00, x_10, x_10, x_10, x_10]
+ * - mat02i: An SVE register has the imag. part of the first column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_00, y_00, y_00, y_00, y_10, y_10, y_10, y_10]
+ * - mat13r: An SVE register has the real part of the second column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ x_01, x_01, x_01, x_01, x_11, x_11, x_11, x_11]
+ * - mat13i: An SVE register has the imag. part of the second column of the matrix
+ *   - e.g.) 512-bit SVE & FP64: [ y_01, y_01, y_01, y_01, y_11, y_11, y_11, y_11]
+ * - out*: SVE register store results of matrix-vector products
+ *
+ */
+// clang-format on
 
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
-        SV_FTYPE result01_real, result01_imag;
-        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
+static inline void MatrixVectorProduct2x2(SV_PRED pg, SV_FTYPE in00r,
+    SV_FTYPE in00i, SV_FTYPE in11r, SV_FTYPE in11i, SV_FTYPE mat02r,
+    SV_FTYPE mat02i, SV_FTYPE mat13r, SV_FTYPE mat13i, SV_FTYPE *out01r,
+    SV_FTYPE *out01i) {
+    *out01r = svmul_x(pg, in00r, mat02r);
+    *out01i = svmul_x(pg, in00i, mat02r);
 
-        // load matrix elements
-        mat02_real = svuzp1(SvdupF(creal(matrix[0])), SvdupF(creal(matrix[2])));
-        mat02_imag = svuzp1(SvdupF(cimag(matrix[0])), SvdupF(cimag(matrix[2])));
-        mat13_real = svuzp1(SvdupF(creal(matrix[1])), SvdupF(creal(matrix[3])));
-        mat13_imag = svuzp1(SvdupF(cimag(matrix[1])), SvdupF(cimag(matrix[3])));
+    *out01r = svmsb_x(pg, in00i, mat02i, *out01r);
+    *out01i = svmad_x(pg, in00r, mat02i, *out01i);
 
-        for (state_index = 0; state_index < loop_dim;
-             state_index += (vec_len >> 1)) {
-            // calculate indices
-            ITYPE basis_0 =
-                (state_index & mask_low) + ((state_index & mask_high) << 1);
-            ITYPE basis_1 = basis_0 + mask;
+    *out01r = svmad_x(pg, in11r, mat13r, *out01r);
+    *out01i = svmad_x(pg, in11r, mat13i, *out01i);
 
-            // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[basis_0]);
-            input1 = svld1(pg, (ETYPE *)&state[basis_1]);
-
-            // select odd or even elements from two vectors
-            cal00_real = svuzp1(input0, input0);
-            cal00_imag = svuzp2(input0, input0);
-            cal11_real = svuzp1(input1, input1);
-            cal11_imag = svuzp2(input1, input1);
-
-            // perform matrix-vector product
-            result01_real = svmul_x(pg, cal00_real, mat02_real);
-            result01_imag = svmul_x(pg, cal00_imag, mat02_real);
-
-            result01_real = svmsb_x(pg, cal00_imag, mat02_imag, result01_real);
-            result01_imag = svmad_x(pg, cal00_real, mat02_imag, result01_imag);
-
-            result01_real = svmad_x(pg, cal11_real, mat13_real, result01_real);
-            result01_imag = svmad_x(pg, cal11_real, mat13_imag, result01_imag);
-
-            result01_real = svmsb_x(pg, cal11_imag, mat13_imag, result01_real);
-            result01_imag = svmad_x(pg, cal11_imag, mat13_real, result01_imag);
-
-            // interleave elements from low halves of two vectors
-            output0 = svzip1(result01_real, result01_imag);
-            output1 = svzip2(result01_real, result01_imag);
-
-            if (5 <= target_qubit_index && target_qubit_index <= 10) {
-                // L1 prefetch
-                __builtin_prefetch(&state[basis_0 + mask * 4], 1, 3);
-                __builtin_prefetch(&state[basis_1 + mask * 4], 1, 3);
-                // L2 prefetch
-                __builtin_prefetch(&state[basis_0 + mask * 8], 1, 2);
-                __builtin_prefetch(&state[basis_1 + mask * 8], 1, 2);
-            }
-
-            // set values
-            svst1(pg, (ETYPE *)&state[basis_0], output0);
-            svst1(pg, (ETYPE *)&state[basis_1], output1);
-        }
-    } else if (dim >= vec_len) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
-        SV_PRED select_flag;
-
-        SV_ITYPE vec_shuffle_table;
-        SV_ITYPE vec_index = SvindexI(0, 1);
-        vec_index = svlsr_z(pg, vec_index, 1);
-        select_flag = svcmpne(pg, SvdupI(0),
-            svand_z(pg, vec_index, SvdupI(1ULL << target_qubit_index)));
-        vec_shuffle_table = sveor_z(
-            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
-
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
-        SV_FTYPE shuffle0, shuffle1, result01_real, result01_imag;
-        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
-
-        // load matrix elements
-        mat02_real = svuzp1(SvdupF(creal(matrix[0])), SvdupF(creal(matrix[2])));
-        mat02_imag = svuzp1(SvdupF(cimag(matrix[0])), SvdupF(cimag(matrix[2])));
-        mat13_real = svuzp1(SvdupF(creal(matrix[1])), SvdupF(creal(matrix[3])));
-        mat13_imag = svuzp1(SvdupF(cimag(matrix[1])), SvdupF(cimag(matrix[3])));
-
-        for (state_index = 0; state_index < dim; state_index += vec_len) {
-            // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[state_index]);
-            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
-
-            // shuffle
-            shuffle0 =
-                svsel(select_flag, svtbl(input1, vec_shuffle_table), input0);
-            shuffle1 =
-                svsel(select_flag, input1, svtbl(input0, vec_shuffle_table));
-
-            // select odd or even elements from two vectors
-            cal00_real = svuzp1(shuffle0, shuffle0);
-            cal00_imag = svuzp2(shuffle0, shuffle0);
-            cal11_real = svuzp1(shuffle1, shuffle1);
-            cal11_imag = svuzp2(shuffle1, shuffle1);
-
-            // perform matrix-vector product
-            result01_real = svmul_x(pg, cal00_real, mat02_real);
-            result01_imag = svmul_x(pg, cal00_imag, mat02_real);
-
-            result01_real = svmsb_x(pg, cal00_imag, mat02_imag, result01_real);
-            result01_imag = svmad_x(pg, cal00_real, mat02_imag, result01_imag);
-
-            result01_real = svmad_x(pg, cal11_real, mat13_real, result01_real);
-            result01_imag = svmad_x(pg, cal11_real, mat13_imag, result01_imag);
-
-            result01_real = svmsb_x(pg, cal11_imag, mat13_imag, result01_real);
-            result01_imag = svmad_x(pg, cal11_imag, mat13_real, result01_imag);
-
-            // interleave elements from low halves of two vectors
-            shuffle0 = svzip1(result01_real, result01_imag);
-            shuffle1 = svzip2(result01_real, result01_imag);
-
-            // re-shuffle
-            output0 = svsel(
-                select_flag, svtbl(shuffle1, vec_shuffle_table), shuffle0);
-            output1 = svsel(
-                select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
-
-            // set values
-            svst1(pg, (ETYPE *)&state[state_index], output0);
-            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
-        }
-    } else {
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-            ITYPE basis_0 =
-                (state_index & mask_low) + ((state_index & mask_high) << 1);
-            ITYPE basis_1 = basis_0 + mask;
-
-            // fetch values
-            CTYPE cval_0 = state[basis_0];
-            CTYPE cval_1 = state[basis_1];
-
-            // set values
-            state[basis_0] = matrix[0] * cval_0 + matrix[1] * cval_1;
-            state[basis_1] = matrix[2] * cval_0 + matrix[3] * cval_1;
-        }
-    }
+    *out01r = svmsb_x(pg, in11i, mat13i, *out01r);
+    *out01i = svmad_x(pg, in11i, mat13r, *out01i);
 }
 
-#ifdef _OPENMP
-
-void single_qubit_dense_matrix_gate_parallel_sve(
+void single_qubit_dense_matrix_gate_sve(
     UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
     const ITYPE loop_dim = dim / 2;
     const ITYPE mask = (1ULL << target_qubit_index);
@@ -394,145 +271,126 @@ void single_qubit_dense_matrix_gate_parallel_sve(
     const ITYPE mask_high = ~mask_low;
 
     ITYPE state_index = 0;
-    ITYPE vec_len =
-        getVecLength();  // length of SVE registers (# of 64-bit elements)
 
-    if (mask >= (vec_len >> 1)) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
+    // Get # of elements in SVE registers
+    // note: # of complex numbers is halved.
+    ITYPE vec_len = getVecLength();
 
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
-        SV_FTYPE result01_real, result01_imag;
-        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
+    if (dim >= vec_len) {
+        // Create an all 1's predicate variable
+        SV_PRED pg = Svptrue();
 
-        // load matrix elements
-        mat02_real = svuzp1(SvdupF(creal(matrix[0])), SvdupF(creal(matrix[2])));
-        mat02_imag = svuzp1(SvdupF(cimag(matrix[0])), SvdupF(cimag(matrix[2])));
-        mat13_real = svuzp1(SvdupF(creal(matrix[1])), SvdupF(creal(matrix[3])));
-        mat13_imag = svuzp1(SvdupF(cimag(matrix[1])), SvdupF(cimag(matrix[3])));
+        SV_FTYPE mat02r, mat02i, mat13r, mat13i;
 
-#pragma omp parallel for private(input0, input1, output0, output1, cal00_real, \
-    cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag)          \
-    shared(pg, mat02_real, mat02_imag, mat13_real, mat13_imag)
-        for (state_index = 0; state_index < loop_dim;
-             state_index += (vec_len >> 1)) {
-            // calculate indices
-            ITYPE basis_0 =
-                (state_index & mask_low) + ((state_index & mask_high) << 1);
-            ITYPE basis_1 = basis_0 + mask;
+        // Load matrix elements to SVE variables
+        // e.g.) mat02_real is [matrix[0].real, matrix[0].real, matrix[2].real,
+        // matrix[2].real],
+        //       if # of elements in SVE variables is four.
+        mat02r = svuzp1(SvdupF(creal(matrix[0])), SvdupF(creal(matrix[2])));
+        mat02i = svuzp1(SvdupF(cimag(matrix[0])), SvdupF(cimag(matrix[2])));
+        mat13r = svuzp1(SvdupF(creal(matrix[1])), SvdupF(creal(matrix[3])));
+        mat13i = svuzp1(SvdupF(cimag(matrix[1])), SvdupF(cimag(matrix[3])));
 
-            // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[basis_0]);
-            input1 = svld1(pg, (ETYPE *)&state[basis_1]);
+        if (mask >= (vec_len >> 1)) {
+            // If the above condition is met, the continuous elements loaded
+            // into SVE variables can be applied without reordering.
 
-            // select odd or even elements from two vectors
-            cal00_real = svuzp1(input0, input0);
-            cal00_imag = svuzp2(input0, input0);
-            cal11_real = svuzp1(input1, input1);
-            cal11_imag = svuzp2(input1, input1);
+#pragma omp parallel for
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += (vec_len >> 1)) {
+                // Calculate indices
+                ITYPE basis_0 =
+                    (state_index & mask_low) + ((state_index & mask_high) << 1);
+                ITYPE basis_1 = basis_0 + mask;
 
-            // perform matrix-vector product
-            result01_real = svmul_x(pg, cal00_real, mat02_real);
-            result01_imag = svmul_x(pg, cal00_imag, mat02_real);
+                // Load values
+                SV_FTYPE input0 = svld1(pg, (ETYPE *)&state[basis_0]);
+                SV_FTYPE input1 = svld1(pg, (ETYPE *)&state[basis_1]);
 
-            result01_real = svmsb_x(pg, cal00_imag, mat02_imag, result01_real);
-            result01_imag = svmad_x(pg, cal00_real, mat02_imag, result01_imag);
+                // Select odd or even elements from two vectors
+                SV_FTYPE cval00r = svuzp1(input0, input0);
+                SV_FTYPE cval00i = svuzp2(input0, input0);
+                SV_FTYPE cval11r = svuzp1(input1, input1);
+                SV_FTYPE cval11i = svuzp2(input1, input1);
 
-            result01_real = svmad_x(pg, cal11_real, mat13_real, result01_real);
-            result01_imag = svmad_x(pg, cal11_real, mat13_imag, result01_imag);
+                // Perform matrix-vector products
+                SV_FTYPE result01r, result01i;
+                MatrixVectorProduct2x2(pg, cval00r, cval00i, cval11r, cval11i,
+                    mat02r, mat02i, mat13r, mat13i, &result01r, &result01i);
+                // Interleave elements from low or high halves of two vectors
+                SV_FTYPE output0 = svzip1(result01r, result01i);
+                SV_FTYPE output1 = svzip2(result01r, result01i);
 
-            result01_real = svmsb_x(pg, cal11_imag, mat13_imag, result01_real);
-            result01_imag = svmad_x(pg, cal11_imag, mat13_real, result01_imag);
+                if (5 <= target_qubit_index && target_qubit_index <= 10) {
+                    // L1 prefetch
+                    __builtin_prefetch(&state[basis_0 + mask * 4], 1, 3);
+                    __builtin_prefetch(&state[basis_1 + mask * 4], 1, 3);
+                    // L2 prefetch
+                    __builtin_prefetch(&state[basis_0 + mask * 8], 1, 2);
+                    __builtin_prefetch(&state[basis_1 + mask * 8], 1, 2);
+                }
 
-            // interleave elements from low halves of two vectors
-            output0 = svzip1(result01_real, result01_imag);
-            output1 = svzip2(result01_real, result01_imag);
-
-            if (5 <= target_qubit_index && target_qubit_index <= 10) {
-                // L1 prefetch
-                __builtin_prefetch(&state[basis_0 + mask * 4], 1, 3);
-                __builtin_prefetch(&state[basis_1 + mask * 4], 1, 3);
-                // L2 prefetch
-                __builtin_prefetch(&state[basis_0 + mask * 8], 1, 2);
-                __builtin_prefetch(&state[basis_1 + mask * 8], 1, 2);
+                // Store values
+                svst1(pg, (ETYPE *)&state[basis_0], output0);
+                svst1(pg, (ETYPE *)&state[basis_1], output1);
             }
+        } else {
+            // In this case, the reordering between two SVE variables is
+            // performed before and after the matrix-vector product.
 
-            // set values
-            svst1(pg, (ETYPE *)&state[basis_0], output0);
-            svst1(pg, (ETYPE *)&state[basis_1], output1);
-        }
-    } else if (dim >= vec_len) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
-        SV_PRED select_flag;
+            // Define a predicate variable for reordering
+            SV_PRED select_flag;
 
-        SV_ITYPE vec_shuffle_table;
-        SV_ITYPE vec_index = SvindexI(0, 1);
-        vec_index = svlsr_z(pg, vec_index, 1);
-        select_flag = svcmpne(pg, SvdupI(0),
-            svand_z(pg, vec_index, SvdupI(1ULL << target_qubit_index)));
-        vec_shuffle_table = sveor_z(
-            pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
+            // Define SVE variables for reordering
+            SV_ITYPE vec_shuffle_table, vec_index;
 
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, output0, output1;
-        SV_FTYPE cal00_real, cal00_imag, cal11_real, cal11_imag;
-        SV_FTYPE shuffle0, shuffle1, result01_real, result01_imag;
-        SV_FTYPE mat02_real, mat02_imag, mat13_real, mat13_imag;
+            // Prepare a table and a flag for reordering
+            vec_index = SvindexI(0, 1);             // [0, 1, 2, 3, 4, .., 7]
+            vec_index = svlsr_z(pg, vec_index, 1);  // [0, 0, 1, 1, 2, ..., 3]
+            select_flag = svcmpne(pg, SvdupI(0),
+                svand_z(pg, vec_index, SvdupI(1ULL << target_qubit_index)));
+            vec_shuffle_table = sveor_z(
+                pg, SvindexI(0, 1), SvdupI(1ULL << (target_qubit_index + 1)));
 
-        // load matrix elements
-        mat02_real = svuzp1(SvdupF(creal(matrix[0])), SvdupF(creal(matrix[2])));
-        mat02_imag = svuzp1(SvdupF(cimag(matrix[0])), SvdupF(cimag(matrix[2])));
-        mat13_real = svuzp1(SvdupF(creal(matrix[1])), SvdupF(creal(matrix[3])));
-        mat13_imag = svuzp1(SvdupF(cimag(matrix[1])), SvdupF(cimag(matrix[3])));
+#pragma omp parallel for
+            for (state_index = 0; state_index < dim; state_index += vec_len) {
+                // fetch values
+                SV_FTYPE input0 = svld1(pg, (ETYPE *)&state[state_index]);
+                SV_FTYPE input1 =
+                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
 
-#pragma omp parallel for private(input0, input1, output0, output1, cal00_real, \
-    cal00_imag, cal11_real, cal11_imag, result01_real, result01_imag,          \
-    shuffle0, shuffle1) shared(pg, select_flag, vec_index, vec_shuffle_table,  \
-    mat02_real, mat02_imag, mat13_real, mat13_imag)
-        for (state_index = 0; state_index < dim; state_index += vec_len) {
-            // fetch values
-            input0 = svld1(pg, (ETYPE *)&state[state_index]);
-            input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
+                // Reordering input vectors
+                SV_FTYPE reordered0 = svsel(
+                    select_flag, svtbl(input1, vec_shuffle_table), input0);
+                SV_FTYPE reordered1 = svsel(
+                    select_flag, input1, svtbl(input0, vec_shuffle_table));
 
-            // shuffle
-            shuffle0 =
-                svsel(select_flag, svtbl(input1, vec_shuffle_table), input0);
-            shuffle1 =
-                svsel(select_flag, input1, svtbl(input0, vec_shuffle_table));
+                // Select odd or even elements from two vectors
+                SV_FTYPE cval00r = svuzp1(reordered0, reordered0);
+                SV_FTYPE cval00i = svuzp2(reordered0, reordered0);
+                SV_FTYPE cval11r = svuzp1(reordered1, reordered1);
+                SV_FTYPE cval11i = svuzp2(reordered1, reordered1);
 
-            // select odd or even elements from two vectors
-            cal00_real = svuzp1(shuffle0, shuffle0);
-            cal00_imag = svuzp2(shuffle0, shuffle0);
-            cal11_real = svuzp1(shuffle1, shuffle1);
-            cal11_imag = svuzp2(shuffle1, shuffle1);
+                // Perform matrix-vector products
+                SV_FTYPE result01r, result01i;
+                MatrixVectorProduct2x2(pg, cval00r, cval00i, cval11r, cval11i,
+                    mat02r, mat02i, mat13r, mat13i, &result01r, &result01i);
 
-            // perform matrix-vector product
-            result01_real = svmul_x(pg, cal00_real, mat02_real);
-            result01_imag = svmul_x(pg, cal00_imag, mat02_real);
+                // Interleave elements from low or high halves of two vectors
+                reordered0 = svzip1(result01r, result01i);
+                reordered1 = svzip2(result01r, result01i);
 
-            result01_real = svmsb_x(pg, cal00_imag, mat02_imag, result01_real);
-            result01_imag = svmad_x(pg, cal00_real, mat02_imag, result01_imag);
+                // Reordering output vectors
+                SV_FTYPE output0 = svsel(select_flag,
+                    svtbl(reordered1, vec_shuffle_table), reordered0);
+                SV_FTYPE output1 = svsel(select_flag, reordered1,
+                    svtbl(reordered0, vec_shuffle_table));
 
-            result01_real = svmad_x(pg, cal11_real, mat13_real, result01_real);
-            result01_imag = svmad_x(pg, cal11_real, mat13_imag, result01_imag);
-
-            result01_real = svmsb_x(pg, cal11_imag, mat13_imag, result01_real);
-            result01_imag = svmad_x(pg, cal11_imag, mat13_real, result01_imag);
-
-            // interleave elements from low halves of two vectors
-            shuffle0 = svzip1(result01_real, result01_imag);
-            shuffle1 = svzip2(result01_real, result01_imag);
-
-            // re-shuffle
-            output0 = svsel(
-                select_flag, svtbl(shuffle1, vec_shuffle_table), shuffle0);
-            output1 = svsel(
-                select_flag, shuffle1, svtbl(shuffle0, vec_shuffle_table));
-
-            // set values
-            svst1(pg, (ETYPE *)&state[state_index], output0);
-            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
+                // Store values
+                svst1(pg, (ETYPE *)&state[state_index], output0);
+                svst1(
+                    pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
+            }
         }
     } else {
 #pragma omp parallel for
@@ -551,7 +409,6 @@ void single_qubit_dense_matrix_gate_parallel_sve(
         }
     }
 }
-#endif  // #ifdef _OPENMP
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _USE_SIMD
@@ -759,298 +616,83 @@ void single_qubit_dense_matrix_gate_mpi(UINT target_qubit_index,
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
         CTYPE *si = state;
+
+#ifdef _OPENMP
+        UINT threshold = 13;
+        UINT default_thread_count = omp_get_max_threads();
+        if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+#endif
         for (ITYPE iter = 0; iter < num_work; ++iter) {
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
-#ifdef _OPENMP
-            UINT threshold = 13;
-            if (dim < (((ITYPE)1) << threshold)) {
-                single_qubit_dense_matrix_gate_single_mpi(
-                    t, matrix, si, dim_work, rank & pair_rank_bit);
-            } else {
-                single_qubit_dense_matrix_gate_parallel_mpi(
-                    t, matrix, si, dim_work, rank & pair_rank_bit);
-#pragma omp barrier
-            }
-#else
-            single_qubit_dense_matrix_gate_single_mpi(
+
+            _single_qubit_dense_matrix_gate_mpi(
                 t, matrix, si, dim_work, rank & pair_rank_bit);
-#endif
+
             si += dim_work;
         }
-    }
-}
-
-void single_qubit_dense_matrix_gate_single_mpi(
-    CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    ITYPE vec_len =
-        getVecLength();  // length of SVE registers (# of 64-bit elements)
-    if (dim >= vec_len) {
-        SV_PRED pg = Svptrue();  // this predicate register is all 1.
-
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, input2, input3, output0, output1;
-        SV_FTYPE cval02_real, cval02_imag, cval13_real, cval13_imag;
-        SV_FTYPE result01_real, result01_imag;
-
-        if (flag) {
-            // SVE registers for matrix[4]
-            SV_FTYPE mat2_real, mat2_imag, mat3_real, mat3_imag;
-
-            // load matrix elements
-            mat2_real = SvdupF(creal(matrix[2]));
-            mat2_imag = SvdupF(cimag(matrix[2]));
-            mat3_real = SvdupF(creal(matrix[3]));
-            mat3_imag = SvdupF(cimag(matrix[3]));
-
-            for (ITYPE state_index = 0; state_index < dim;
-                 state_index += vec_len) {
-                // fetch values
-                input0 = svld1(pg, (ETYPE *)&t[state_index]);
-                input1 = svld1(pg, (ETYPE *)&state[state_index]);
-                input2 = svld1(pg, (ETYPE *)&t[state_index + (vec_len >> 1)]);
-                input3 =
-                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
-
-                // select odd or even elements from two vectors
-                cval02_real = svuzp1(input0, input2);
-                cval02_imag = svuzp2(input0, input2);
-                cval13_real = svuzp1(input1, input3);
-                cval13_imag = svuzp2(input1, input3);
-
-                // perform matrix-vector product
-                result01_real = svmul_x(pg, cval02_real, mat2_real);
-                result01_imag = svmul_x(pg, cval02_imag, mat2_real);
-
-                result01_real =
-                    svmsb_x(pg, cval02_imag, mat2_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval02_real, mat2_imag, result01_imag);
-
-                result01_real =
-                    svmad_x(pg, cval13_real, mat3_real, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_real, mat3_imag, result01_imag);
-
-                result01_real =
-                    svmsb_x(pg, cval13_imag, mat3_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_imag, mat3_real, result01_imag);
-
-                // interleave elements from low halves of two vectors
-                output0 = svzip1(result01_real, result01_imag);
-                output1 = svzip2(result01_real, result01_imag);
-
-                // set values
-                svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
-            }
-        } else {  // val=0
-            // SVE registers for matrix[4]
-            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
-
-            // load matrix elements
-            mat0_real = SvdupF(creal(matrix[0]));
-            mat0_imag = SvdupF(cimag(matrix[0]));
-            mat1_real = SvdupF(creal(matrix[1]));
-            mat1_imag = SvdupF(cimag(matrix[1]));
-
-            for (ITYPE state_index = 0; state_index < dim;
-                 state_index += vec_len) {
-                // fetch values
-                input0 = svld1(pg, (ETYPE *)&state[state_index]);
-                input1 = svld1(pg, (ETYPE *)&t[state_index]);
-                input2 =
-                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
-                input3 = svld1(pg, (ETYPE *)&t[state_index + (vec_len >> 1)]);
-
-                // select odd or even elements from two vectors
-                cval02_real = svuzp1(input0, input2);
-                cval02_imag = svuzp2(input0, input2);
-                cval13_real = svuzp1(input1, input3);
-                cval13_imag = svuzp2(input1, input3);
-
-                // perform matrix-vector product
-                result01_real = svmul_x(pg, cval02_real, mat0_real);
-                result01_imag = svmul_x(pg, cval02_imag, mat0_real);
-
-                result01_real =
-                    svmsb_x(pg, cval02_imag, mat0_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval02_real, mat0_imag, result01_imag);
-
-                result01_real =
-                    svmad_x(pg, cval13_real, mat1_real, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_real, mat1_imag, result01_imag);
-
-                result01_real =
-                    svmsb_x(pg, cval13_imag, mat1_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_imag, mat1_real, result01_imag);
-
-                // interleave elements from low halves of two vectors
-                output0 = svzip1(result01_real, result01_imag);
-                output1 = svzip2(result01_real, result01_imag);
-
-                // set values
-                svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
-            }
-        }
-    } else
-#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-    {
-        for (ITYPE state_index = 0; state_index < dim; ++state_index) {
-            if (flag) {  // val=1
-                // fetch values
-                CTYPE cval_0 = t[state_index];
-                CTYPE cval_1 = state[state_index];
-
-                // set values
-                state[state_index] = matrix[2] * cval_0 + matrix[3] * cval_1;
-            } else {  // val=0
-                // fetch values
-                CTYPE cval_0 = state[state_index];
-                CTYPE cval_1 = t[state_index];
-
-                // set values
-                state[state_index] = matrix[0] * cval_0 + matrix[1] * cval_1;
-            }
-        }
-    }
-}
-
 #ifdef _OPENMP
-void single_qubit_dense_matrix_gate_parallel_mpi(
+        omp_set_num_threads(default_thread_count);
+#endif
+    }
+}
+
+void _single_qubit_dense_matrix_gate_mpi(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
     ITYPE vec_len =
         getVecLength();  // length of SVE registers (# of 64-bit elements)
     if (dim >= vec_len) {
+        CTYPE *s0, *s1;
+        s0 = (flag) ? t : state;
+        s1 = (flag) ? state : t;
+
         SV_PRED pg = Svptrue();  // this predicate register is all 1.
 
-        // SVE registers for matrix-vector products
-        SV_FTYPE input0, input1, input2, input3, output0, output1;
-        SV_FTYPE cval02_real, cval02_imag, cval13_real, cval13_imag;
-        SV_FTYPE result01_real, result01_imag;
+        // SVE registers for matrix[4]
+        SV_FTYPE mat0r, mat0i, mat1r, mat1i;
 
-        if (flag) {
-            // SVE registers for matrix[4]
-            SV_FTYPE mat2_real, mat2_imag, mat3_real, mat3_imag;
+        // load matrix elements
+        mat0r = SvdupF(creal(matrix[0 + (flag != 0) * 2]));
+        mat0i = SvdupF(cimag(matrix[0 + (flag != 0) * 2]));
+        mat1r = SvdupF(creal(matrix[1 + (flag != 0) * 2]));
+        mat1i = SvdupF(cimag(matrix[1 + (flag != 0) * 2]));
 
-            // load matrix elements
-            mat2_real = SvdupF(creal(matrix[2]));
-            mat2_imag = SvdupF(cimag(matrix[2]));
-            mat3_real = SvdupF(creal(matrix[3]));
-            mat3_imag = SvdupF(cimag(matrix[3]));
+#pragma omp parallel for shared(pg, mat0r, mat0i, mat1r, mat1i)
+        for (ITYPE state_index = 0; state_index < dim; state_index += vec_len) {
+            // fetch values
+            SV_FTYPE input0 = svld1(pg, (ETYPE *)&s0[state_index]);
+            SV_FTYPE input1 = svld1(pg, (ETYPE *)&s1[state_index]);
+            SV_FTYPE input2 =
+                svld1(pg, (ETYPE *)&s0[state_index + (vec_len >> 1)]);
+            SV_FTYPE input3 =
+                svld1(pg, (ETYPE *)&s1[state_index + (vec_len >> 1)]);
 
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    output1, result01_real, result01_imag, cval02_real, cval02_imag,      \
-    cval13_real, cval13_imag)                                             \
-    shared(pg, mat2_real, mat2_imag, mat3_real, mat3_imag)
-            for (ITYPE state_index = 0; state_index < dim;
-                 state_index += vec_len) {
-                // fetch values
-                input0 = svld1(pg, (ETYPE *)&t[state_index]);
-                input1 = svld1(pg, (ETYPE *)&state[state_index]);
-                input2 = svld1(pg, (ETYPE *)&t[state_index + (vec_len >> 1)]);
-                input3 =
-                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
+            // select odd or even elements from two vectors
+            SV_FTYPE cval02r = svuzp1(input0, input2);
+            SV_FTYPE cval02i = svuzp2(input0, input2);
+            SV_FTYPE cval13r = svuzp1(input1, input3);
+            SV_FTYPE cval13i = svuzp2(input1, input3);
 
-                // select odd or even elements from two vectors
-                cval02_real = svuzp1(input0, input2);
-                cval02_imag = svuzp2(input0, input2);
-                cval13_real = svuzp1(input1, input3);
-                cval13_imag = svuzp2(input1, input3);
+            // perform matrix-vector product
+            SV_FTYPE result01r = svmul_x(pg, cval02r, mat0r);
+            SV_FTYPE result01i = svmul_x(pg, cval02i, mat0r);
 
-                // perform matrix-vector product
-                result01_real = svmul_x(pg, cval02_real, mat2_real);
-                result01_imag = svmul_x(pg, cval02_imag, mat2_real);
+            result01r = svmsb_x(pg, cval02i, mat0i, result01r);
+            result01i = svmad_x(pg, cval02r, mat0i, result01i);
 
-                result01_real =
-                    svmsb_x(pg, cval02_imag, mat2_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval02_real, mat2_imag, result01_imag);
+            result01r = svmad_x(pg, cval13r, mat1r, result01r);
+            result01i = svmad_x(pg, cval13r, mat1i, result01i);
 
-                result01_real =
-                    svmad_x(pg, cval13_real, mat3_real, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_real, mat3_imag, result01_imag);
+            result01r = svmsb_x(pg, cval13i, mat1i, result01r);
+            result01i = svmad_x(pg, cval13i, mat1r, result01i);
 
-                result01_real =
-                    svmsb_x(pg, cval13_imag, mat3_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_imag, mat3_real, result01_imag);
+            // interleave elements from low halves of two vectors
+            SV_FTYPE output0 = svzip1(result01r, result01i);
+            SV_FTYPE output1 = svzip2(result01r, result01i);
 
-                // interleave elements from low halves of two vectors
-                output0 = svzip1(result01_real, result01_imag);
-                output1 = svzip2(result01_real, result01_imag);
-
-                // set values
-                svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
-            }
-        } else {  // val=0
-            // SVE registers for matrix[4]
-            SV_FTYPE mat0_real, mat0_imag, mat1_real, mat1_imag;
-
-            // load matrix elements
-            mat0_real = SvdupF(creal(matrix[0]));
-            mat0_imag = SvdupF(cimag(matrix[0]));
-            mat1_real = SvdupF(creal(matrix[1]));
-            mat1_imag = SvdupF(cimag(matrix[1]));
-
-#pragma omp parallel for private(input0, input1, input2, input3, output0, \
-    output1, result01_real, result01_imag, cval02_real, cval02_imag,      \
-    cval13_real, cval13_imag)                                             \
-    shared(pg, mat0_real, mat0_imag, mat1_real, mat1_imag)
-            for (ITYPE state_index = 0; state_index < dim;
-                 state_index += vec_len) {
-                // fetch values
-                input0 = svld1(pg, (ETYPE *)&state[state_index]);
-                input1 = svld1(pg, (ETYPE *)&t[state_index]);
-                input2 =
-                    svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
-                input3 = svld1(pg, (ETYPE *)&t[state_index + (vec_len >> 1)]);
-
-                // select odd or even elements from two vectors
-                cval02_real = svuzp1(input0, input2);
-                cval02_imag = svuzp2(input0, input2);
-                cval13_real = svuzp1(input1, input3);
-                cval13_imag = svuzp2(input1, input3);
-
-                // perform matrix-vector product
-                result01_real = svmul_x(pg, cval02_real, mat0_real);
-                result01_imag = svmul_x(pg, cval02_imag, mat0_real);
-
-                result01_real =
-                    svmsb_x(pg, cval02_imag, mat0_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval02_real, mat0_imag, result01_imag);
-
-                result01_real =
-                    svmad_x(pg, cval13_real, mat1_real, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_real, mat1_imag, result01_imag);
-
-                result01_real =
-                    svmsb_x(pg, cval13_imag, mat1_imag, result01_real);
-                result01_imag =
-                    svmad_x(pg, cval13_imag, mat1_real, result01_imag);
-
-                // interleave elements from low halves of two vectors
-                output0 = svzip1(result01_real, result01_imag);
-                output1 = svzip2(result01_real, result01_imag);
-
-                // set values
-                svst1(pg, (ETYPE *)&state[state_index], output0);
-                svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)],
-                    output1);
-            }
+            // set values
+            svst1(pg, (ETYPE *)&state[state_index], output0);
+            svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
         }
     } else
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -1075,67 +717,4 @@ void single_qubit_dense_matrix_gate_parallel_mpi(
         }
     }
 }
-#endif
 #endif  //#ifdef _USE_MPI
-
-/*
-
-void single_qubit_dense_matrix_gate_old_single(UINT target_qubit_index, const
-CTYPE matrix[4], CTYPE *state, ITYPE dim) {
-
-        // target mask
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-
-        // loop variables
-        const ITYPE loop_dim = dim / 2;
-        ITYPE state_index;
-
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // create index
-                ITYPE basis_0 = insert_zero_to_basis_index(state_index,
-target_mask, target_qubit_index);
-
-                // gather index
-                ITYPE basis_1 = basis_0 ^ target_mask;
-
-                // fetch values
-                CTYPE cval_0 = state[basis_0];
-                CTYPE cval_1 = state[basis_1];
-
-                // set values
-                state[basis_0] = matrix[0] * cval_0 + matrix[1] * cval_1;
-                state[basis_1] = matrix[2] * cval_0 + matrix[3] * cval_1;
-        }
-}
-
-#ifdef _OPENMP
-void single_qubit_dense_matrix_gate_old_parallel(UINT target_qubit_index, const
-CTYPE matrix[4], CTYPE *state, ITYPE dim) {
-
-        // target mask
-        const ITYPE target_mask = 1ULL << target_qubit_index;
-
-        // loop variables
-        const ITYPE loop_dim = dim / 2;
-        ITYPE state_index;
-
-#pragma omp parallel for
-        for (state_index = 0; state_index < loop_dim; ++state_index) {
-                // create index
-                ITYPE basis_0 = insert_zero_to_basis_index(state_index,
-target_mask, target_qubit_index);
-
-                // gather index
-                ITYPE basis_1 = basis_0 ^ target_mask;
-
-                // fetch values
-                CTYPE cval_0 = state[basis_0];
-                CTYPE cval_1 = state[basis_1];
-
-                // set values
-                state[basis_0] = matrix[0] * cval_0 + matrix[1] * cval_1;
-                state[basis_1] = matrix[2] * cval_0 + matrix[3] * cval_1;
-        }
-}
-#endif
-*/

@@ -1,14 +1,13 @@
 #!/bin/bash
 
-LOG=./log_qbench_0225.txt
+. ../../setenv
+LOG=./${LOG_FILE}_qbench.txt
 touch ${LOG}
 echo "### start " `date` >> ${LOG}
 echo "### mpi-qulacs version ###" >> ${LOG}
 git log -n 1 >> ${LOG}
-MPI_OPT="-x UCX_IB_MLX5_DEVX=no"
-CMD="./job.sh qulacsbench.py"
-#CMD="./job.sh hbench.py -d 11 -r 5"
-#CMD="./job.sh qvolume.py -d 10 -r 5"
+MPI_OPT=
+CMD="./job.sh python qulacsbench.py"
 #TEST=echo 
 TEST=
 

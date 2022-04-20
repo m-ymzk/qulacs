@@ -127,13 +127,41 @@ public:
         this->_update_func_mpi = FusedSWAP_gate_mpi;
 #endif
         this->_name = "FusedSWAP";
-        this->_target_qubit_list.push_back(
-            TargetQubitInfo(target_qubit_index1, 0));
-        this->_target_qubit_list.push_back(
-            TargetQubitInfo(target_qubit_index2, 0));
+
+        // 以下の順序でtarget_qubit_listに追加
+        // [target_qubit_index1, target_qubit_index1+1, ..., target_qubit_index1+(num_qubits-1),
+        //  target_qubit_index2, target_qubit_index2+1, ..., target_qubit_index2+(num_qubits-1)]
+        for (UINT i = 0; i < num_qubits; i++) {
+            this->_target_qubit_list.push_back(
+                TargetQubitInfo(target_qubit_index1 + i, 0));
+        }
+        for (UINT i = 0; i < num_qubits; i++) {
+            this->_target_qubit_list.push_back(
+                TargetQubitInfo(target_qubit_index2 + i, 0));
+        }
         this->_num_qubits = num_qubits;
         this->_gate_property = FLAG_CLIFFORD;
-        this->_matrix_element = ComplexMatrix::Zero(4, 4);
-        this->_matrix_element << 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+
+        // matrix生成
+        // FYI fmergeで生成する方法
+        // for (UINT i = 0; i < num_qubits; i++) {
+        //     QuantumGateBase *swap_gate = gate::SWAP(target_qubit_index1 + i, target_qubit_index2 + i);
+        //     ComplexMatrix matrix;
+        //     get_extended_matrix(swap_gate, this->_target_qubit_list, this->_control_qubit_list, matrix);
+        //     if (i == 0) {
+        //         this->_matrix_element = matrix;
+        //     } else {
+        //         this->_matrix_element = matrix * this->_matrix_element;
+        //     }
+        // }
+        const ITYPE pow2_nq = 1ULL << num_qubits;
+        const ITYPE pow2_2nq = 1ULL << (num_qubits * 2);
+        this->_matrix_element = SparseComplexMatrix(pow2_2nq, pow2_2nq);
+        this->_matrix_element.reserve(pow2_2nq);
+        for (ITYPE i = 0; i < pow2_nq; i++) {
+            for (ITYPE j = 0; j < pow2_nq; j++) {
+                this->_matrix_element.insert(i * pow2_nq + j, i + j * pow2_nq) = 1;
+            }
+        }
     }
 };

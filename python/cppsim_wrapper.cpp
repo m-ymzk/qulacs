@@ -29,6 +29,7 @@ extern "C" {
 #include <cppsim/circuit.hpp>
 #include <cppsim/circuit_optimizer.hpp>
 #include <cppsim/simulator.hpp>
+#include <cppsim/utility.hpp>
 
 #ifdef _USE_GPU
 #include <cppsim/state_gpu.hpp>
@@ -41,6 +42,7 @@ extern "C" {
 namespace py = pybind11;
 PYBIND11_MODULE(qulacs, m) {
     m.doc() = "cppsim python interface";
+
 
     py::class_<PauliOperator>(m, "PauliOperator")
         .def(py::init<std::complex<double>>(), "Constructor", py::arg("coef"))
@@ -132,7 +134,8 @@ PYBIND11_MODULE(qulacs, m) {
         .def("set_classical_value", &QuantumState::set_classical_value, "Set classical value", py::arg("index"), py::arg("value"))
         .def("to_string",&QuantumState::to_string, "Get string representation")
         .def("sampling", (std::vector<ITYPE> (QuantumState::*)(UINT))&QuantumState::sampling, "Sampling measurement results", py::arg("count"))
-		.def("sampling", (std::vector<ITYPE>(QuantumState::*)(UINT, UINT))&QuantumState::sampling, "Sampling measurement results", py::arg("count"), py::arg("seed"))
+        .def("sampling", (std::vector<ITYPE>(QuantumState::*)(UINT, UINT))&QuantumState::sampling, "Sampling measurement results", py::arg("count"), py::arg("seed"))
+	    //.def("set_seed", &QuantumState::set_seed, "Set random seed", py::arg("seed"))
 
         .def("get_vector", [](const QuantumState& state) {
         Eigen::VectorXcd vec = Eigen::Map<Eigen::VectorXcd>(state.data_cpp(), state.dim);
@@ -249,7 +252,8 @@ PYBIND11_MODULE(qulacs, m) {
     mstate.def("partial_trace", py::overload_cast<const DensityMatrix*, std::vector<UINT>>(&state::partial_trace), pybind11::return_value_policy::take_ownership, "Take partial trace", py::arg("state"), py::arg("target_traceout"));
 
     py::class_<QuantumGateBase>(m, "QuantumGateBase")
-        .def("update_quantum_state", &QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))
+        .def("update_quantum_state", (void (QuantumGateBase::*)(QuantumStateBase*))&QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))
+        .def("update_quantum_state", (void (QuantumGateBase::*)(QuantumStateBase*, unsigned int))&QuantumGateBase::update_quantum_state, "Update quantum state with seed", py::arg("state"), py::arg("seed"))
         .def("copy",&QuantumGateBase::copy, pybind11::return_value_policy::take_ownership, "Create copied instance")
         .def("to_string", &QuantumGateBase::to_string, "Get string representation")
         .def("get_matrix", [](const QuantumGateBase& gate) {
@@ -475,6 +479,8 @@ PYBIND11_MODULE(qulacs, m) {
 
         .def("update_quantum_state", (void (QuantumCircuit::*)(QuantumStateBase*))&QuantumCircuit::update_quantum_state, "Update quantum state", py::arg("state"))
         .def("update_quantum_state", (void (QuantumCircuit::*)(QuantumStateBase*, unsigned int, unsigned int))&QuantumCircuit::update_quantum_state, "Update quantum state", py::arg("state"), py::arg("start"), py::arg("end"))
+        .def("update_quantum_state", (void (QuantumCircuit::*)(QuantumStateBase*, unsigned int))&QuantumCircuit::update_quantum_state, "Update quantum state with seed", py::arg("state"), py::arg("seed"))
+        .def("update_quantum_state", (void (QuantumCircuit::*)(QuantumStateBase*, unsigned int, unsigned int, unsigned int))&QuantumCircuit::update_quantum_state, "Update quantum state with seed", py::arg("state"), py::arg("start"), py::arg("end"), py::arg("seed"))
         .def("calculate_depth", &QuantumCircuit::calculate_depth, "Calculate depth of circuit")
         .def("to_string", &QuantumCircuit::to_string, "Get string representation")
 
@@ -538,8 +544,6 @@ PYBIND11_MODULE(qulacs, m) {
 
         .def("__repr__", [](const ParametricQuantumCircuit &p) {return p.to_string(); });
     ;
-
-
 
     auto mcircuit = m.def_submodule("circuit");
     py::class_<QuantumCircuitOptimizer>(mcircuit, "QuantumCircuitOptimizer")

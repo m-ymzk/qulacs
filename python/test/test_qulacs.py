@@ -19,13 +19,13 @@ class TestQuantumState(unittest.TestCase):
         self.dim = 2**self.n
         self.state = qulacs.QuantumState(self.n, True)
         if self.state.get_device_name()=="multi-cpu":
-            self.inner_dim = self.dim // mpisize
-            self.outer_qc = int(math.log2(mpisize))
-            self.inner_qc = self.n - self.outer_qc
+            self.local_dim = self.dim // mpisize
+            self.global_qc = int(math.log2(mpisize))
+            self.local_qc = self.n - self.global_qc
         else:
-            self.inner_dim = self.dim
-            self.outer_qc = 0
-            self.inner_qc = self.n
+            self.local_dim = self.dim
+            self.global_qc = 0
+            self.local_qc = self.n
 
     def tearDown(self):
         del self.state
@@ -41,7 +41,7 @@ class TestQuantumState(unittest.TestCase):
         self.state.set_zero_state()
         vector = self.state.get_vector()
         if self.state.get_device_name()=="multi-cpu":
-            vector_ans = np.zeros(self.inner_dim)
+            vector_ans = np.zeros(self.local_dim)
         else:
             vector_ans = np.zeros(self.dim)
         vector_ans[0] = 1.
@@ -52,9 +52,9 @@ class TestQuantumState(unittest.TestCase):
         self.state.set_computational_basis(pos)
         vector = self.state.get_vector()
         if self.state.get_device_name()=="multi-cpu":
-            vector_ans = np.zeros(self.inner_dim)
-            if (pos >> self.inner_qc) == mpirank:
-                vector_ans[pos % self.inner_dim] = 1.
+            vector_ans = np.zeros(self.local_dim)
+            if (pos >> self.local_qc) == mpirank:
+                vector_ans[pos % self.local_dim] = 1.
         else:
             vector_ans = np.zeros(self.dim)
             vector_ans[pos] = 1.
