@@ -95,9 +95,13 @@ void QuantumGateSparseMatrix::update_quantum_state(QuantumStateBase* state) {
                 state->data_c(), state->dim);
         }
 #else
-        multi_qubit_sparse_matrix_gate_eigen(target_index.data(),
-            (UINT)(target_index.size()), this->_matrix_element, state->data_c(),
-            state->dim);
+        if (state->outer_qc == 0) {
+            multi_qubit_sparse_matrix_gate_eigen(target_index.data(),
+                (UINT)(target_index.size()), this->_matrix_element, state->data_c(),
+                state->dim);
+        } else {
+            std::cerr << "not implemented" << std::endl;
+        }
 #endif
     } else {
         std::cerr << "not implemented" << std::endl;
