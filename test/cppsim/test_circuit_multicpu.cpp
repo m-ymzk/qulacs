@@ -944,6 +944,12 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv,
                 }
             }
         }
+
+#if 0
+        if (m->get_rank() == 0) {
+            std::cout << "num_outer_swap_gates=" << num_outer_swap_gates << std::endl;
+        }
+#endif
         ASSERT_TRUE(num_outer_swap_gates <= num_exp_outer_swaps)
             << "# outer swaps is " << num_outer_swap_gates
             << ", but expected is " << num_exp_outer_swaps;

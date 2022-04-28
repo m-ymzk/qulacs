@@ -105,6 +105,16 @@ public:
      */
     virtual void remove_gate(UINT index);
 
+    /**
+     * \~japanese-en 回路内の量子ゲートを移動する。
+     *
+     * 回路内の量子ゲートを移動する。
+     * from_indexとto_indexの間のゲートはfrom_indexの方向にシフトする。
+     * @param[in] from_index 移動元のゲートの位置
+     * @param[in] to_index 移動先のゲートの位置
+     */
+    virtual void move_gate(UINT from_index, UINT to_index);
+
     /////////////////////////////// UPDATE QUANTUM STATE
 
     /**

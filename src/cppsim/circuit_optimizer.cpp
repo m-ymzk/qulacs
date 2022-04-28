@@ -626,6 +626,41 @@ void QuantumCircuitOptimizer::add_swaps_to_reorder(QubitTable &qt) {
     }
 }
 
+UINT QuantumCircuitOptimizer::gather_current_local_gates(UINT gate_idx, QubitTable &qt, std::multimap<const QuantumGateBase*, const QuantumGateBase*> &dep_map) {
+    std::unordered_set<const QuantumGateBase*> solved_gates;
+
+    for (UINT i = 0; (i + 1) < gate_idx; i++) {
+        solved_gates.insert(circuit->gate_list[i]);
+    }
+
+    const UINT num_gates = circuit->gate_list.size();
+    UINT moved_gates = 0;
+    for (UINT i = gate_idx; i < num_gates; i++) {
+        // no comm & dependency is solved
+        if (! need_comm(i, qt)) {
+            auto range = dep_map.equal_range(circuit->gate_list[i]);
+
+            bool is_solved = true;
+            for (auto it = range.first; it != range.second; ++it) {
+                if (solved_gates.find(it->second) == solved_gates.end()) {
+                    is_solved = false;
+                }
+            }
+
+            if (is_solved) {
+                QuantumGateBase* g = circuit->gate_list[i];
+                circuit->move_gate(i, gate_idx + moved_gates);
+                moved_gates++;
+                solved_gates.insert(g);
+
+                // 現在のqtで書き換え
+                g->rewrite_qubits_index(qt.l2p);
+            }
+        }
+    }
+    return moved_gates;
+}
+
 void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     if (level == 0) {
         return;
@@ -637,6 +672,8 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
 #ifndef NDEBUG
     UINT mpirank = mpiutil->get_rank();
 #endif
+
+    bool use_gate_reorder = (level >= 2);
 
     assert(!(mpisize & (mpisize - 1)));  // mpi-size must be power of 2
 
@@ -659,16 +696,16 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
         return;
     }
 
-    if (level > 1) {
+    if (level > 2) {
         std::cerr
             << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
-               ": invalid level. currently supports only level <= 1"
+               ": invalid level. currently supports only level <= 2"
             << std::endl;
         return;
     }
 
     // 依存解析
-    auto dep_map = make_dep_map(circuit);
+    auto dep_map = use_gate_reorder? make_dep_map(circuit) : std::multimap<const QuantumGateBase*, const QuantumGateBase*>();
 #ifndef NDEBUG
     if (mpirank == 0) {
         print_dep(dep_map);
@@ -693,6 +730,9 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
 #ifndef NDEBUG
             if(mpirank==0) std::cout<< "cur: " << qt << std::endl;
 #endif
+            if (use_gate_reorder) {
+                gate_idx += gather_current_local_gates(gate_idx, qt, dep_map);
+            }
             std::unordered_set<UINT> next_inner_qubits = find_next_inner_qubits(gate_idx);
             UINT num_inserted_gates = insert_swaps(gate_idx, next_inner_qubits, qt);
             gate_idx += num_inserted_gates;
