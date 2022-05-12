@@ -852,6 +852,22 @@ TEST(CircuitTest_multicpu, SpecialGatesToString) {
     std::cout << "#s =" << std::endl << s;
 }
 
+void _PrintCircuit(QuantumCircuit* circuit) {
+    for (auto& gate : circuit->gate_list) {
+        auto t_index_list = gate->get_target_index_list();
+        auto c_index_list = gate->get_control_index_list();
+        std::cout << gate->get_name() << "(t:{" ;
+        for (auto idx : t_index_list) {
+            std::cout << idx << ",";
+        }
+        std::cout << "}, c:{";
+        for (auto idx : c_index_list) {
+            std::cout << idx << ",";
+        }
+        std::cout<< "})" << std::endl;
+    }
+}
+
 void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv,
     UINT num_exp_outer_swaps) {
     const UINT n = circuit_ref->qubit_count;
@@ -883,33 +899,11 @@ void _ApplyOptimizer(QuantumCircuit* circuit_ref, int opt_lv, UINT swap_lv,
 
 #if 0
         if (m->get_rank() == 0) {
-            for (auto& gate : circuit_ref->gate_list) {
-                auto t_index_list = gate->get_target_index_list();
-                auto c_index_list = gate->get_control_index_list();
-                std::cout << gate->get_name() << "(t:{" ;
-                for (auto idx : t_index_list) {
-                    std::cout << idx << ",";
-                }
-                std::cout << "}, c:{";
-                for (auto idx : c_index_list) {
-                    std::cout << idx << ",";
-                }
-                std::cout<< "})" << std::endl;
-            }
-            std::cout << "-----" << std::endl;
-            for (auto& gate : circuit->gate_list) {
-                auto t_index_list = gate->get_target_index_list();
-                auto c_index_list = gate->get_control_index_list();
-                std::cout << gate->get_name() << "(t:{" ;
-                for (auto idx : t_index_list) {
-                    std::cout << idx << ",";
-                }
-                std::cout << "}, c:{";
-                for (auto idx : c_index_list) {
-                    std::cout << idx << ",";
-                }
-                std::cout<< "})" << std::endl;
-            }
+            std::cout << "-----original circuit-----" << std::endl;
+            _PrintCircuit(circuit_ref);
+            std::cout << "-----optimized circuit-----" << std::endl;
+            _PrintCircuit(circuit);
+            std::cout << "---------------------------" << std::endl;
         }
 #endif
 
@@ -1251,3 +1245,68 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_nocomm_6qubits) {
 //        _ApplyOptimizer(&circuit, -1, 1, 4);
 //    }
 //}
+
+void _BuildQulacsBenchmark(QuantumCircuit& circuit, UINT nqubits, UINT depth, Random& random) {
+    // first rotation
+    for (UINT k = 0; k < nqubits; k++) {
+        circuit.add_RX_gate(k, random.uniform()*3.14159);
+        circuit.add_RZ_gate(k, random.uniform()*3.14159);
+    }
+
+    // entangler
+    for (UINT k = 0; k < nqubits; k++) {
+        circuit.add_CNOT_gate(k, (k + 1) % nqubits);
+    }
+
+    for (UINT i = 0; i < depth; i++) {
+        // mid rotation
+        for (UINT k = 0; k < nqubits; k++) {
+            circuit.add_RZ_gate(k, random.uniform()*3.14159);
+            circuit.add_RX_gate(k, random.uniform()*3.14159);
+            circuit.add_RZ_gate(k, random.uniform()*3.14159);
+        }
+
+        // entangler
+        for (UINT k = 0; k < nqubits; k++) {
+            circuit.add_CNOT_gate(k, (k + 1) % nqubits);
+        }
+    }
+
+    // last rotation
+    for (UINT k = 0; k < nqubits; k++) {
+        circuit.add_RZ_gate(k, random.uniform()*3.14159);
+        circuit.add_RX_gate(k, random.uniform()*3.14159);
+    }
+}
+
+TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
+    UINT n = 6;
+
+    MPIutil m = get_mpiutil();
+    const UINT outer_qc = std::log2(m->get_size());
+    const UINT inner_qc = n - outer_qc;
+
+    if (outer_qc < 1) {
+        return;
+    }
+
+    Random random;
+
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        _BuildQulacsBenchmark(circuit, n, 9, random);
+        UINT n_expected_swaps = 0;
+        switch (outer_qc) {
+        case 1:
+            n_expected_swaps = 15;
+        case 2:
+            n_expected_swaps = 20;
+        case 3:
+            n_expected_swaps = 34;
+        default:
+            n_expected_swaps = 1000;
+        }
+        _ApplyOptimizer(&circuit, 0, 2, n_expected_swaps);
+    }
+}
