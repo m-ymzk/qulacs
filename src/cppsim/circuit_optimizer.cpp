@@ -252,8 +252,10 @@ QuantumGateMatrix* QuantumCircuitOptimizer::merge_all(
 }
 
 
+#ifndef NDEBUG
 static void print_dep(std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map);
 static void output_dep_dot(std::vector<QuantumGateBase*> gate_list,  std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map, const std::string& fname);
+#endif
 static std::multimap<const QuantumGateBase*, const QuantumGateBase*> make_dep_map(QuantumCircuit *circuit);
 
 QuantumCircuitOptimizer::QubitTable::QubitTable(const UINT nc): _nc(nc),
@@ -705,6 +707,10 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     }
 
     // 依存解析
+#ifndef NDEBUG
+    std::chrono::system_clock::time_point t_start, t_end, t_addswap_start;
+    t_start = std::chrono::system_clock::now();
+#endif
     auto dep_map = use_gate_reorder? make_dep_map(circuit) : std::multimap<const QuantumGateBase*, const QuantumGateBase*>();
 #ifndef NDEBUG
     if (mpirank == 0) {
@@ -717,6 +723,7 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     if (mpirank == 0) {
         std::cout << "insert_fswap" << std::endl;
     }
+    t_addswap_start = std::chrono::system_clock::now();
 #endif
 
     UINT num_gates = circuit->gate_list.size();
@@ -747,9 +754,20 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
 
     //最初の順序に戻す
     add_swaps_to_reorder(qt);
+
+#ifndef NDEBUG
+    t_end = std::chrono::system_clock::now();
+    double t_make_dep_map = std::chrono::duration_cast<std::chrono::milliseconds>(t_addswap_start - t_start).count() / 1000.0;
+    double t_addswap = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_addswap_start).count() / 1000.0;
+    if (mpirank == 0) {
+        std::cout << "make_dep_map_time(s) " << t_make_dep_map << std::endl;
+        std::cout << "addswap_time(s) " << t_addswap << std::endl;
+    }
+#endif
 }
 
 
+#ifndef NDEBUG
 static void print_dep(std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map) {
     std::cout << "--- dependency info ---" << std::endl;
     for (auto& dep : dep_map) {
@@ -797,36 +815,44 @@ static void output_dep_dot(std::vector<QuantumGateBase*> gate_list,  std::multim
     }
     fout << "}" << std::endl;
 }
-
-static void add_depend_gates(std::multimap<const QuantumGateBase*, const QuantumGateBase*>& dep_map, std::unordered_set<const QuantumGateBase*>& checked_gates, const QuantumGateBase* g) {
-    // ゲートg、およびゲートgが依存しているゲートを再帰的に追加する
-    auto range = dep_map.equal_range(g);
-
-    checked_gates.insert(g);
-    for (auto it = range.first; it != range.second; ++it) {
-        add_depend_gates(dep_map, checked_gates, it->second);
-    }
-}
+#endif
 
 static std::multimap<const QuantumGateBase*, const QuantumGateBase*> make_dep_map(QuantumCircuit *circuit) {
-    // key: depender, value: dependee.
-    // ゲートg1, ゲートg2があり、g1, g2の順に実行する必要があるとき
-    // (key:g2, value:g1)となる
+    // key: depender
+    // value: dependee
+    // ゲートg1, ゲートg2があり、g1, g2の順に実行する必要があるとき(key:g2, value:g1)
     std::multimap<const QuantumGateBase*, const QuantumGateBase*> dep_map;
+
+    // key: 対象ゲート
+    // value: 対象ゲートが直接/間接的に依存しているゲートの集合 (対象ゲート自身を含む)
+    std::map<const QuantumGateBase*, std::unordered_set<const QuantumGateBase*>> depset_map;
 
     UINT num_gates = circuit->gate_list.size();
 
     for (UINT i = 0; i < num_gates; i++) {
         const QuantumGateBase* g = circuit->gate_list[i];
-        // 依存確認済みゲート集合
-        std::unordered_set<const QuantumGateBase*> checked_gates;
+
+        auto result_emplace = depset_map.emplace(g, std::initializer_list<const QuantumGateBase*>{g});
+        auto& g_depset = result_emplace.first->second;
 
         for (int j = i - 1; j >= 0; j--) {
             const QuantumGateBase* g2 = circuit->gate_list[j];
-            if (checked_gates.find(g2) == checked_gates.end()) {
+
+            if (g_depset.find(g2) == g_depset.end()) {
                 if (! g->is_commute(g2)) {
-                    dep_map.insert(std::make_pair(g, g2));
-                    add_depend_gates(dep_map, checked_gates, g2);
+                    dep_map.emplace(g, g2);
+
+                    auto g2_depset_it = depset_map.find(g2);
+                    if (g2_depset_it == depset_map.end()) {
+                        // error
+                        std::cerr
+                            << "Error: make_dep_map"
+                               ": dependence gate set is not found"
+                            << std::endl;
+                        return dep_map;
+                    }
+                    auto& g2_depset = g2_depset_it->second;
+                    g_depset.insert(g2_depset.begin(), g2_depset.end());
                 }
             }
         }
