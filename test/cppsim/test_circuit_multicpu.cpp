@@ -1279,6 +1279,22 @@ void _BuildQulacsBenchmark(QuantumCircuit& circuit, UINT nqubits, UINT depth, Ra
     }
 }
 
+void _BuildQVolumeBenchmark(QuantumCircuit& circuit, UINT nqubits, UINT depth, Random& random) {
+    std::vector<UINT> perm(nqubits);
+    std::iota(perm.begin(), perm.end(), 0); // [0, ..., nqubits-1]
+
+    std::mt19937 mt;
+    mt.seed(random.int64());
+
+    for (UINT d = 0; d < depth; ++d) {
+        std::shuffle(perm.begin(), perm.end(), mt);
+        for (UINT w = 0; w < nqubits; w += 2) {
+            std::vector<UINT> target_qubits = {perm[w], perm[w+1]};
+            circuit.add_random_unitary_gate(target_qubits);
+        }
+    }
+}
+
 TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
     UINT n = 6;
 
@@ -1292,6 +1308,7 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
 
     Random random;
 
+    // Qulacs Benchmark
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
@@ -1304,6 +1321,25 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
             n_expected_swaps = 20;
         case 3:
             n_expected_swaps = 34;
+        default:
+            n_expected_swaps = 1000;
+        }
+        _ApplyOptimizer(&circuit, 0, 2, n_expected_swaps);
+    }
+
+    // QVolume Benchmark
+    {
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        _BuildQVolumeBenchmark(circuit, n, 10, random);
+        UINT n_expected_swaps = 0;
+        switch (outer_qc) {
+        case 1:
+            n_expected_swaps = 10;
+        case 2:
+            n_expected_swaps = 14;
+        case 3:
+            n_expected_swaps = 29;
         default:
             n_expected_swaps = 1000;
         }
