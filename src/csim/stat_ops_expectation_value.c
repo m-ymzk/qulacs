@@ -161,7 +161,7 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
             // B
             int sign = 1 - 2 * bit_parity;
             // C
-            sum += pow(cabs(state[state_index]), 2) * sign;
+            sum += state[state_index] * conj(state[state_index]) * sign;
         }
     }
     return sum;
