@@ -38,33 +38,36 @@ void Y_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        Y_gate_single_sve(target_qubit_index, state, dim);
-    } else {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
+    //    Y_gate_single_sve(target_qubit_index, state, dim);
+    //} else {
         Y_gate_parallel_sve(target_qubit_index, state, dim);
-    }
+    //}
 #else
     Y_gate_single_sve(target_qubit_index, state, dim);
 #endif
 #elif defined(_USE_SIMD)
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        Y_gate_single_simd(target_qubit_index, state, dim);
-    } else {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
+    //    Y_gate_single_simd(target_qubit_index, state, dim);
+    //} else {
         Y_gate_parallel_simd(target_qubit_index, state, dim);
-    }
+    //}
 #else
     Y_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         Y_gate_single_unroll(target_qubit_index, state, dim);
-    } else {
-        Y_gate_parallel_unroll(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    Y_gate_parallel_unroll(target_qubit_index, state, dim);
+    //}
 #else
     Y_gate_single_unroll(target_qubit_index, state, dim);
 #endif

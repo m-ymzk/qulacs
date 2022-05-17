@@ -27,33 +27,36 @@ void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         H_gate_single_sve(target_qubit_index, state, dim);
-    } else {
-        H_gate_parallel_sve(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    H_gate_parallel_sve(target_qubit_index, state, dim);
+    //}
 #else
     H_gate_single_sve(target_qubit_index, state, dim);
 #endif
 #elif defined(_USE_SIMD)
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         H_gate_single_simd(target_qubit_index, state, dim);
-    } else {
-        H_gate_parallel_simd(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    H_gate_parallel_simd(target_qubit_index, state, dim);
+    //}
 #else
     H_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         H_gate_single_unroll(target_qubit_index, state, dim);
-    } else {
-        H_gate_parallel_unroll(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    H_gate_parallel_unroll(target_qubit_index, state, dim);
+    //}
 #else
     H_gate_single_unroll(target_qubit_index, state, dim);
 #endif
@@ -500,8 +503,9 @@ void H_gate_mpi(
 
 #ifdef _OPENMP
         UINT threshold = 13;
-        UINT default_thread_count = omp_get_max_threads();
-        if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+	    set_qulacs_num_threads(dim, threshold);
+        //UINT default_thread_count = omp_get_max_threads();
+        //if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
 #endif
 
         CTYPE *si = state;
@@ -513,7 +517,8 @@ void H_gate_mpi(
             si += dim_work;
         }
 #ifdef _OPENMP
-        omp_set_num_threads(default_thread_count);
+        //omp_set_num_threads(default_thread_count);
+	    reset_qulacs_num_threads();
 #endif
     }
 }

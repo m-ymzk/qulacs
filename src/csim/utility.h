@@ -1,7 +1,44 @@
 #pragma once
 
+#include <stdlib.h>
+
 #include "constant.h"
 #include "type.h"
+
+#ifdef _OPENMP 
+#include <omp.h>
+#include <stdio.h>
+static UINT qulacs_num_default_thread_max = 1;
+static UINT qulacs_num_thread_max = 0;
+
+inline static void set_qulacs_num_threads(ITYPE dim, UINT threshold){
+	printf("# set qulacs_num_threads entry, %lld, %d, %d\n", dim, threshold, qulacs_num_thread_max);
+	if (!qulacs_num_thread_max) {
+		qulacs_num_thread_max = omp_get_max_threads();
+		const char *tmp = getenv("QULACS_NUM_THREADS");
+		if (tmp){
+			const UINT tmp_val = atoi(tmp);
+			if (0 < tmp_val && tmp_val < 1025) qulacs_num_thread_max = tmp_val;
+		}
+		printf("# set qulacs_num_thread_max = %d\n", qulacs_num_thread_max);
+
+	    qulacs_num_default_thread_max = omp_get_max_threads();
+		printf("# set qulacs_num_default_thread_max = %d\n", qulacs_num_default_thread_max);
+	}
+
+	if (dim < (((ITYPE)1) << threshold)) {
+		omp_set_num_threads(1);
+	    printf("# set omp_num_thread = 1\n");
+	} else {
+		omp_set_num_threads(qulacs_num_thread_max);
+	    printf("# set omp_num_thread = %d\n", qulacs_num_thread_max);
+	}
+}
+
+inline static void reset_qulacs_num_threads(){
+	omp_set_num_threads(qulacs_num_default_thread_max);
+}
+#endif
 
 /**
  * Insert 0 to qubit_index-th bit of basis_index. basis_mask must be 1ULL <<

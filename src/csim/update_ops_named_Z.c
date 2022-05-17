@@ -35,22 +35,24 @@ void Z_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _USE_SIMD
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         Z_gate_single_simd(target_qubit_index, state, dim);
-    } else {
-        Z_gate_parallel_simd(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    Z_gate_parallel_simd(target_qubit_index, state, dim);
+    //}
 #else
     Z_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
     UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
+	set_qulacs_num_threads(dim, threshold);
+    //if (dim < (((ITYPE)1) << threshold)) {
         Z_gate_single_unroll(target_qubit_index, state, dim);
-    } else {
-        Z_gate_parallel_unroll(target_qubit_index, state, dim);
-    }
+    //} else {
+    //    Z_gate_parallel_unroll(target_qubit_index, state, dim);
+    //}
 #else
     Z_gate_single_unroll(target_qubit_index, state, dim);
 #endif
