@@ -26,6 +26,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_XZ_mask(
 #ifndef _MSC_VER
     CTYPE sum = 0.;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -45,6 +47,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_XZ_mask(
     double sum_real = 0.;
     double sum_imag = 0.;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : sum_real, sum_imag)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -64,6 +68,9 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_XZ_mask(
     }
     CTYPE sum(sum_real, sum_imag);
 #endif
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
     return sum;
 }
 
@@ -76,6 +83,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
 #ifndef _MSC_VER
     CTYPE sum = 0.;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -83,6 +92,9 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
         double sign = 1 - 2 * bit_parity;
         sum += sign * state_ket[state_index] * conj(state_bra[state_index]);
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
     return sum;
 
 #else
@@ -90,6 +102,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
     double sum_real = 0.;
     double sum_imag = 0.;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : sum_real, sum_imag)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -101,6 +115,9 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
         sum_imag += cimag(val);
     }
     CTYPE sum(sum_real, sum_imag);
+#endif
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
 #endif
     return sum;
 }

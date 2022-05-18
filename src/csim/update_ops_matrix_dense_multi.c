@@ -35,14 +35,16 @@ void multi_qubit_dense_matrix_gate(const UINT* target_qubit_index_list,
     } else {
 
 #ifdef _OPENMP
-        UINT threshold = 10;
-        if (dim < (((ITYPE)1) << threshold)) {
-            multi_qubit_dense_matrix_gate_single(target_qubit_index_list,
-                target_qubit_index_count, matrix, state, dim);
-        } else {
+		OMPutil omputil = get_omputil();
+		omputil->set_qulacs_num_threads(dim, 10);
+
+        //if (dim < (((ITYPE)1) << threshold)) {
+        //    multi_qubit_dense_matrix_gate_single(target_qubit_index_list,
+        //        target_qubit_index_count, matrix, state, dim);
+        //} else {
             multi_qubit_dense_matrix_gate_parallel(target_qubit_index_list,
                 target_qubit_index_count, matrix, state, dim);
-        }
+        //}
 #else
         multi_qubit_dense_matrix_gate_single(target_qubit_index_list,
             target_qubit_index_count, matrix, state, dim);

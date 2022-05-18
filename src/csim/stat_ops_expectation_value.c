@@ -89,6 +89,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 PHASE_90ROT[(global_phase_90rot_count + sign_0 * 2) % 4] * 2.0);
         }
     }
+
     return sum;
 }
 
@@ -175,6 +176,11 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
         Pauli_operator_type_list, target_qubit_index_count, &bit_flip_mask,
         &phase_flip_mask, &global_phase_90rot_count, &pivot_qubit_index);
     double result;
+
+#ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
+#endif
 #ifdef _USE_MPI
     if (outer_qc > 0) {
         MPIutil m = get_mpiutil();
@@ -199,6 +205,9 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
                 pivot_qubit_index, state, dim, outer_qc, inner_qc);
         }
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
     return result;
 }
 
@@ -209,6 +218,11 @@ double expectation_value_multi_qubit_Pauli_operator_whole_list(
     ITYPE phase_flip_mask = 0;
     UINT global_phase_90rot_count = 0;
     UINT pivot_qubit_index = 0;
+
+#ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
+#endif
     get_Pauli_masks_whole_list(Pauli_operator_type_list, qubit_count,
         &bit_flip_mask, &phase_flip_mask, &global_phase_90rot_count,
         &pivot_qubit_index);
@@ -221,6 +235,9 @@ double expectation_value_multi_qubit_Pauli_operator_whole_list(
             bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
             pivot_qubit_index, state, dim, outer_qc, inner_qc);
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
     return result;
 }
 

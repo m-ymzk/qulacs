@@ -21,16 +21,17 @@ void single_qubit_control_single_qubit_dense_matrix_gate(
     const CTYPE matrix[4], CTYPE* state, ITYPE dim) {
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
-            control_qubit_index, control_value, target_qubit_index, matrix,
-            state, dim);
-    } else {
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
+    //if (dim < (((ITYPE)1) << threshold)) {
+    //    single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
+    //        control_qubit_index, control_value, target_qubit_index, matrix,
+    //        state, dim);
+    //} else {
         single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
             control_qubit_index, control_value, target_qubit_index, matrix,
             state, dim);
-    }
+    //}
 #else
     single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
         control_qubit_index, control_value, target_qubit_index, matrix, state,
@@ -38,21 +39,25 @@ void single_qubit_control_single_qubit_dense_matrix_gate(
 #endif
 #else
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
-            control_qubit_index, control_value, target_qubit_index, matrix,
-            state, dim);
-    } else {
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
+    //if (dim < (((ITYPE)1) << threshold)) {
+    //    single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
+    //        control_qubit_index, control_value, target_qubit_index, matrix,
+    //        state, dim);
+    //} else {
         single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
             control_qubit_index, control_value, target_qubit_index, matrix,
             state, dim);
-    }
+    //}
 #else
     single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
         control_qubit_index, control_value, target_qubit_index, matrix, state,
         dim);
 #endif
+#endif
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -475,9 +480,8 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
         } else {  // control, target: inner, outer
 
 #ifdef _OPENMP
-            UINT threshold = 13;
-            UINT default_thread_count = omp_get_max_threads();
-            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+			OMPutil omputil = get_omputil();
+			omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
             for (ITYPE iter = 0; iter < num_work; ++iter) {
@@ -492,7 +496,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
             }
 
 #ifdef _OPENMP
-            omp_set_num_threads(default_thread_count);
+			omputil->reset_qulacs_num_threads();
 #endif
         }
     } else {
@@ -504,9 +508,8 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
         } else {  // control, target: outer, outer
 
 #ifdef _OPENMP
-            UINT threshold = 13;
-            UINT default_thread_count = omp_get_max_threads();
-            if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+			OMPutil omputil = get_omputil();
+			omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
             ITYPE dummy_flag =
@@ -526,7 +529,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
             }
 
 #ifdef _OPENMP
-            omp_set_num_threads(default_thread_count);
+			omputil->reset_qulacs_num_threads();
 #endif
         }
     }
