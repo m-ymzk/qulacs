@@ -8,10 +8,6 @@
 #include "constant.h"
 #include "utility.h"
 
-#ifdef _USE_MPI
-#include "csim/MPIutil.h"
-#endif
-
 // calculate norm
 double state_norm_squared(const CTYPE* state, ITYPE dim) {
     ITYPE index;

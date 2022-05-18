@@ -5,13 +5,6 @@
 
 #include "init_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "csim/MPIutil.h"
-#endif
 
 // state initialization
 void initialize_quantum_state(CTYPE *state, ITYPE dim) {

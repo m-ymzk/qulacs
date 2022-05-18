@@ -1,7 +1,6 @@
-#pragma once
-
 #include "constant.h"
 #include "type.h"
+#include "omp.h"
 
 #ifdef _OPENMP 
 typedef struct {

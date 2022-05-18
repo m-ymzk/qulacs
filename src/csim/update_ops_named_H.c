@@ -5,13 +5,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -36,7 +29,7 @@ void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         H_gate_parallel_sve(target_qubit_index, state, dim);
     //}
 #else
-    //H_gate_single_sve(target_qubit_index, state, dim);
+    H_gate_single_sve(target_qubit_index, state, dim);
 #endif
 #elif defined(_USE_SIMD)
 #ifdef _OPENMP
@@ -46,7 +39,7 @@ void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         H_gate_parallel_simd(target_qubit_index, state, dim);
     //}
 #else
-    //H_gate_single_simd(target_qubit_index, state, dim);
+    H_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
@@ -56,7 +49,7 @@ void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         H_gate_parallel_unroll(target_qubit_index, state, dim);
     //}
 #else
-    //H_gate_single_unroll(target_qubit_index, state, dim);
+    H_gate_single_unroll(target_qubit_index, state, dim);
 #endif
 #endif
 #ifdef _OPENMP

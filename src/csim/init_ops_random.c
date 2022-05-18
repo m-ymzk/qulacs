@@ -5,13 +5,6 @@
 
 #include "init_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 // state randomization
 unsigned long xor128(unsigned long* state);
@@ -33,14 +26,16 @@ void initialize_Haar_random_state_mpi_with_seed(
     CTYPE* state, ITYPE dim, UINT outer_qc, UINT seed) {
     // printf("# enter init-Haar-rand-stat(seed), %lld, %d\n", dim, seed);
 #ifdef _OPENMP
-    UINT threshold = 8;
-    if (dim < (((ITYPE)1) << threshold)) {
-        initialize_Haar_random_state_with_seed_single(
-            state, dim, outer_qc, seed);
-    } else {
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 8);
+    //if (dim < (((ITYPE)1) << threshold)) {
+    //    initialize_Haar_random_state_with_seed_single(
+    //        state, dim, outer_qc, seed);
+    //} else {
         initialize_Haar_random_state_with_seed_parallel(
             state, dim, outer_qc, seed);
-    }
+    //}
+	omputil->reset_qulacs_num_threads();
 #else
     initialize_Haar_random_state_with_seed_single(state, dim, outer_qc, seed);
 #endif

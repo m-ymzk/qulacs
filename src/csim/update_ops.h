@@ -14,9 +14,6 @@
 #pragma once
 
 #include "type.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 /** X gate **/
 

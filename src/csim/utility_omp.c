@@ -1,13 +1,8 @@
-#pragma once
-
 #include <stdlib.h>
-
-#ifdef _OPENMP 
-#include <omp.h>
 #include <stdio.h>
-
 #include "utility.h"
 
+#ifdef _OPENMP 
 static OMPutil omputil = NULL;
 
 static UINT qulacs_num_default_thread_max = 1;
