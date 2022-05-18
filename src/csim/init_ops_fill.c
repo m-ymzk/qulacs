@@ -16,7 +16,8 @@
 // state initialization
 void initialize_quantum_state(CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	set_qulacs_num_threads(dim, 15);
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #endif
 
     ITYPE index;
@@ -27,14 +28,15 @@ void initialize_quantum_state(CTYPE *state, ITYPE dim) {
     state[0] = 1.0;
 
 #ifdef _OPENMP
-	reset_qulacs_num_threads();
+	omputil->reset_qulacs_num_threads();
 #endif
 }
 
 #ifdef _USE_MPI
 void initialize_quantum_state_mpi(CTYPE *state, ITYPE dim, UINT outer_qc) {
 #ifdef _OPENMP
-	set_qulacs_num_threads(dim, 15);
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 15);
 #endif
 
     ITYPE index;
@@ -46,7 +48,7 @@ void initialize_quantum_state_mpi(CTYPE *state, ITYPE dim, UINT outer_qc) {
     if (outer_qc == 0 || m->get_rank() == 0) state[0] = 1.0;
 
 #ifdef _OPENMP
-	reset_qulacs_num_threads();
+	omputil->reset_qulacs_num_threads();
 #endif
 }
 #endif  //#ifdef _USE_MPI

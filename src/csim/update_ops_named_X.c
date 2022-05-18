@@ -49,12 +49,14 @@ void X_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
 #else
 #ifdef _OPENMP
     UINT threshold = 13;
-	set_qulacs_num_threads(dim, threshold);
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, threshold);
     //if (dim < (((ITYPE)1) << threshold)) {
     //    X_gate_single_unroll(target_qubit_index, state, dim);
     //} else {
         X_gate_parallel_unroll(target_qubit_index, state, dim);
     //}
+	omputil->reset_qulacs_num_threads();
 #else
     X_gate_single_unroll(target_qubit_index, state, dim);
 #endif
