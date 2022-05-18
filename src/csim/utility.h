@@ -37,6 +37,7 @@ inline static void set_qulacs_num_threads(ITYPE dim, UINT threshold){
 
 inline static void reset_qulacs_num_threads(){
 	omp_set_num_threads(qulacs_num_default_thread_max);
+	printf("# reset omp_num_thread = %d\n", qulacs_num_default_thread_max);
 }
 #endif
 
