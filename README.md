@@ -158,6 +158,8 @@
         - No SWAP/FusedSWAP gate insertion
       - swap_level = 1
         - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
+      - swap_level = 2
+        - Insert SWAP/FusedSWAP gates to reduce communication with changing gate order (not supported with block_size >= 1)
     - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
