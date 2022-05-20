@@ -344,8 +344,8 @@ TEST(UpdateTest, SWAPGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(
         n, "SWAP", SWAP_gate, get_eigen_matrix_full_qubit_SWAP);
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_single_unroll,
-        get_eigen_matrix_full_qubit_SWAP);
+    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
+        get_eigen_matrix_full_qubit_SWAP);  // change from single
 #ifdef _OPENMP
     test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
         get_eigen_matrix_full_qubit_SWAP);

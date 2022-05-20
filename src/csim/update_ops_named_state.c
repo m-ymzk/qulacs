@@ -23,29 +23,44 @@ void normalize(double squared_norm, CTYPE *state, ITYPE dim) {
     const double normalize_factor = sqrt(1. / squared_norm);
     ITYPE state_index;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
         state[state_index] *= normalize_factor;
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
 }
 
 void state_add(const CTYPE *state_added, CTYPE *state, ITYPE dim) {
     ITYPE index;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for
 #endif
     for (index = 0; index < dim; ++index) {
         state[index] += state_added[index];
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
 }
 
 void state_multiply(CTYPE coef, CTYPE *state, ITYPE dim) {
     ITYPE index;
 #ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for
 #endif
     for (index = 0; index < dim; ++index) {
         state[index] *= coef;
     }
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
 }

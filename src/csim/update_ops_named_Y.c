@@ -14,62 +14,34 @@
 #endif
 #endif
 
-// void Y_gate_old_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Y_gate_old_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Y_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Y_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-
 void Y_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
-    // Y_gate_old_single(target_qubit_index, state, dim);
-    // Y_gate_old_parallel(target_qubit_index, state, dim);
-    // Y_gate_single(target_qubit_index, state, dim);
-    // Y_gate_single_simd(target_qubit_index, state, dim);
-    // Y_gate_single_unroll(target_qubit_index, state, dim);
-    // Y_gate_parallel(target_qubit_index, state, dim);
-    // return;
+#ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
+#endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _OPENMP
-    UINT threshold = 13;
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, threshold);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    Y_gate_single_sve(target_qubit_index, state, dim);
-    //} else {
-        Y_gate_parallel_sve(target_qubit_index, state, dim);
-    //}
-	omputil->reset_qulacs_num_threads();
+    Y_gate_parallel_sve(target_qubit_index, state, dim);
 #else
     Y_gate_single_sve(target_qubit_index, state, dim);
 #endif
 #elif defined(_USE_SIMD)
 #ifdef _OPENMP
-    UINT threshold = 13;
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, threshold);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    Y_gate_single_simd(target_qubit_index, state, dim);
-    //} else {
-        Y_gate_parallel_simd(target_qubit_index, state, dim);
-    //}
-	omputil->reset_qulacs_num_threads();
+    Y_gate_parallel_simd(target_qubit_index, state, dim);
 #else
     Y_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
-    UINT threshold = 13;
-	OMPutil omputil = get_omputil();
-	omp_util->set_qulacs_num_threads(dim, threshold);
-    //if (dim < (((ITYPE)1) << threshold)) {
-        Y_gate_single_unroll(target_qubit_index, state, dim);
-    //} else {
-    //    Y_gate_parallel_unroll(target_qubit_index, state, dim);
-    //}
-	omputil->reset_qulacs_num_threads();
+    Y_gate_single_unroll(target_qubit_index, state, dim);
 #else
     Y_gate_single_unroll(target_qubit_index, state, dim);
 #endif
+#endif
+
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -443,6 +415,10 @@ void Y_gate_mpi(
         ITYPE num_work = 0;
         CTYPE* t = m->get_workarea(&dim_work, &num_work);
         assert(num_work > 0);
+#ifdef _OPENMP
+	    OMPutil omputil = get_omputil();
+	    omputil->set_qulacs_num_threads(dim_work, 13);
+#endif
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
         const int pair_rank = rank ^ pair_rank_bit;
         const CTYPE imag = 1.i;
@@ -453,16 +429,26 @@ void Y_gate_mpi(
             m->m_DC_sendrecv(si, t, dim_work, pair_rank);
             ITYPE state_index = 0;
             if (rank & pair_rank_bit) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
                 for (state_index = 0; state_index < dim_work; ++state_index) {
                     si[state_index] = imag * t[state_index];
                 }
             } else {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
                 for (state_index = 0; state_index < dim_work; ++state_index) {
                     si[state_index] = -imag * t[state_index];
                 }
             }
             si += dim_work;
         }
+
+#ifdef _OPENMP
+	    omputil->reset_qulacs_num_threads();
+#endif
     }
 }
 #endif

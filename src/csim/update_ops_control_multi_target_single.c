@@ -83,19 +83,16 @@ void multi_qubit_control_single_qubit_dense_matrix_gate(
         return;
     }
 
-#ifdef _USE_SIMD
 #ifdef _OPENMP
 	OMPutil omputil = get_omputil();
 	omputil->set_qulacs_num_threads(dim, 13);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    multi_qubit_control_single_qubit_dense_matrix_gate_single_simd(
-    //        control_qubit_index_list, control_value_list,
-    //        control_qubit_index_count, target_qubit_index, matrix, state, dim);
-    //} else {
-        multi_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
-            control_qubit_index_list, control_value_list,
-            control_qubit_index_count, target_qubit_index, matrix, state, dim);
-    //}
+#endif
+
+#ifdef _USE_SIMD
+#ifdef _OPENMP
+    multi_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
+        control_qubit_index_list, control_value_list,
+        control_qubit_index_count, target_qubit_index, matrix, state, dim);
 #else
     multi_qubit_control_single_qubit_dense_matrix_gate_single_simd(
         control_qubit_index_list, control_value_list, control_qubit_index_count,
@@ -103,23 +100,16 @@ void multi_qubit_control_single_qubit_dense_matrix_gate(
 #endif
 #else
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    multi_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
-    //        control_qubit_index_list, control_value_list,
-    //        control_qubit_index_count, target_qubit_index, matrix, state, dim);
-    //} else {
-        multi_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
-            control_qubit_index_list, control_value_list,
-            control_qubit_index_count, target_qubit_index, matrix, state, dim);
-    //}
+    multi_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
+        control_qubit_index_list, control_value_list,
+        control_qubit_index_count, target_qubit_index, matrix, state, dim);
 #else
     multi_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
         control_qubit_index_list, control_value_list, control_qubit_index_count,
         target_qubit_index, matrix, state, dim);
 #endif
 #endif
+
 #ifdef _OPENMP
 	omputil->reset_qulacs_num_threads();
 #endif

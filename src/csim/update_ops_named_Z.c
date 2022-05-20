@@ -11,43 +11,21 @@
 #endif
 #endif
 
-// void Z_gate_old_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_old_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-
 void Z_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-    // Z_gate_old_single(target_qubit_index, state, dim);
-    // Z_gate_old_parallel(target_qubit_index, state, dim);
-    // Z_gate_single(target_qubit_index, state, dim);
-    // Z_gate_single_simd(target_qubit_index, state, dim);
-    // Z_gate_single_unroll(target_qubit_index, state, dim);
-    // Z_gate_parallel(target_qubit_index, state, dim);
-    // return;
-
 #ifdef _OPENMP
-    UINT threshold = 13;
 	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, threshold);
+	omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    //if (dim < (((ITYPE)1) << threshold)) {
-        Z_gate_single_simd(target_qubit_index, state, dim);
-    //} else {
-    //    Z_gate_parallel_simd(target_qubit_index, state, dim);
-    //}
+    Z_gate_single_simd(target_qubit_index, state, dim);
 #else
     Z_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
-    //if (dim < (((ITYPE)1) << threshold)) {
-        Z_gate_single_unroll(target_qubit_index, state, dim);
-    //} else {
-    //    Z_gate_parallel_unroll(target_qubit_index, state, dim);
-    //}
+    Z_gate_single_unroll(target_qubit_index, state, dim);
 #else
     Z_gate_single_unroll(target_qubit_index, state, dim);
 #endif

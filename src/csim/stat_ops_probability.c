@@ -15,7 +15,7 @@ double M0_prob(UINT target_qubit_index, const CTYPE* state, ITYPE dim) {
     double sum = 0.;
 #ifdef _OPENMP
 	OMPutil omputil = get_omputil(); 
-	omputil->set_qulacs_num_threads(dim, 15); 
+	omputil->set_qulacs_num_threads(loop_dim, 15); 
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -37,7 +37,7 @@ double M1_prob(UINT target_qubit_index, const CTYPE* state, ITYPE dim) {
     double sum = 0.;
 #ifdef _OPENMP
 	OMPutil omputil = get_omputil(); 
-	omputil->set_qulacs_num_threads(dim, 15); 
+	omputil->set_qulacs_num_threads(loop_dim, 15); 
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -63,7 +63,7 @@ double marginal_prob(const UINT* sorted_target_qubit_index_list,
     double sum = 0.;
 #ifdef _OPENMP
 	OMPutil omputil = get_omputil(); 
-	omputil->set_qulacs_num_threads(dim, 15); 
+	omputil->set_qulacs_num_threads(loop_dim, 15); 
 #pragma omp parallel for reduction(+ : sum)
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {

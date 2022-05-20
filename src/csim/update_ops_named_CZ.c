@@ -30,32 +30,29 @@ void CZ_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE *state,
     // state, dim); CZ_gate_parallel(control_qubit_index, target_qubit_index,
     // state, dim); return;
 
+#ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        CZ_gate_single_simd(
-            control_qubit_index, target_qubit_index, state, dim);
-    } else {
-        CZ_gate_parallel_simd(
-            control_qubit_index, target_qubit_index, state, dim);
-    }
+    CZ_gate_parallel_simd(
+        control_qubit_index, target_qubit_index, state, dim);
 #else
     CZ_gate_single_simd(control_qubit_index, target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        CZ_gate_single_unroll(
-            control_qubit_index, target_qubit_index, state, dim);
-    } else {
-        CZ_gate_parallel_unroll(
-            control_qubit_index, target_qubit_index, state, dim);
-    }
+    CZ_gate_parallel_unroll(
+        control_qubit_index, target_qubit_index, state, dim);
 #else
     CZ_gate_single_unroll(control_qubit_index, target_qubit_index, state, dim);
 #endif
+#endif
+
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
 #endif
 }
 

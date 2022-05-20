@@ -15,6 +15,7 @@ static void set_qulacs_num_threads(ITYPE dim, UINT threshold) {
 	} else {
 		omp_set_num_threads(qulacs_num_thread_max);
 	    printf("# set omp_num_thread = %d\n", qulacs_num_thread_max);
+	    printf("# omp_max_thread = %d\n", omp_get_max_threads());
 	}
 }
 

@@ -19,19 +19,16 @@
 void single_qubit_control_single_qubit_dense_matrix_gate(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE* state, ITYPE dim) {
-#ifdef _USE_SIMD
 #ifdef _OPENMP
 	OMPutil omputil = get_omputil();
 	omputil->set_qulacs_num_threads(dim, 13);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
-    //        control_qubit_index, control_value, target_qubit_index, matrix,
-    //        state, dim);
-    //} else {
-        single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
-            control_qubit_index, control_value, target_qubit_index, matrix,
-            state, dim);
-    //}
+#endif
+
+#ifdef _USE_SIMD
+#ifdef _OPENMP
+    single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
+        control_qubit_index, control_value, target_qubit_index, matrix,
+        state, dim);
 #else
     single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
         control_qubit_index, control_value, target_qubit_index, matrix, state,
@@ -39,23 +36,16 @@ void single_qubit_control_single_qubit_dense_matrix_gate(
 #endif
 #else
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
-    //if (dim < (((ITYPE)1) << threshold)) {
-    //    single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
-    //        control_qubit_index, control_value, target_qubit_index, matrix,
-    //        state, dim);
-    //} else {
-        single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
-            control_qubit_index, control_value, target_qubit_index, matrix,
-            state, dim);
-    //}
+    single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
+        control_qubit_index, control_value, target_qubit_index, matrix,
+        state, dim);
 #else
     single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
         control_qubit_index, control_value, target_qubit_index, matrix, state,
         dim);
 #endif
 #endif
+
 #ifdef _OPENMP
 	omputil->reset_qulacs_num_threads();
 #endif
@@ -470,6 +460,11 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     const int pair_rank = rank ^ pair_rank_bit;
     CTYPE* si = state;
 
+#ifdef _OPENMP
+	OMPutil omputil = get_omputil();
+	omputil->set_qulacs_num_threads(dim, 13);
+#endif
+
     if (control_qubit_index < inner_qc) {
         if (target_qubit_index < inner_qc) {  // control, target: inner, inner
 
@@ -478,11 +473,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 state, dim);
 
         } else {  // control, target: inner, outer
-
-#ifdef _OPENMP
-			OMPutil omputil = get_omputil();
-			omputil->set_qulacs_num_threads(dim, 13);
-#endif
 
             for (ITYPE iter = 0; iter < num_work; ++iter) {
                 m->m_DC_sendrecv(si, t, dim_work, pair_rank);
@@ -494,10 +484,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
 
                 si += dim_work;
             }
-
-#ifdef _OPENMP
-			omputil->reset_qulacs_num_threads();
-#endif
         }
     } else {
         if (target_qubit_index < inner_qc) {  // control, target: outer, inner
@@ -506,12 +492,6 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                 single_qubit_dense_matrix_gate(
                     target_qubit_index, matrix, state, dim);
         } else {  // control, target: outer, outer
-
-#ifdef _OPENMP
-			OMPutil omputil = get_omputil();
-			omputil->set_qulacs_num_threads(dim, 13);
-#endif
-
             ITYPE dummy_flag =
                 !(((rank & control_rank_bit) && (control_value == 1)) ||
                     (!(rank & control_rank_bit) && (control_value == 0)));
@@ -527,12 +507,12 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                     si += dim_work;
                 }
             }
-
-#ifdef _OPENMP
-			omputil->reset_qulacs_num_threads();
-#endif
         }
     }
+
+#ifdef _OPENMP
+	omputil->reset_qulacs_num_threads();
+#endif
 }
 
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
