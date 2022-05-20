@@ -898,13 +898,7 @@ DllExport void single_qubit_phase_gate_mpi(UINT target_qubit_index, CTYPE phase,
 DllExport void single_qubit_control_single_qubit_dense_matrix_gate(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim);
-void single_qubit_control_single_qubit_dense_matrix_gate_single_unroll(
-    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
-    const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 void single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
-    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
-    const CTYPE matrix[4], CTYPE *state, ITYPE dim);
-void single_qubit_control_single_qubit_dense_matrix_gate_single_simd(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim);
 void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
@@ -915,7 +909,9 @@ DllExport void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
-    UINT control_qubit_index, UINT control_value, CTYPE* t, const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag, UINT index_offset);
+    UINT control_qubit_index, UINT control_value, CTYPE* t,
+	const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag,
+	UINT index_offset);
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag);
 #endif

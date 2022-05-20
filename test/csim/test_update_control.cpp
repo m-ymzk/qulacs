@@ -64,15 +64,11 @@ void test_single_control_single_target(std::function<void(UINT,UINT,UINT,const C
 
 TEST(UpdateTest, SingleQubitControlSingleQubitDenseMatrixTest) {
 	test_single_control_single_target(single_qubit_control_single_qubit_dense_matrix_gate);
-	test_single_control_single_target(single_qubit_control_single_qubit_dense_matrix_gate_single_unroll);
 #ifdef _OPENMP
 	test_single_control_single_target(single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll);
 #endif
 #ifdef _USE_SIMD
-	test_single_control_single_target(single_qubit_control_single_qubit_dense_matrix_gate_single_simd);
-#ifdef _OPENMP
 	test_single_control_single_target(single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd);
-#endif
 #endif
 }
 
