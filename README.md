@@ -56,12 +56,14 @@
       - CPTP
       - Instrument
       - Adaptive
+      - RandomUnitary
       - to_matrix_gate
-  - Observable
-  - PauliOperator
+  - GeneralQuantumOperator (w/o get_transition_amplitude)
+  - Observable (w/o get_transition_amplitude)
+  - PauliOperator (w/o get_transition_amplitude)
 
 ## Additional info
-- To be supported after April (T.B.D.)
+- To be supported later (T.B.D.)
   - gate
       - TOFFOLI
       - FREDKIN
@@ -77,6 +79,11 @@
       - permutate_qubit
       - drop_qubit
       - partial_trace
+  - QuantumGateBase
+  - QuantumGateMatrix
+  - GeneralQuantumOperator.get_transition_amplitude( )
+  - Observable.get_transition_amplitude( )
+  - PauliOperator.get_transition_amplitude( )
 
 - Might be supported in future (T.B.D.)
   - gate
@@ -84,7 +91,6 @@
       - DenseMatrix(single control, multi target)
       - DenseMatrix(multi control, multi target)
       - SparseMatrix
-      - RandomUnitary
       - ReversibleBoolean
       - StateReflection
       - BitFlipNoise
@@ -99,9 +105,6 @@
       - CP
       - merge(> 2qubit)
   - DensityMatrix (simulation)
-  - GeneralQuantumOperator
-  - QuantumGateBase
-  - QuantumGateMatrix
   - QuantumGate_SingleParameter
 
 - API which has different functionality from the original
