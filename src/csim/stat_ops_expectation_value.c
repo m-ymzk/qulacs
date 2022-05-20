@@ -47,8 +47,8 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
         ITYPE inner_mask = dim - 1;
         ITYPE i, j;
 #ifdef _OPENMP
-		OMPutil omputil = get_omputil();
-		omputil->set_qulacs_num_threads(dim_work, 15);
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(dim_work, 15);
 #endif
 
         state_index = 0;
@@ -176,13 +176,13 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
             }
         }
 #ifdef _OPENMP
-		omputil->reset_qulacs_num_threads();
+        omputil->reset_qulacs_num_threads();
 #endif
     } else {
         const ITYPE loop_dim = dim / 2;
 #ifdef _OPENMP
-		OMPutil omputil = get_omputil();
-		omputil->set_qulacs_num_threads(loop_dim, 15);
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(loop_dim, 15);
 #endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -289,7 +289,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
             }
         }
 #ifdef _OPENMP
-		omputil->reset_qulacs_num_threads();
+        omputil->reset_qulacs_num_threads();
 #endif
     }
 
@@ -303,8 +303,8 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
     ITYPE state_index;
     double sum = 0.;
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(loop_dim, 15);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(loop_dim, 15);
 #endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -374,7 +374,7 @@ double expectation_value_multi_qubit_Pauli_operator_Z_mask(
     }
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
     return sum;
 }

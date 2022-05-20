@@ -19,13 +19,15 @@
 void single_qubit_phase_gate(
     UINT target_qubit_index, CTYPE phase, CTYPE *state, ITYPE dim) {
     // single_qubit_phase_gate_single(target_qubit_index, phase, state, dim);
-	// single_qubit_phase_gate_single_unroll(target_qubit_index, phase, state, dim);
-    // single_qubit_phase_gate_single_simd(target_qubit_index, phase, state, dim);
-	// single_qubit_phase_gate_parallel_simd(target_qubit_index, phase, state, dim);
+    // single_qubit_phase_gate_single_unroll(target_qubit_index, phase, state,
+    // dim);
+    // single_qubit_phase_gate_single_simd(target_qubit_index, phase, state,
+    // dim); single_qubit_phase_gate_parallel_simd(target_qubit_index, phase,
+    // state, dim);
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 12);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 12);
 #endif
 
 #ifdef _USE_SIMD
@@ -46,7 +48,7 @@ void single_qubit_phase_gate(
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

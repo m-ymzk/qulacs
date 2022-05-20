@@ -23,8 +23,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_XZ_mask(
     const ITYPE pivot_mask = 1ULL << pivot_qubit_index;
     ITYPE state_index;
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(loop_dim, 15);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(loop_dim, 15);
 #endif
 
 #ifndef _MSC_VER
@@ -70,7 +70,7 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_XZ_mask(
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
     return sum;
 }
@@ -81,8 +81,8 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
     const ITYPE loop_dim = dim;
     ITYPE state_index;
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(loop_dim, 15);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(loop_dim, 15);
 #endif
 
 #ifndef _MSC_VER
@@ -116,7 +116,7 @@ CTYPE transition_amplitude_multi_qubit_Pauli_operator_Z_mask(
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
     return sum;
 }

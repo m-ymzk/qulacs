@@ -19,22 +19,22 @@
 void single_qubit_diagonal_matrix_gate(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 12);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 12);
 #endif
 
 #ifdef _USE_SIMD
 #ifdef _OPENMP
     single_qubit_diagonal_matrix_gate_parallel_simd(
         target_qubit_index, diagonal_matrix, state, dim);
-#else  // #ifdef _OPENMP
+#else                                                  // #ifdef _OPENMP
     single_qubit_diagonal_matrix_gate_single_simd(
         target_qubit_index, diagonal_matrix, state, dim);
-#endif  // #ifdef _OPENMP
+#endif                                                 // #ifdef _OPENMP
 #elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)  // #ifdef _USE_SIMD
     single_qubit_diagonal_matrix_gate_sve(
         target_qubit_index, diagonal_matrix, state, dim);
-#else  // #ifdef _USE_SIMD
+#else                                                  // #ifdef _USE_SIMD
 #ifdef _OPENMP
     single_qubit_diagonal_matrix_gate_parallel_unroll(
         target_qubit_index, diagonal_matrix, state, dim);
@@ -45,7 +45,7 @@ void single_qubit_diagonal_matrix_gate(UINT target_qubit_index,
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -323,8 +323,8 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
             target_qubit_index, diagonal_matrix, state, dim);
     } else {
 #ifdef _OPENMP
-		OMPutil omputil = get_omputil();
-		omputil->set_qulacs_num_threads(dim, 12);
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(dim, 12);
 #endif
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
@@ -333,7 +333,7 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
         _single_qubit_diagonal_matrix_gate_mpi(
             diagonal_matrix, state, dim, (rank & pair_rank_bit) != 0);
 #ifdef _OPENMP
-		omputil->reset_qulacs_num_threads();
+        omputil->reset_qulacs_num_threads();
 #endif
     }
 }

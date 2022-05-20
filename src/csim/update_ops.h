@@ -482,8 +482,8 @@ DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
  * @param[in,out] state 量子状態
  * @param[in] dim 次元
  */
-DllExport void FusedSWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
-    UINT num_qubits, CTYPE *state, ITYPE dim);
+DllExport void FusedSWAP_gate(UINT target_qubit_index_0,
+    UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void FusedSWAP_gate_mpi(UINT target_qubit_index_0,
     UINT target_qubit_index_1, UINT num_qubits, CTYPE *state, ITYPE dim,
@@ -909,9 +909,9 @@ DllExport void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim, UINT inner_qc);
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OI(
-    UINT control_qubit_index, UINT control_value, CTYPE* t,
-	const CTYPE matrix[4], CTYPE* state, ITYPE dim, int flag,
-	UINT index_offset);
+    UINT control_qubit_index, UINT control_value, CTYPE *t,
+    const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag,
+    UINT index_offset);
 void single_qubit_control_single_qubit_dense_matrix_gate_mpi_OO(
     CTYPE *t, const CTYPE matrix[4], CTYPE *state, ITYPE dim, int flag);
 #endif
@@ -1174,8 +1174,9 @@ void double_qubit_dense_matrix_gate_sve(UINT target_qubit_index1,
 
 #ifdef _USE_MPI
 DllExport void double_qubit_dense_matrix_gate_mpi(UINT target_qubit_index1,
-    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim, UINT inner_qc);
-#endif // #ifdef _USE_MPI
+    UINT target_qubit_index2, const CTYPE matrix[16], CTYPE *state, ITYPE dim,
+    UINT inner_qc);
+#endif  // #ifdef _USE_MPI
 
 /**
  * \~english

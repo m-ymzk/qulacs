@@ -18,8 +18,8 @@
 
 void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -43,7 +43,7 @@ void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -486,8 +486,8 @@ void H_gate_mpi(
         const int pair_rank = rank ^ pair_rank_bit;
 
 #ifdef _OPENMP
-	    OMPutil omputil = get_omputil();
-	    omputil->set_qulacs_num_threads(dim_work, 13);
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(dim_work, 13);
 #endif
 
         CTYPE *si = state;
@@ -499,7 +499,7 @@ void H_gate_mpi(
             si += dim_work;
         }
 #ifdef _OPENMP
-	    omputil->reset_qulacs_num_threads();
+        omputil->reset_qulacs_num_threads();
 #endif
     }
 }

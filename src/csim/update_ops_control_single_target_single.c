@@ -20,22 +20,22 @@ void single_qubit_control_single_qubit_dense_matrix_gate(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE* state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim / 4, 13); // =loop_dim
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim / 4, 13);  // =loop_dim
 #endif
 
 #ifdef _USE_SIMD
     single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
-        control_qubit_index, control_value, target_qubit_index, matrix,
-        state, dim);
+        control_qubit_index, control_value, target_qubit_index, matrix, state,
+        dim);
 #else
     single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
-        control_qubit_index, control_value, target_qubit_index, matrix,
-        state, dim);
+        control_qubit_index, control_value, target_qubit_index, matrix, state,
+        dim);
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -266,8 +266,8 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     CTYPE* si = state;
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
     if (control_qubit_index < inner_qc) {
@@ -316,7 +316,7 @@ void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     }
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

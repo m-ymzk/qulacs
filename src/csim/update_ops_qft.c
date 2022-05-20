@@ -30,8 +30,8 @@ void CUz_gate(double angle, UINT c_bit, UINT t_bit, CTYPE *psi, ITYPE dim) {
     }
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for private(head, body, tail, basis00, basis11)
 #endif
     for (j = 0; j < dim / 4; ++j) {
@@ -46,7 +46,7 @@ void CUz_gate(double angle, UINT c_bit, UINT t_bit, CTYPE *psi, ITYPE dim) {
             cos(angle) * psi[basis11] + sin(angle) * 1.0i * psi[basis11];
     }
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

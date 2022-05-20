@@ -17,10 +17,10 @@
 
 void P0_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
     P0_gate_parallel(target_qubit_index, state, dim);
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #else
     P0_gate_single(target_qubit_index, state, dim);
 #endif
@@ -28,10 +28,10 @@ void P0_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 
 void P1_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
     P1_gate_parallel(target_qubit_index, state, dim);
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #else
     P1_gate_single(target_qubit_index, state, dim);
 #endif
@@ -116,7 +116,7 @@ void P0_gate_mpi(
                 state[iter] = 0;
             }
 #ifdef _OPENMP
-	        omputil->reset_qulacs_num_threads();
+            omputil->reset_qulacs_num_threads();
 #endif
         }  // else nothing to do.
     }

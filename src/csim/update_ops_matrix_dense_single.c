@@ -19,12 +19,12 @@
 void single_qubit_dense_matrix_gate(
     UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-// ARMV8.2-A + SVE
+    // ARMV8.2-A + SVE
     single_qubit_dense_matrix_gate_sve(target_qubit_index, matrix, state, dim);
 #else  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_SIMD
@@ -35,7 +35,7 @@ void single_qubit_dense_matrix_gate(
     single_qubit_dense_matrix_gate_single_simd(
         target_qubit_index, matrix, state, dim);
 #endif  // #ifdef _OPENMP
-#else  // #ifdef _USE_SIMD
+#else   // #ifdef _USE_SIMD
 #ifdef _OPENMP
     single_qubit_dense_matrix_gate_parallel(
         target_qubit_index, matrix, state, dim);
@@ -47,7 +47,7 @@ void single_qubit_dense_matrix_gate(
 #endif  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

@@ -46,8 +46,8 @@ void multi_qubit_Pauli_gate_XZ_mask(ITYPE bit_flip_mask, ITYPE phase_flip_mask,
     const ITYPE mask_high = ~mask_low;
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 14);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 14);
 #pragma omp parallel for
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -73,7 +73,7 @@ void multi_qubit_Pauli_gate_XZ_mask(ITYPE bit_flip_mask, ITYPE phase_flip_mask,
             cval_0 * PHASE_M90ROT[(global_phase_90rot_count + sign_1 * 2) % 4];
     }
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 void multi_qubit_Pauli_rotation_gate_XZ_mask(ITYPE bit_flip_mask,
@@ -93,8 +93,8 @@ void multi_qubit_Pauli_rotation_gate_XZ_mask(ITYPE bit_flip_mask,
     const double cosval = cos(angle / 2);
     const double sinval = sin(angle / 2);
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 14);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 14);
 #pragma omp parallel for
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -124,7 +124,7 @@ void multi_qubit_Pauli_rotation_gate_XZ_mask(ITYPE bit_flip_mask,
                 PHASE_M90ROT[(global_phase_90rot_count + bit_parity_1 * 2) % 4];
     }
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -135,8 +135,8 @@ void multi_qubit_Pauli_gate_Z_mask(
     ITYPE state_index;
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 14);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 14);
 #pragma omp parallel for
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -149,7 +149,7 @@ void multi_qubit_Pauli_gate_Z_mask(
         }
     }
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -164,8 +164,8 @@ void multi_qubit_Pauli_rotation_gate_Z_mask(
     const double sinval = sin(angle / 2);
 
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 14);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 14);
 #pragma omp parallel for
 #endif
     for (state_index = 0; state_index < loop_dim; ++state_index) {
@@ -177,7 +177,7 @@ void multi_qubit_Pauli_rotation_gate_Z_mask(
         state[state_index] *= cosval + (CTYPE)sign * 1.i * sinval;
     }
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

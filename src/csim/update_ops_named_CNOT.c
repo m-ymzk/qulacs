@@ -19,8 +19,8 @@
 void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state,
     ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #ifdef _USE_SIMD
@@ -41,7 +41,7 @@ void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state,
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -473,8 +473,8 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
-#endif // #ifdef __aarch64__
-#endif // #if defined(__ARM_FEATURE_SVE)
+#endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
 
                 state[basis_index_0] = state[basis_index_1];
                 state[basis_index_0 + 1] = state[basis_index_1 + 1];

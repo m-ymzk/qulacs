@@ -17,8 +17,8 @@
 
 void X_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
-	omputil->set_qulacs_num_threads(dim, 13);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #ifdef _USE_SIMD
@@ -36,7 +36,7 @@ void X_gate(UINT target_qubit_index, CTYPE* state, ITYPE dim) {
 #endif
 
 #ifdef _OPENMP
-	omputil->reset_qulacs_num_threads();
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

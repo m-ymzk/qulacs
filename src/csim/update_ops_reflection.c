@@ -11,7 +11,7 @@
 void reflection_gate(const CTYPE* reflection_state, CTYPE* state, ITYPE dim) {
     CTYPE coef = state_inner_product(reflection_state, state, dim);
 #ifdef _OPENMP
-	OMPutil omputil = get_omputil();
+    OMPutil omputil = get_omputil();
     omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for
 #endif
