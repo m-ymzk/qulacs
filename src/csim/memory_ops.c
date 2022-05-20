@@ -58,8 +58,6 @@ void memcpy_sve(double* Out, double* In, ITYPE Num) {
         const UINT thread_count = omp_get_max_threads();
         const ITYPE block_size = Num / thread_count;
         const ITYPE residual = Num % thread_count;
-#else
-        const UINT thread_count = 1;
 #endif
 
 #pragma omp parallel private(i)
@@ -75,7 +73,6 @@ void memcpy_sve(double* Out, double* In, ITYPE Num) {
                 (residual > (thread_id + 1) ? (thread_id + 1) : residual);
             // end_index = (end_index < 0) ? 0 : end_index;
 #else
-            UINT thread_id = 0;
             ITYPE start_index = 0;
             ITYPE end_index = Num;
 #endif
