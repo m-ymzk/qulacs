@@ -169,6 +169,10 @@
   - circuit.update_quantum_state(state, seed)
     - 乱数の種を指定して状態ベクトルの更新処理を行います
 
+  - 環境変数
+    - QULACS_NUM_THREADS : mpiQulacsで使用する最大のスレッド数を指定。
+	                       (OMP_NUM_THREADSに優先、有効な値の範囲: 1 - 1024)
+
 <hr>
 
 ## build/install

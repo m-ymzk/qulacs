@@ -170,6 +170,10 @@
   - circuit.update_quantum_state(state, seed)
     - Enables updating of the state vector with a random number of seeds
 
+  - environmental variable
+    QULACS_NUM_THREADS : Specifies the maximum number of threads to be used in mpiQulacs.
+	                     (Override OMP_NUM_THREADS; valid range is 1 - 1024)
+
 <hr>
 
 ## build/install
