@@ -149,6 +149,18 @@ static void s_D_allreduce(void *buf) {
     MPI_Allreduce(MPI_IN_PLACE, buf, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
 }
 
+static void s_D_allreduce_ordersafe(void *buf) {
+    double *recvbuf = malloc(mpisize * sizeof(double));
+    MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1,
+        MPI_CXX_DOUBLE_COMPLEX, mpicomm);
+    double* sum = buf;
+    *sum = 0.;
+    for (int idx=0; idx < mpisize; ++idx) {
+        *sum += recvbuf[idx];
+    }
+    buf = (void*) &sum;
+}
+
 /*
 static double s_D_send_next_rank(double a) {
     int tag0 = get_tag();
@@ -207,6 +219,7 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(m_I_allreduce)
     REGISTER_METHOD_POINTER(s_D_allgather)
     REGISTER_METHOD_POINTER(s_D_allreduce)
+    REGISTER_METHOD_POINTER(s_D_allreduce_ordersafe)
     REGISTER_METHOD_POINTER(s_u_bcast)
     REGISTER_METHOD_POINTER(s_D_bcast)
     // mpiutil->s_D_send_next_rank = s_D_send_next_rank; // single, Double,
