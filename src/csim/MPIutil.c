@@ -151,14 +151,13 @@ static void s_D_allreduce(void *buf) {
 
 static void s_D_allreduce_ordersafe(void *buf) {
     double *recvbuf = malloc(mpisize * sizeof(double));
-    MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1,
-        MPI_CXX_DOUBLE_COMPLEX, mpicomm);
+    MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
     double* sum = buf;
     *sum = 0.;
     for (int idx=0; idx < mpisize; ++idx) {
         *sum += recvbuf[idx];
     }
-    buf = (void*) &sum;
+	free(recvbuf);
 }
 
 /*
