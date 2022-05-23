@@ -82,13 +82,13 @@ TEST(UpdateTest, YGate) {
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 TEST(UpdateTest, YGateSVE) {
-  Eigen::MatrixXcd mat(2, 2);
-  mat << 0, -1.i, 1.i, 0;
-  test_single_qubit_named_gate(1, "YGate", Y_gate_single_sve, mat);
-  test_single_qubit_named_gate(6, "YGate", Y_gate_single_sve, mat);
+    Eigen::MatrixXcd mat(2, 2);
+    mat << 0, -1.i, 1.i, 0;
+    test_single_qubit_named_gate(1, "YGate", Y_gate_single_sve, mat);
+    test_single_qubit_named_gate(6, "YGate", Y_gate_single_sve, mat);
 #ifdef _OPENMP
-  test_single_qubit_named_gate(1, "YGate", Y_gate_parallel_sve, mat);
-  test_single_qubit_named_gate(6, "YGate", Y_gate_parallel_sve, mat);
+    test_single_qubit_named_gate(1, "YGate", Y_gate_parallel_sve, mat);
+    test_single_qubit_named_gate(6, "YGate", Y_gate_parallel_sve, mat);
 #endif
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
@@ -344,8 +344,8 @@ TEST(UpdateTest, SWAPGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(
         n, "SWAP", SWAP_gate, get_eigen_matrix_full_qubit_SWAP);
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_single_unroll,
-        get_eigen_matrix_full_qubit_SWAP);
+    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
+        get_eigen_matrix_full_qubit_SWAP);  // change from single
 #ifdef _OPENMP
     test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
         get_eigen_matrix_full_qubit_SWAP);

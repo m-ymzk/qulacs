@@ -41,9 +41,8 @@ void double_qubit_dense_matrix_gate_sve_low(UINT target_qubit_index1,
 void double_qubit_dense_matrix_gate_c(UINT target_qubit_index1,
     UINT target_qubit_index2, const CTYPE matrix[16], CTYPE* state, ITYPE dim) {
 #ifdef _OPENMP
-    UINT threshold = 13;
-    UINT default_thread_count = omp_get_max_threads();
-    if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
 #ifdef _USE_SIMD
@@ -58,7 +57,7 @@ void double_qubit_dense_matrix_gate_c(UINT target_qubit_index1,
 #endif
 
 #ifdef _OPENMP
-    omp_set_num_threads(default_thread_count);
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

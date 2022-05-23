@@ -3,6 +3,13 @@
 #include "constant.h"
 #include "type.h"
 
+#ifdef _OPENMP
+#include "utility_omp.h"
+#endif
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
+
 /**
  * Insert 0 to qubit_index-th bit of basis_index. basis_mask must be 1ULL <<
  * qubit_index.

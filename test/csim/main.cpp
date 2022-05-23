@@ -1,5 +1,5 @@
-#include <mpi.h>
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 GTEST_API_ int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

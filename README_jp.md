@@ -51,16 +51,18 @@
       - DenseMatrix(single control, single target)
       - DiagonalMatrix(single target)
       - Measurement
-      - merge(qubits <= 2)
+      - merge(#qubits <= 2)
       - CPTP
       - Instrument
       - Adaptive
+      - RandomUnitary
       - to_matrix_gate
-  - Observable
-  - PauliOperator
+  - GeneralQuantumOperator (get_transition_amplitudeを除く)
+  - Observable (get_transition_amplitudeを除く)
+  - PauliOperator (get_transition_amplitudeを除く)
 
 ## 注意事項
-- 4月以降の版で順次対応予定の関数・機能
+- 今後の版で順次対応予定の関数・機能
   - gate
       - TOFFOLI
       - FREDKIN
@@ -76,6 +78,11 @@
       - permutate_qubit
       - drop_qubit
       - partial_trace
+  - QuantumGateBase
+  - QuantumGateMatrix
+  - GeneralQuantumOperator.get_transition_amplitude( )
+  - Observable.get_transition_amplitude( )
+  - PauliOperator.get_transition_amplitude( )
 
 - 対応予定が未定な関数・機能
   - gate
@@ -83,7 +90,6 @@
       - DenseMatrix(single control, multi target)
       - DenseMatrix(multi control, multi target)
       - SparseMatrix
-      - RandomUnitary
       - ReversibleBoolean
       - StateReflection
       - BitFlipNoise
@@ -97,9 +103,6 @@
       - ProbabilisticInstrument
       - CP
   - DensityMatrix (simulation)
-  - GeneralQuantumOperator
-  - QuantumGateBase
-  - QuantumGateMatrix
   - QuantumGate_SingleParameter
 
 - オリジナルqulacsとの機能に差があるAPI
@@ -165,6 +168,10 @@
 
   - circuit.update_quantum_state(state, seed)
     - 乱数の種を指定して状態ベクトルの更新処理を行います
+
+  - 環境変数
+    - QULACS_NUM_THREADS : mpiQulacsで使用する最大のスレッド数を指定。
+	                       (OMP_NUM_THREADSに優先、有効な値の範囲: 1 - 1024)
 
 <hr>
 

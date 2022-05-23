@@ -2,13 +2,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -18,42 +11,28 @@
 #endif
 #endif
 
-// void Z_gate_old_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_old_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_single(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-// void Z_gate_parallel(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-
 void Z_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
-    // Z_gate_old_single(target_qubit_index, state, dim);
-    // Z_gate_old_parallel(target_qubit_index, state, dim);
-    // Z_gate_single(target_qubit_index, state, dim);
-    // Z_gate_single_simd(target_qubit_index, state, dim);
-    // Z_gate_single_unroll(target_qubit_index, state, dim);
-    // Z_gate_parallel(target_qubit_index, state, dim);
-    // return;
+#ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
+#endif
 
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        Z_gate_single_simd(target_qubit_index, state, dim);
-    } else {
-        Z_gate_parallel_simd(target_qubit_index, state, dim);
-    }
+    Z_gate_single_simd(target_qubit_index, state, dim);
 #else
     Z_gate_single_simd(target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        Z_gate_single_unroll(target_qubit_index, state, dim);
-    } else {
-        Z_gate_parallel_unroll(target_qubit_index, state, dim);
-    }
+    Z_gate_single_unroll(target_qubit_index, state, dim);
 #else
     Z_gate_single_unroll(target_qubit_index, state, dim);
 #endif
+#endif
+
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 

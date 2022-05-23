@@ -6,13 +6,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -24,12 +17,10 @@
 
 void P0_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        P0_gate_single(target_qubit_index, state, dim);
-    } else {
-        P0_gate_parallel(target_qubit_index, state, dim);
-    }
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
+    P0_gate_parallel(target_qubit_index, state, dim);
+    omputil->reset_qulacs_num_threads();
 #else
     P0_gate_single(target_qubit_index, state, dim);
 #endif
@@ -37,12 +28,10 @@ void P0_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 
 void P1_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        P1_gate_single(target_qubit_index, state, dim);
-    } else {
-        P1_gate_parallel(target_qubit_index, state, dim);
-    }
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
+    P1_gate_parallel(target_qubit_index, state, dim);
+    omputil->reset_qulacs_num_threads();
 #else
     P1_gate_single(target_qubit_index, state, dim);
 #endif
@@ -117,18 +106,18 @@ void P0_gate_mpi(
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
-        const UINT threshold = 13;
         if ((rank & pair_rank_bit) != 0) {
-            if (dim < (((ITYPE)1) << threshold)) {
-                for (ITYPE iter = 0; iter < dim; ++iter) {
-                    state[iter] = 0;
-                }
-            } else {
+#ifdef _OPENMP
+            OMPutil omputil = get_omputil();
+            omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for
-                for (ITYPE iter = 0; iter < dim; ++iter) {
-                    state[iter] = 0;
-                }
+#endif
+            for (ITYPE iter = 0; iter < dim; ++iter) {
+                state[iter] = 0;
             }
+#ifdef _OPENMP
+            omputil->reset_qulacs_num_threads();
+#endif
         }  // else nothing to do.
     }
 }
@@ -141,18 +130,18 @@ void P1_gate_mpi(
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
-        const UINT threshold = 13;
         if ((rank & pair_rank_bit) == 0) {
-            if (dim < (((ITYPE)1) << threshold)) {
-                for (ITYPE iter = 0; iter < dim; ++iter) {
-                    state[iter] = 0;
-                }
-            } else {
+#ifdef _OPENMP
+            OMPutil omputil = get_omputil();
+            omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for
-                for (ITYPE iter = 0; iter < dim; ++iter) {
-                    state[iter] = 0;
-                }
+#endif
+            for (ITYPE iter = 0; iter < dim; ++iter) {
+                state[iter] = 0;
             }
+#ifdef _OPENMP
+            omputil->reset_qulacs_num_threads();
+#endif
         }  // else nothing to do.
     }
 }
