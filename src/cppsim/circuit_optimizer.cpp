@@ -690,10 +690,10 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     return;
 #endif
 
-    if (outer_qc == 0 || inner_qc == 0) {
+    if (outer_qc == 0 || inner_qc <= 1) {
         std::cerr
             << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
-               ": insert_swap is no effect when MPI size = 1 or 2^inner_qc"
+               ": insert_swap is no effect when MPI size = 1 or inner_qc <= 1"
             << std::endl;
         return;
     }
