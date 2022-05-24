@@ -25,7 +25,6 @@ void create_shift_mask_list_from_list_buf(
 void multi_qubit_dense_matrix_gate(const UINT* target_qubit_index_list,
     UINT target_qubit_index_count, const CTYPE* matrix, CTYPE* state,
     ITYPE dim) {
-
     if (target_qubit_index_count == 1) {
         single_qubit_dense_matrix_gate(
             target_qubit_index_list[0], matrix, state, dim);
@@ -33,16 +32,12 @@ void multi_qubit_dense_matrix_gate(const UINT* target_qubit_index_list,
         double_qubit_dense_matrix_gate_c(target_qubit_index_list[0],
             target_qubit_index_list[1], matrix, state, dim);
     } else {
-
 #ifdef _OPENMP
-        UINT threshold = 10;
-        if (dim < (((ITYPE)1) << threshold)) {
-            multi_qubit_dense_matrix_gate_single(target_qubit_index_list,
-                target_qubit_index_count, matrix, state, dim);
-        } else {
-            multi_qubit_dense_matrix_gate_parallel(target_qubit_index_list,
-                target_qubit_index_count, matrix, state, dim);
-        }
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(dim, 10);
+        multi_qubit_dense_matrix_gate_parallel(target_qubit_index_list,
+            target_qubit_index_count, matrix, state, dim);
+        omputil->reset_qulacs_num_threads();
 #else
         multi_qubit_dense_matrix_gate_single(target_qubit_index_list,
             target_qubit_index_count, matrix, state, dim);
@@ -175,21 +170,20 @@ void multi_qubit_dense_matrix_gate_mpi(const UINT* target_qubit_index_list,
     for (UINT i = 0; i < target_qubit_index_count; ++i)
         if (target_qubit_index_list[i] >= inner_qc) all_inner = 0;
 
-    if (all_inner){
+    if (all_inner) {
         multi_qubit_dense_matrix_gate(target_qubit_index_list,
             target_qubit_index_count, matrix, state, dim);
-    }else{
-
+    } else {
         if (target_qubit_index_count == 1) {
             single_qubit_dense_matrix_gate_mpi(
                 target_qubit_index_list[0], matrix, state, dim, inner_qc);
         } else if (target_qubit_index_count == 2) {
             double_qubit_dense_matrix_gate_mpi(target_qubit_index_list[0],
                 target_qubit_index_list[1], matrix, state, dim, inner_qc);
-        } else { // targets > 2
-            fprintf( stderr, 
-                   "#ERROR: not implemented multi_qubit_dense_matrix_gate "
-                    "for more than two outer qubits.\n");
+        } else {  // targets > 2
+            fprintf(stderr,
+                "#ERROR: not implemented multi_qubit_dense_matrix_gate "
+                "for more than two outer qubits.\n");
         }
     }
 }

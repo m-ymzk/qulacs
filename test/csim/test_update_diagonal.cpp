@@ -81,10 +81,8 @@ TEST(UpdateTest, SingleDiagonalMatrixTest) {
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 TEST(UpdateTest, SingleDiagonalMatrixTestSVE) {
-    test_single_diagonal_matrix_gate(
-        single_qubit_diagonal_matrix_gate_sve, 1);
-    test_single_diagonal_matrix_gate(
-        single_qubit_diagonal_matrix_gate_sve, 6);
+    test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_sve, 1);
+    test_single_diagonal_matrix_gate(single_qubit_diagonal_matrix_gate_sve, 6);
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 

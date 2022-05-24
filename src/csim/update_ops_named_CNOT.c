@@ -7,13 +7,6 @@
 #include "memory_ops.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -25,33 +18,30 @@
 
 void CNOT_gate(UINT control_qubit_index, UINT target_qubit_index, CTYPE* state,
     ITYPE dim) {
+#ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        CNOT_gate_single_simd(
-            control_qubit_index, target_qubit_index, state, dim);
-    } else {
-        CNOT_gate_parallel_simd(
-            control_qubit_index, target_qubit_index, state, dim);
-    }
+    CNOT_gate_parallel_simd(
+        control_qubit_index, target_qubit_index, state, dim);
 #else
     CNOT_gate_single_simd(control_qubit_index, target_qubit_index, state, dim);
 #endif
 #else
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        CNOT_gate_single_unroll(
-            control_qubit_index, target_qubit_index, state, dim);
-    } else {
-        CNOT_gate_parallel_unroll(
-            control_qubit_index, target_qubit_index, state, dim);
-    }
+    CNOT_gate_parallel_unroll(
+        control_qubit_index, target_qubit_index, state, dim);
 #else
     CNOT_gate_single_unroll(
         control_qubit_index, target_qubit_index, state, dim);
 #endif
+#endif
+
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -483,8 +473,8 @@ void CNOT_gate_parallel_unroll(UINT control_qubit_index,
                 __builtin_prefetch(&state[basis_index_l2pf0 + 1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
                 __builtin_prefetch(&state[basis_index_l2pf1 + 1], 1, 2);
-#endif // #ifdef __aarch64__
-#endif // #if defined(__ARM_FEATURE_SVE)
+#endif  // #ifdef __aarch64__
+#endif  // #if defined(__ARM_FEATURE_SVE)
 
                 state[basis_index_0] = state[basis_index_1];
                 state[basis_index_0 + 1] = state[basis_index_1 + 1];

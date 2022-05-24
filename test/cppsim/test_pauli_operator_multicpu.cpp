@@ -7,7 +7,6 @@
 #include <cppsim/circuit.hpp>
 #include <cppsim/pauli_operator.hpp>
 
-/* // pauli.get_expectation_value is not support yet
 TEST(PauliOperatorTest_multicpu,BasicTest) {
 	int n = 10;
 	double coef = 2.0;
@@ -30,4 +29,3 @@ TEST(PauliOperatorTest_multicpu, PauliQubitOverflow) {
 	CPPCTYPE value = pauli.get_expectation_value(&state);
 	ASSERT_NE(value, value); // (value != value is true) if and only if value is NaN.
 }
-*/

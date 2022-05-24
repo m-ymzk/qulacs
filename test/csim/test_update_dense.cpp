@@ -65,7 +65,6 @@ TEST(UpdateTest, SingleDenseMatrixTestScalar) {
     test_single_dense_matrix_gate(
         single_qubit_dense_matrix_gate_parallel_unroll, 6);
 #endif
-
 }
 
 #ifdef _USE_SIMD

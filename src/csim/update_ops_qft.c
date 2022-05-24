@@ -5,9 +5,7 @@
 
 #include "constant.h"
 #include "update_ops.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "utility.h"
 
 void CUz_gate(double angle, UINT c_bit, UINT t_bit, CTYPE *psi, ITYPE dim) {
     // ITYPE i;
@@ -32,6 +30,8 @@ void CUz_gate(double angle, UINT c_bit, UINT t_bit, CTYPE *psi, ITYPE dim) {
     }
 
 #ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #pragma omp parallel for private(head, body, tail, basis00, basis11)
 #endif
     for (j = 0; j < dim / 4; ++j) {
@@ -45,6 +45,9 @@ void CUz_gate(double angle, UINT c_bit, UINT t_bit, CTYPE *psi, ITYPE dim) {
         psi[basis11] =
             cos(angle) * psi[basis11] + sin(angle) * 1.0i * psi[basis11];
     }
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
 }
 
 // qft: apply qft from k th to k+Nbits th
