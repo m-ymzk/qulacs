@@ -7,13 +7,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -25,48 +18,34 @@
 
 void single_qubit_diagonal_matrix_gate(UINT target_qubit_index,
     const CTYPE diagonal_matrix[2], CTYPE *state, ITYPE dim) {
+#ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 12);
+#endif
+
 #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 12;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_diagonal_matrix_gate_single_simd(
-            target_qubit_index, diagonal_matrix, state, dim);
-    } else {
-        single_qubit_diagonal_matrix_gate_parallel_simd(
-            target_qubit_index, diagonal_matrix, state, dim);
-    }
+    single_qubit_diagonal_matrix_gate_parallel_simd(
+        target_qubit_index, diagonal_matrix, state, dim);
 #else                                                  // #ifdef _OPENMP
     single_qubit_diagonal_matrix_gate_single_simd(
         target_qubit_index, diagonal_matrix, state, dim);
 #endif                                                 // #ifdef _OPENMP
 #elif defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)  // #ifdef _USE_SIMD
-
-#ifdef _OPENMP
-    UINT threshold = 12;
-    UINT default_thread_count = omp_get_max_threads();
-    if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
-#endif
     single_qubit_diagonal_matrix_gate_sve(
         target_qubit_index, diagonal_matrix, state, dim);
-
+#else                                                  // #ifdef _USE_SIMD
 #ifdef _OPENMP
-    omp_set_num_threads(default_thread_count);
-#endif
-
-#else  // #ifdef _USE_SIMD
-#ifdef _OPENMP
-    UINT threshold = 12;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_diagonal_matrix_gate_single_unroll(
-            target_qubit_index, diagonal_matrix, state, dim);
-    } else {
-        single_qubit_diagonal_matrix_gate_parallel_unroll(
-            target_qubit_index, diagonal_matrix, state, dim);
-    }
+    single_qubit_diagonal_matrix_gate_parallel_unroll(
+        target_qubit_index, diagonal_matrix, state, dim);
 #else
     single_qubit_diagonal_matrix_gate_single_unroll(
         target_qubit_index, diagonal_matrix, state, dim);
 #endif
+#endif
+
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
 #endif
 }
 
@@ -344,11 +323,9 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
             target_qubit_index, diagonal_matrix, state, dim);
     } else {
 #ifdef _OPENMP
-        UINT threshold = 12;
-        UINT default_thread_count = omp_get_max_threads();
-        if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
+        OMPutil omputil = get_omputil();
+        omputil->set_qulacs_num_threads(dim, 12);
 #endif
-
         const MPIutil m = get_mpiutil();
         const int rank = m->get_rank();
         const int pair_rank_bit = 1 << (target_qubit_index - inner_qc);
@@ -356,7 +333,7 @@ void single_qubit_diagonal_matrix_gate_mpi(UINT target_qubit_index,
         _single_qubit_diagonal_matrix_gate_mpi(
             diagonal_matrix, state, dim, (rank & pair_rank_bit) != 0);
 #ifdef _OPENMP
-        omp_set_num_threads(default_thread_count);
+        omputil->reset_qulacs_num_threads();
 #endif
     }
 }

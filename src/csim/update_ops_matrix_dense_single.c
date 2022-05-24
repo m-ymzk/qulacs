@@ -7,13 +7,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_MPI
-#include "MPIutil.h"
-#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -25,52 +18,37 @@
 
 void single_qubit_dense_matrix_gate(
     UINT target_qubit_index, const CTYPE matrix[4], CTYPE *state, ITYPE dim) {
-#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-// ARMV8.2-A + SVE
 #ifdef _OPENMP
-    UINT threshold = 13;
-    UINT default_thread_count = omp_get_max_threads();
-    if (dim < (((ITYPE)1) << threshold)) omp_set_num_threads(1);
-#endif
-    single_qubit_dense_matrix_gate_sve(target_qubit_index, matrix, state, dim);
-#ifdef _OPENMP
-    omp_set_num_threads(default_thread_count);
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
 #endif
 
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+    // ARMV8.2-A + SVE
+    single_qubit_dense_matrix_gate_sve(target_qubit_index, matrix, state, dim);
 #else  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_SIMD
-
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_dense_matrix_gate_single_simd(
-            target_qubit_index, matrix, state, dim);
-    } else {
-        single_qubit_dense_matrix_gate_parallel_simd(
-            target_qubit_index, matrix, state, dim);
-    }
+    single_qubit_dense_matrix_gate_parallel_simd(
+        target_qubit_index, matrix, state, dim);
 #else   // #ifdef _USE_SIMD
     single_qubit_dense_matrix_gate_single_simd(
         target_qubit_index, matrix, state, dim);
 #endif  // #ifdef _OPENMP
-
-#else  // #ifdef _USE_SIMD
-
+#else   // #ifdef _USE_SIMD
 #ifdef _OPENMP
-    UINT threshold = 13;
-    if (dim < (((ITYPE)1) << threshold)) {
-        single_qubit_dense_matrix_gate_single(
-            target_qubit_index, matrix, state, dim);
-    } else {
-        single_qubit_dense_matrix_gate_parallel(
-            target_qubit_index, matrix, state, dim);
-    }
+    single_qubit_dense_matrix_gate_parallel(
+        target_qubit_index, matrix, state, dim);
 #else   // #ifdef _OEPNMP
     single_qubit_dense_matrix_gate_single(
         target_qubit_index, matrix, state, dim);
 #endif  // #ifdef _OPENMP
 #endif  // #ifdef _USE_SIMD
 #endif  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
 }
 
 void single_qubit_dense_matrix_gate_single(

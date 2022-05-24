@@ -60,7 +60,9 @@ private:
     void add_swaps_to_reorder_at(QubitTable& qt, const UINT i, const UINT v);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, QubitTable& qt);
     void add_swap_gate(UINT idx0, UINT idx1, UINT width, QubitTable& qt, UINT gate_pos);
-public:
+    UINT gather_current_local_gates(UINT gate_idx, QubitTable &qt, std::multimap<const QuantumGateBase*, const QuantumGateBase*> &dep_map);
+
+ public:
     /**
      * \~japanese-en コンストラクタ
      */

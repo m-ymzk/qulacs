@@ -8,20 +8,21 @@
 #include "constant.h"
 #include "utility.h"
 
-#ifdef _USE_MPI
-#include "csim/MPIutil.h"
-#endif
-
 // calculate norm
 double state_norm_squared(const CTYPE* state, ITYPE dim) {
     ITYPE index;
     double norm = 0;
 #ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : norm)
 #endif
     for (index = 0; index < dim; ++index) {
-        norm += pow(cabs(state[index]), 2);
+        norm += conj(state[index]) * state[index];
     }
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
     return norm;
 }
 
@@ -30,15 +31,20 @@ double state_norm_squared_mpi(const CTYPE* state, ITYPE dim) {
     ITYPE index;
     double norm = 0;
 #ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : norm)
 #endif
     for (index = 0; index < dim; ++index) {
-        norm += pow(cabs(state[index]), 2);
+        norm += conj(state[index]) * state[index];
     }
 
     MPIutil m = get_mpiutil();
     m->s_D_allreduce(&norm);
 
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
     return norm;
 }
 #endif  //#ifdef _USE_MPI
@@ -50,11 +56,16 @@ CTYPE state_inner_product(
     CTYPE value = 0;
     ITYPE index;
 #ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : value)
 #endif
     for (index = 0; index < dim; ++index) {
         value += conj(state_bra[index]) * state_ket[index];
     }
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
     return value;
 #else
 
@@ -62,6 +73,8 @@ CTYPE state_inner_product(
     double imag_sum = 0.;
     ITYPE index;
 #ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 15);
 #pragma omp parallel for reduction(+ : real_sum, imag_sum)
 #endif
     for (index = 0; index < dim; ++index) {
@@ -70,6 +83,9 @@ CTYPE state_inner_product(
         real_sum += creal(value);
         imag_sum += cimag(value);
     }
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
     return real_sum + 1.i * imag_sum;
 #endif
 }
