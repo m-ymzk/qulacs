@@ -40,7 +40,7 @@ def build_circuit(nqubits=20, global_nqubits=2, depth=10, verbose=False, random_
         for w in range(nqubits//2):
             physical_qubits = [int(perm[2 * w]), int(perm[2 * w + 1])]
             if physical_qubits[0] < local_nqubits and physical_qubits[1] < local_nqubits:
-                if verbose > 1 and mpirank == 0: print("#1: circuit.add_random_unitary_gate(",physical_qubits,")")
+                if verbose: print("#1: circuit.add_random_unitary_gate(",physical_qubits,")")
                 circuit.add_random_unitary_gate(physical_qubits)
                 done_ug[physical_qubits[0]] = 1
                 done_ug[physical_qubits[1]] = 1
@@ -56,25 +56,25 @@ def build_circuit(nqubits=20, global_nqubits=2, depth=10, verbose=False, random_
                         p = work_qubit + s
                         q = work_qubit - t - 1
                         local_swap(p, q, done_ug, qubit_table)
-                        if verbose > 1 and mpirank == 0: print("#2: circuit.add_SWAP_gate(", p, ", ", q, ")")
+                        if verbose: print("#2: circuit.add_SWAP_gate(", p, ", ", q, ")")
                         circuit.add_SWAP_gate(p, q)
                         break
 
-        if verbose > 1 and mpirank == 0: print("#3 block_swap(", work_qubit,", ", local_nqubits,", ", global_nqubits, ")")
+        if verbose: print("#3 block_swap(", work_qubit,", ", local_nqubits,", ", global_nqubits, ")")
         if global_nqubits > 0:
             block_swap(work_qubit, local_nqubits, global_nqubits, done_ug, qubit_table)
             circuit.add_FusedSWAP_gate(work_qubit, local_nqubits, global_nqubits)
-        if verbose > 1 and mpirank == 0: print("#: qubit_table=", qubit_table)
+        if verbose: print("#: qubit_table=", qubit_table)
 
         # add random_unitary_gate for qubits that were originally outside.
         for pair in pend_pair:
             unitary_pair = [qubit_table.index(pair[0]), qubit_table.index(pair[1])]
-            if verbose > 1 and mpirank == 0: print("#4: circuit.add_random_unitary_gate(", unitary_pair, ")")
+            if verbose: print("#4: circuit.add_random_unitary_gate(", unitary_pair, ")")
             circuit.add_random_unitary_gate(unitary_pair)
             done_ug[unitary_pair[0]] = 1
             done_ug[unitary_pair[1]] = 1
 
-    if verbose > 0 and mpirank == 0: print("rank=", mpirank, ", circuit=",circuit)
+    if verbose: print("circuit=",circuit)
 
     return circuit
 
