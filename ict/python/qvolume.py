@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
+from circuits import get_circuit
 import time
 from mpi4py import MPI
 mpicomm = MPI.COMM_WORLD
@@ -18,88 +19,10 @@ def get_option():
             default=10, help='Number of Depth')
     argparser.add_argument('-r', '--repeats', type=int,
             default=5, help='Repeat times to measure')
-    argparser.add_argument('-v', '--verbose', type=int,
-            default=0, help='Define Output level. 0: time only, 1: Circuit info and time, 2: All Gates')
+    argparser.add_argument('-v', '--verbose',
+            action='store_true',
+            help='Verbose switch, Output circuit infomations')
     return argparser.parse_args()
-
-def simple_swap(p, q, array):
-    tmp = array[p]
-    array[p] = array[q]
-    array[q] = tmp
-
-def local_swap(p, q, done_ug, qubit_table):
-    simple_swap(p, q, done_ug)
-    simple_swap(p, q, qubit_table)
-    #simple_swap(p, q, master_table)
-
-def block_swap(p, q, bs, done_ug, qubit_table):
-    for t in range(bs):
-        simple_swap(p + t, q + t, qubit_table)
-        #simple_swap(p + t, q + t, master_table)
-
-def phys_idx(idx, qubit_table):
-    while(1):
-        a = qubit_table[idx]
-        if a < local_qc:
-            return a
-
-def build_circuit(args):
-    depth = args.depth
-    vb = args.verbose
-    nqubits = args.nqubits
-    global_qc = int(np.log2(mpisize))
-    local_qc = nqubits - global_qc
-    perm_0 = list(range(nqubits))
-
-    circuit = QuantumCircuit(nqubits)
-
-    for d in range(depth):
-        qubit_table = list(range(nqubits))
-        perm = rng.permutation(perm_0)
-        pend_pair=[]
-        done_ug = [0]*nqubits
-
-        # add random_unitary_gate for local_qcs, first
-        for w in range(nqubits//2):
-            physical_qubits = [int(perm[2 * w]), int(perm[2 * w + 1])]
-            if physical_qubits[0] < local_qc and physical_qubits[1] < local_qc:
-                if vb > 1 and mpirank == 0: print("#1: circuit.add_random_unitary_gate(",physical_qubits,")")
-                circuit.add_random_unitary_gate(physical_qubits)
-                done_ug[physical_qubits[0]] = 1
-                done_ug[physical_qubits[1]] = 1
-            else:
-                pend_pair.append(physical_qubits)
-
-        # add SWAP gate for FusedSWAP
-        work_qubit = local_qc - global_qc
-        for s in range(global_qc):
-            if done_ug[work_qubit + s] == 0:
-                for t in range(work_qubit):
-                    if done_ug[work_qubit - t - 1] == 1:
-                        p = work_qubit + s
-                        q = work_qubit - t - 1
-                        local_swap(p, q, done_ug, qubit_table)
-                        if vb > 1 and mpirank == 0: print("#2: circuit.add_SWAP_gate(", p, ", ", q, ")")
-                        circuit.add_SWAP_gate(p, q)
-                        break
-
-        if vb > 1 and mpirank == 0: print("#3 block_swap(", work_qubit,", ", local_qc,", ", global_qc, ")")
-        if global_qc > 0:
-            block_swap(work_qubit, local_qc, global_qc, done_ug, qubit_table)
-            circuit.add_FusedSWAP_gate(work_qubit, local_qc, global_qc)
-        if vb > 1 and mpirank == 0: print("#: qubit_table=", qubit_table)
-
-        # add random_unitary_gate for qubits that were originally outside.
-        for pair in pend_pair:
-            unitary_pair = [qubit_table.index(pair[0]), qubit_table.index(pair[1])]
-            if vb > 1 and mpirank == 0: print("#4: circuit.add_random_unitary_gate(", unitary_pair, ")")
-            circuit.add_random_unitary_gate(unitary_pair)
-            done_ug[unitary_pair[0]] = 1
-            done_ug[unitary_pair[1]] = 1
-
-    if vb > 0 and mpirank == 0: print("rank=", mpirank, ", circuit=",circuit)
-
-    return circuit
 
 if __name__ == '__main__':
     args = get_option()
@@ -113,7 +36,12 @@ if __name__ == '__main__':
     st = QuantumState(n, use_multi_cpu=True)
     for i in range(repeats):
         constStart = time.perf_counter()
-        circuit = build_circuit(args)
+        circuit = get_circuit("quantumvolume",
+                nqubits=args.nqubits,
+                global_nqubits=int(np.log2(mpisize)),
+                depth=args.depth,
+                verbose=(args.verbose and (mpirank == 0)),
+                random_gen=rng)
         constTimes[i] = time.perf_counter() - constStart
 
         mpicomm.Barrier()

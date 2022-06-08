@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 #import pytest
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
-#from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix
+from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix, merge
 #from qulacs.circuit import QuantumCircuitOptimizer as QCO
 import time
 from mpi4py import MPI
@@ -30,6 +30,8 @@ def build_circuit(nqubits, tgt, depth, gate):
             circuit.add_H_gate(tgt)
         elif gate == "RU":
             circuit.add_random_unitary_gate(tgt, tgt2)
+        elif gate == "DDM":
+            circuit.add_gate(merge(X(tgt), H(tgt2)))
         elif gate == "CNOT":
             circuit.add_CNOT_gate(tgt, tgt2)
         elif gate == "SWAP":
