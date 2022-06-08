@@ -61,45 +61,60 @@ TEST(StateTest_multicpu, Sampling) {
     }
 }
 
-/*
 TEST(StateTest_multicpu, SetState) {
-        const double eps = 1e-10;
-        const UINT n = 10;
-        QuantumState state(n, 1);
-        const ITYPE dim = 1ULL << state.inner_qc;
-        std::vector<std::complex<double>> state_vector(dim);
-        for (ITYPE i = 0; i < dim; ++i) {
-                double d = (double)i;
-                state_vector[i] = d + std::complex<double>(0, 1)*(d + 0.1);
-        }
-        state.load(state_vector);
-        for (ITYPE i = 0; i < dim; ++i) {
-                ASSERT_NEAR(state.data_cpp()[i].real(), state_vector[i].real(),
-eps); ASSERT_NEAR(state.data_cpp()[i].imag(), state_vector[i].imag(), eps);
-        }
+    const double eps = 1e-10;
+    const UINT n = 10;
+    QuantumState ref(n, 0);
+    QuantumState state(n, 1);
+    const ITYPE dim = 1ULL << n;
+    const MPIutil m = get_mpiutil();
+	const UINT mpisize = m->get_size();
+	const UINT mpirank = m->get_rank();
+
+	const UINT idx_offset = dim / mpisize * mpirank;
+    std::vector<std::complex<double>> state_vector(dim);
+    std::vector<std::complex<double>> state_vector_part(dim / mpisize);
+
+    for (ITYPE i = 0; i < dim; ++i) {
+        double d = (double)i;
+        state_vector[i] = d + std::complex<double>(0, 1)*(d + 0.1);
+	}
+    for (ITYPE i = 0; i < dim / mpisize; ++i) {
+        state_vector_part[i] = state_vector[i + idx_offset];
+    }
+
+    ref.load(state_vector);
+    state.load(state_vector_part);
+    for (ITYPE i = 0; i < dim; ++i) {
+        ASSERT_NEAR(ref.data_cpp()[i].real(), state_vector[i].real(), eps);
+	   	ASSERT_NEAR(ref.data_cpp()[i].imag(), state_vector[i].imag(), eps);
+	}
+    for (ITYPE i = 0; i < dim / m->get_size(); ++i) {
+        ASSERT_NEAR(ref.data_cpp()[i + idx_offset].real(), state.data_cpp()[i].real(), eps) << i << "offset:" << idx_offset;
+	   	ASSERT_NEAR(ref.data_cpp()[i + idx_offset].imag(), state.data_cpp()[i].imag(), eps) << i << "offset:" << idx_offset;
+    }
 }
 
 TEST(StateTest_multicpu, GetMarginalProbability) {
-        const double eps = 1e-10;
-        const UINT n = 2;
-        const ITYPE dim = 1 << n;
-        QuantumState state(n, 1);
-        state.set_Haar_random_state(2022);
-        std::vector<double> probs;
-        for (ITYPE i = 0; i < dim; ++i) {
-                probs.push_back(pow(abs(state.data_cpp()[i]),2));
-        }
-        ASSERT_NEAR(state.get_marginal_probability({ 0,0 }), probs[0], eps);
-        ASSERT_NEAR(state.get_marginal_probability({ 1,0 }), probs[1], eps);
-        ASSERT_NEAR(state.get_marginal_probability({ 0,1 }), probs[2], eps);
-        ASSERT_NEAR(state.get_marginal_probability({ 1,1 }), probs[3], eps);
-        ASSERT_NEAR(state.get_marginal_probability({ 0,2 }), probs[0] +
-probs[2], eps); ASSERT_NEAR(state.get_marginal_probability({ 1,2 }), probs[1] +
-probs[3], eps); ASSERT_NEAR(state.get_marginal_probability({ 2,0 }), probs[0] +
-probs[1], eps); ASSERT_NEAR(state.get_marginal_probability({ 2,1 }), probs[2] +
-probs[3], eps); ASSERT_NEAR(state.get_marginal_probability({ 2,2 }), 1., eps);
+    const double eps = 1e-10;
+    const UINT n = 2;
+    const ITYPE dim = 1 << n;
+    QuantumState state(n, 1);
+    state.set_Haar_random_state(2022);
+    std::vector<double> probs;
+    for (ITYPE i = 0; i < dim; ++i) {
+            probs.push_back(pow(abs(state.data_cpp()[i]),2));
+    }
+    ASSERT_NEAR(state.get_marginal_probability({ 0,0 }), probs[0], eps);
+    ASSERT_NEAR(state.get_marginal_probability({ 1,0 }), probs[1], eps);
+    ASSERT_NEAR(state.get_marginal_probability({ 0,1 }), probs[2], eps);
+    ASSERT_NEAR(state.get_marginal_probability({ 1,1 }), probs[3], eps);
+    ASSERT_NEAR(state.get_marginal_probability({ 0,2 }), probs[0] + probs[2], eps);
+   	ASSERT_NEAR(state.get_marginal_probability({ 1,2 }), probs[1] + probs[3], eps);
+   	ASSERT_NEAR(state.get_marginal_probability({ 2,0 }), probs[0] + probs[1], eps);
+   	ASSERT_NEAR(state.get_marginal_probability({ 2,1 }), probs[2] + probs[3], eps);
+   	ASSERT_NEAR(state.get_marginal_probability({ 2,2 }), 1., eps);
 }
-*/
 
 TEST(StateTest_multicpu, AddState) {
     const double eps = 1e-10;

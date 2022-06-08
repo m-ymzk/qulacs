@@ -117,7 +117,7 @@
         -  qubits are divided into local_qc + global_qc internally.
             - local_qc: qubits in one node
             - global_qc: qubits in multiple nodes (=log2(#rank))
-    - state.get_device()
+    - state.get_device_name()
       - return the list of devices having the state vector.
 
         | ret value | explanation|
@@ -154,6 +154,12 @@
     - As the same as gate operation, you must call it in all ranks.
     - Even if a seed is not specified, the random value in rank0 is shared (bcast) and used as a seed.
     - If you specify a seed, use the same one in all ranks.
+
+  - state.load(vector)
+    - In the case state vector distributed in multi nodes, load to the element with each rank.
+
+  - state.get_vector()
+    - In the case state vector distributed in multi nodes, returns the elements that each rank has.
 
   - Automatic FusedSWAP gate insertion of QuantumCircuitOptimizer
     - optimize(circuit, block_size, swap_level=0)
