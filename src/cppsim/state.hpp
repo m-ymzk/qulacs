@@ -686,26 +686,14 @@ public:
      * \~japanese-en <code>state</code>の量子状態を自身へコピーする。
      */
     virtual void load(const std::vector<CPPCTYPE>& _state) {
-        if (this->outer_qc > 0) {  // load vector to multi-cpu state vector
-            if (_state.size() != _dim) {
-                std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): "
-                             "invalid length of state for multi-cpu"
-                          << std::endl;
-                return;
-            }
-            ITYPE offs = _dim * mpiutil->get_rank();
-            memcpy(this->data_cpp(), &_state.data()[offs],
-                (size_t)(sizeof(CPPCTYPE) * _dim));
-        } else {  // load vector to (single)cpu state vector
-            if (_state.size() != _dim) {
-                std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): "
-                             "invalid length of state"
-                          << std::endl;
-                return;
-            }
-            memcpy(this->data_cpp(), _state.data(),
-                (size_t)(sizeof(CPPCTYPE) * _dim));
+        if (_state.size() != _dim) {
+            std::cerr << "Error: QuantumStateCpu::load(vector<Complex>&): "
+                         "invalid length of state"
+                      << std::endl;
+            return;
         }
+        memcpy(this->data_cpp(), _state.data(),
+            (size_t)(sizeof(CPPCTYPE) * _dim));
     }
 
     /**

@@ -115,7 +115,7 @@
           qubits を内部で local_qc + global_qc に分割
         - local_qc: １ノード内のqubits
         - global_qc: 分散配置されたqubits (=log2(rank数))
-    - state.get_device()
+    - state.get_device_name()
     state vectorの配置されているデバイスを返す。
 
         | 返り値 | 説明 |
@@ -153,6 +153,12 @@
     - 他のgate等の操作と同様に、必ず全ランクでcallすること。
     - seedを指定しない場合でも、rank0での乱数値が全ランクで共有(bcast)され、seedとして使用される。
     - seedを指定する場合、全ランクで共通の値を指定すること。
+
+  - state.load(vector)
+    - 分散配置されたstate vectorへのloadの場合、各ランクの持つ要素へloadする。
+
+  - state.get_vector()
+    - 分散配置されたstate vectorのget_vectorの場合、各ランクの持つ要素が返る。
 
   - QuantumCircuitOptimizerの自動FusedSWAPゲート挿入
     - optimize(circuit, block_size, swap_level=0)
