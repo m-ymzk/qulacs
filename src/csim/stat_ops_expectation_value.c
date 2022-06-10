@@ -36,11 +36,12 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
         comm_flag = bit_flip_mask >> inner_qc;
     }
 
-    if (comm_flag) {
-        MPIutil m = get_mpiutil();
-        int rank = m->get_rank();
-        int pair_rank = rank ^ comm_flag;
+    MPIutil m = get_mpiutil();
+    int mpirank = m->get_rank();
+    int pair_rank = mpirank ^ comm_flag;
+    ITYPE global_offset = mpirank << inner_qc;
 
+    if (comm_flag) {
         ITYPE dim_work = dim;
         ITYPE num_work = 0;
         CTYPE* recvptr = m->get_workarea(&dim_work, &num_work);
@@ -56,7 +57,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
         for (i = 0; i < num_work; ++i) {
             const CTYPE* sendptr = state + dim_work * i;
 
-            if (rank < pair_rank) {
+            if (mpirank < pair_rank) {
                 // recv
                 m->m_DC_recv(recvptr, dim_work, pair_rank);
 
@@ -227,8 +228,10 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                     SV_ITYPE sv_basis1 =
                         sveor_x(pg, sv_basis0, SvdupI(bit_flip_mask));
                     // C
+                    SV_ITYPE sv_basis0_global =
+                        svadd_x(pg, SvdupI(global_offset), sv_basis0);
                     SV_ITYPE sv_popc =
-                        svand_x(pg, sv_basis0, SvdupI(phase_flip_mask));
+                        svand_x(pg, sv_basis0_global, SvdupI(phase_flip_mask));
                     sv_popc = svcnt_z(pg, sv_popc);
                     sv_popc = svand_x(pg, sv_popc, SvdupI(1));
                     SV_FTYPE sv_sign = svneg_m(sv_sign_base,
@@ -279,8 +282,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                 // B
                 ITYPE basis_1 = basis_0 ^ bit_flip_mask;
                 // C
-                UINT sign_0 = count_population(basis_0 & phase_flip_mask) % 2;
-
+                UINT sign_0 = count_population((basis_0 + global_offset) & phase_flip_mask) % 2;
                 // D
                 sum += creal(
                     state[basis_0] * conj(state[basis_1]) *
