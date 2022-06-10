@@ -9,7 +9,6 @@
 #include <cppsim/utility.hpp>
 #include <fstream>
 
-
 TEST(ObservableTest_multicpu, CheckExpectationValue) {
     const UINT n = 4;
     const UINT dim = 1ULL << n;
@@ -19,7 +18,7 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
     CPPCTYPE ref_res;
     CPPCTYPE test_res;
     Random random;
-	random.set_seed(2022);
+	random.set_seed(522);
 
 	const MPIutil m = get_mpiutil();
     const UINT mpisize = m->get_size();
@@ -52,18 +51,16 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
     for (ITYPE i = 0; i < dim; ++i) test_state[i] = ref_state.data_cpp()[i];
     res = observable.get_expectation_value(&state);
     test_res = (test_state.adjoint() * test_observable * test_state);
-    // std::cout << "#test_state: " << test_state.adjoint() << ", " << test_observable << ", " << test_state << std::endl;
     ASSERT_NEAR(test_res.real(), res.real(), eps);
     ASSERT_NEAR(res.imag(), 0, eps);
     ASSERT_NEAR(test_res.imag(), 0, eps);
 
-    for (UINT repeat = 0; repeat < 10; ++repeat) {
+    for (UINT repeat = 0; repeat < 100; ++repeat) {
 
         Observable rand_observable(n);
         Eigen::MatrixXcd test_rand_observable = Eigen::MatrixXcd::Zero(dim, dim);
 
-        //UINT term_count = random.int32() % 10+1;
-        UINT term_count = 1;
+        UINT term_count = random.int32() % 10+1;
         for (UINT term = 0; term < term_count; ++term) {
             std::vector<UINT> paulis(n,0);
             Eigen::MatrixXcd test_rand_observable_term = Eigen::MatrixXcd::Identity(dim, dim);
@@ -86,7 +83,7 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
                 }
             }
             rand_observable.add_operator(coef, str.c_str());
-		    if (mpirank == 0) {
+		    if (false && mpirank == 0) {
                 std::cout << "#rand_observable.add_operator, coef: " << coef << std::endl;
 		        std::cout << "#str.c_str(): " << str.c_str() << std::endl;
 		    }
@@ -95,10 +92,6 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
         ref_state.set_Haar_random_state();
 	    state.load(&ref_state);
         for (ITYPE i = 0; i < dim; ++i) test_state[i] = ref_state.data_cpp()[i];
-		if (mpirank == 0) {
-            std::cout << "#state: " << state << std::endl;
-		    std::cout << "#ref_state(): " << ref_state << std::endl;
-		}
 
         res = rand_observable.get_expectation_value(&state);
         ref_res = rand_observable.get_expectation_value(&ref_state);

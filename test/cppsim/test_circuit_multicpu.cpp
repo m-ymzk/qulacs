@@ -829,7 +829,7 @@ TEST(CircuitTest_multicpu, SimpleExpansionXYZ_6qubit) {
     observable.add_operator(coef[1], "Z 1 I 0");
     observable.add_operator(coef[2], "X 2 Y 0");
     observable.add_operator(coef[3], "Z 3 I 1");
-    observable.add_operator(coef[4], "Z 4 I 1");
+    observable.add_operator(coef[4], "Z 4 X 1");
     observable.add_operator(coef[5], "X 5 Y 1");
 
     state_ref.set_Haar_random_state(2022);
