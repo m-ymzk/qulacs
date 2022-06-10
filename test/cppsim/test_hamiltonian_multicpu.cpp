@@ -62,7 +62,8 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
         Observable rand_observable(n);
         Eigen::MatrixXcd test_rand_observable = Eigen::MatrixXcd::Zero(dim, dim);
 
-        UINT term_count = random.int32() % 10+1;
+        //UINT term_count = random.int32() % 10+1;
+        UINT term_count = 1;
         for (UINT term = 0; term < term_count; ++term) {
             std::vector<UINT> paulis(n,0);
             Eigen::MatrixXcd test_rand_observable_term = Eigen::MatrixXcd::Identity(dim, dim);
@@ -85,22 +86,23 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
                 }
             }
             rand_observable.add_operator(coef, str.c_str());
+		    if (mpirank == 0) {
+                std::cout << "#rand_observable.add_operator, coef: " << coef << std::endl;
+		        std::cout << "#str.c_str(): " << str.c_str() << std::endl;
+		    }
         }
 
         ref_state.set_Haar_random_state();
 	    state.load(&ref_state);
         for (ITYPE i = 0; i < dim; ++i) test_state[i] = ref_state.data_cpp()[i];
+		if (mpirank == 0) {
+            std::cout << "#state: " << state << std::endl;
+		    std::cout << "#ref_state(): " << ref_state << std::endl;
+		}
 
         res = rand_observable.get_expectation_value(&state);
         ref_res = rand_observable.get_expectation_value(&ref_state);
         test_res = test_state.adjoint() * test_rand_observable * test_state;
-		if (mpirank == 0) {
-            std::cout << "#test_state.adjoint(): " << test_state.adjoint() << std::endl;
-		    std::cout << "#test_observable: " << test_observable << std::endl;
-		    std::cout << "#test_state: " << test_state << std::endl;
-            std::cout << "#res: " << res << std::endl;
-            std::cout << "#ref_res: " << ref_res << std::endl;
-		}
         ASSERT_NEAR(test_res.real(), res.real(), eps);
         ASSERT_NEAR(res.imag(), 0, eps);
         ASSERT_NEAR(test_res.imag(), 0, eps);
