@@ -908,6 +908,14 @@ void single_qubit_control_single_qubit_dense_matrix_gate_parallel_unroll(
 void single_qubit_control_single_qubit_dense_matrix_gate_parallel_simd(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
     const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void single_qubit_control_single_qubit_dense_matrix_gate_sve(
+    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
+    const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+void single_qubit_control_single_qubit_dense_matrix_gate_sve_gather_scatter_unroll4(
+    UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
+    const CTYPE matrix[4], CTYPE *state, ITYPE dim);
+#endif
 #ifdef _USE_MPI
 DllExport void single_qubit_control_single_qubit_dense_matrix_gate_mpi(
     UINT control_qubit_index, UINT control_value, UINT target_qubit_index,
