@@ -72,7 +72,12 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
     *dim_work = get_min_ll(1 << _NQUBIT_WORK, dim);
     *num_work = get_max_ll(1, dim >> _NQUBIT_WORK);
     if (workarea == NULL) {
+#if defined(__ARM_FEATURE_SVE)
+        posix_memalign(
+            (void **)&workarea, 256, sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+#else
         workarea = (CTYPE *)malloc(sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+#endif
         if (workarea == NULL) {
             fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__,
                 __LINE__);
