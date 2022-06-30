@@ -72,7 +72,12 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
     *dim_work = get_min_ll(1 << _NQUBIT_WORK, dim);
     *num_work = get_max_ll(1, dim >> _NQUBIT_WORK);
     if (workarea == NULL) {
+#if defined(__ARM_FEATURE_SVE)
+        posix_memalign(
+            (void **)&workarea, 256, sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+#else
         workarea = (CTYPE *)malloc(sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+#endif
         if (workarea == NULL) {
             fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__,
                 __LINE__);
@@ -152,12 +157,12 @@ static void s_D_allreduce(void *buf) {
 static void s_D_allreduce_ordersafe(void *buf) {
     double *recvbuf = malloc(mpisize * sizeof(double));
     MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
-    double* sum = buf;
+    double *sum = buf;
     *sum = 0.;
-    for (int idx=0; idx < mpisize; ++idx) {
+    for (int idx = 0; idx < mpisize; ++idx) {
         *sum += recvbuf[idx];
     }
-	free(recvbuf);
+    free(recvbuf);
 }
 
 /*
