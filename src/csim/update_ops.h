@@ -383,6 +383,10 @@ void CNOT_gate_parallel_unroll(
 void CNOT_gate_parallel_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void CNOT_gate_sve(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void CNOT_gate_sve_gather_scatter_unroll4(
+    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_single_sve(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_parallel_sve(
