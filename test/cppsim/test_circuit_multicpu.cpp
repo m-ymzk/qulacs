@@ -1316,11 +1316,11 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         UINT n_expected_swaps = 0;
         switch (outer_qc) {
         case 1:
-            n_expected_swaps = 15;
+            n_expected_swaps = 14;
         case 2:
-            n_expected_swaps = 20;
+            n_expected_swaps = 18;
         case 3:
-            n_expected_swaps = 34;
+            n_expected_swaps = 23;
         default:
             n_expected_swaps = 1000;
         }
@@ -1335,11 +1335,11 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         UINT n_expected_swaps = 0;
         switch (outer_qc) {
         case 1:
-            n_expected_swaps = 10;
+            n_expected_swaps = 6;
         case 2:
-            n_expected_swaps = 14;
+            n_expected_swaps = 10;
         case 3:
-            n_expected_swaps = 29;
+            n_expected_swaps = 22;
         default:
             n_expected_swaps = 1000;
         }
