@@ -295,18 +295,10 @@ TEST(UpdateTest, CZGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(n, "CZ", CZ_gate, get_eigen_matrix_full_qubit_CZ);
     test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_single_unroll, get_eigen_matrix_full_qubit_CZ);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_parallel_unroll, get_eigen_matrix_full_qubit_CZ);
-#endif
+        6, "CZGate", CZ_gate_unroll, get_eigen_matrix_full_qubit_CZ);
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_single_simd, get_eigen_matrix_full_qubit_CZ);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_parallel_simd, get_eigen_matrix_full_qubit_CZ);
-#endif
+        6, "CZGate", CZ_gate_simd, get_eigen_matrix_full_qubit_CZ);
 #endif
 }
 
