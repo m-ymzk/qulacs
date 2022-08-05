@@ -306,18 +306,10 @@ TEST(UpdateTest, SWAPGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(
         n, "SWAP", SWAP_gate, get_eigen_matrix_full_qubit_SWAP);
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
+    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_unroll,
         get_eigen_matrix_full_qubit_SWAP);  // change from single
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
-        get_eigen_matrix_full_qubit_SWAP);
-#endif
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "SWAPGate", SWAP_gate_single_simd, get_eigen_matrix_full_qubit_SWAP);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_simd,
-        get_eigen_matrix_full_qubit_SWAP);
-#endif
+        6, "SWAPGate", SWAP_gate_simd, get_eigen_matrix_full_qubit_SWAP);
 #endif
 }
