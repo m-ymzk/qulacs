@@ -364,22 +364,14 @@ void _H_gate_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag);
  */
 DllExport void CNOT_gate(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_unroll(
+void CNOT_gate_unroll(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_simd(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_unroll(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_simd(
+void CNOT_gate_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 void CNOT_gate_sve(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_sve_gather_scatter_unroll4(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_sve(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_sve(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_MPI
