@@ -336,13 +336,10 @@ DllExport void sqrtYdag_gate_mpi(
  *
  */
 DllExport void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_MPI
 DllExport void H_gate_mpi(

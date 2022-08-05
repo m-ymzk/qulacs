@@ -115,15 +115,9 @@ TEST(UpdateTest, HGate) {
     mat << 1, 1, 1, -1;
     mat /= sqrt(2.);
     test_single_qubit_named_gate(n, "HGate", H_gate, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "HGate", H_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "HGate", H_gate_simd, mat);
 #endif
 }
 
@@ -132,12 +126,8 @@ TEST(UpdateTest, HGateSVE) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 1, 1, 1, -1;
     mat /= sqrt(2.);
-    test_single_qubit_named_gate(1, "HGate", H_gate_single_sve, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_sve, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(1, "HGate", H_gate_parallel_sve, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_sve, mat);
-#endif
+    test_single_qubit_named_gate(1, "HGate", H_gate_sve, mat);
+    test_single_qubit_named_gate(6, "HGate", H_gate_sve, mat);
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
