@@ -83,15 +83,9 @@ TEST(UpdateTest, ZGate) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 1, 0, 0, -1;
     test_single_qubit_named_gate(6, "ZGate", Z_gate, mat);
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "ZGate", Z_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "ZGate", Z_gate_simd, mat);
 #endif
 }
 TEST(UpdateTest, HGate) {
