@@ -3,6 +3,18 @@
 #include "constant.hpp"
 #include "type.hpp"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+#ifdef _USE_SIMD
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
+#endif
+
 /**
  * Insert 0 to qubit_index-th bit of basis_index. basis_mask must be 1ULL <<
  * qubit_index.

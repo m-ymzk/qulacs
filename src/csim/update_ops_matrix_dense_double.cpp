@@ -4,21 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "constant.hpp"
 #include "update_ops.hpp"
 #include "utility.hpp"
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef _USE_SIMD
-#ifdef _MSC_VER
-#include <intrin.h>
-#else
-#include <x86intrin.h>
-#endif
-#endif
 
 #ifdef _USE_SIMD
 void double_qubit_dense_matrix_gate_simd_high(UINT target_qubit_index1,
