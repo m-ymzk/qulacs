@@ -7,6 +7,9 @@
 #include "constant.h"
 #include "stat_ops.h"
 #include "utility.h"
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
 
 double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
     ITYPE phase_flip_mask, UINT global_phase_90rot_count,

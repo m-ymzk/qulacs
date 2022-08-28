@@ -4,6 +4,9 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER

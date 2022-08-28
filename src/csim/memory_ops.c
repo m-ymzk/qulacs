@@ -4,9 +4,6 @@
 #include <stdlib.h>
 
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 #ifdef _MSC_VER
 #define aligned_free _aligned_free;
