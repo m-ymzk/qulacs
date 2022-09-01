@@ -2,8 +2,12 @@
 cmake_minimum_required(VERSION 2.8)
 
 if (POLICY CMP0048)
-  cmake_policy(SET CMP0048 NEW)
+	cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
+
+if (POLICY CMP0135)
+	cmake_policy(SET CMP0135 NEW)
+endif()
 
 project(qulacs)
 
@@ -80,7 +84,7 @@ set(Boost_USE_STATIC_RUNTIME ON)
 find_package(Boost 1.71.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 if(NOT Boost_FOUND)
-        message(FATAL_ERROR "Boost not found. Please install boost.")
+	message(FATAL_ERROR "Boost not found. Please install boost.")
 endif()
 message(STATUS "Boost found at ${Boost_INCLUDE_DIRS}")
 
@@ -89,15 +93,15 @@ set(EIGEN_BUILD_DIR   ${CMAKE_BINARY_DIR}/eigen)
 set(EIGEN_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
 set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR})
 ExternalProject_Add(
-    eigen
-    URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
-    PREFIX ${EIGEN_BUILD_DIR}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND
-      ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen ${EIGEN_INCLUDE_DIR}/Eigen
-      && ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
-    TEST_COMMAND ""
+	eigen
+	URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
+	PREFIX ${EIGEN_BUILD_DIR}
+	CONFIGURE_COMMAND ""
+	BUILD_COMMAND ""
+	INSTALL_COMMAND
+		${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen ${EIGEN_INCLUDE_DIR}/Eigen
+		&& ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
+	TEST_COMMAND ""
 )
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
 
@@ -106,14 +110,14 @@ set(CEREAL_BUILD_DIR   ${CMAKE_BINARY_DIR}/cereal)
 set(CEREAL_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
 set(CEREAL_INCLUDE_DIR ${CEREAL_INSTALL_DIR})
 ExternalProject_Add(
-    Cereal
-    URL https://github.com/USCiLab/cereal/archive/v1.3.0.tar.gz
-    PREFIX ${CEREAL_BUILD_DIR}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND
-      ${CMAKE_COMMAND} -E copy_directory ${CEREAL_BUILD_DIR}/src/Cereal/include ${CEREAL_INCLUDE_DIR}
-    TEST_COMMAND ""
+	Cereal
+	URL https://github.com/USCiLab/cereal/archive/v1.3.0.tar.gz
+	PREFIX ${CEREAL_BUILD_DIR}
+	CONFIGURE_COMMAND ""
+	BUILD_COMMAND ""
+	INSTALL_COMMAND
+		${CMAKE_COMMAND} -E copy_directory ${CEREAL_BUILD_DIR}/src/Cereal/include ${CEREAL_INCLUDE_DIR}
+	TEST_COMMAND ""
 )
 include_directories(SYSTEM ${CEREAL_INCLUDE_DIR})
 
@@ -194,8 +198,8 @@ if(NOT DEFINED PYTHON_SETUP_FLAG)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 
 	if(MSVC)
-	        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../lib)
-	        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../bin)
+		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../lib)
+		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../bin)
 	endif()
 else()
 	message(STATUS "Install from pip")
@@ -373,21 +377,21 @@ add_custom_target(bench
 # format
 find_program(CLANG_FORMAT "clang-format")
 if(CLANG_FORMAT)
-    file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/*.[ch]pp
+	file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
+		${CMAKE_CURRENT_SOURCE_DIR}/benchmark/*.[ch]pp
 		${CMAKE_CURRENT_SOURCE_DIR}/benchmark/*.[ch]
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.[ch]pp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.[ch]
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/*.[ch]pp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/*.[ch]
-    )
-    add_custom_target(
-        format
-        COMMAND clang-format
+		${CMAKE_CURRENT_SOURCE_DIR}/src/*.[ch]pp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/*.[ch]
+		${CMAKE_CURRENT_SOURCE_DIR}/test/*.[ch]pp
+		${CMAKE_CURRENT_SOURCE_DIR}/test/*.[ch]
+	)
+	add_custom_target(
+		format
+		COMMAND clang-format
 		-style=file
-        -i
-        ${ALL_CXX_SOURCE_FILES}
-    )
+		-i
+		${ALL_CXX_SOURCE_FILES}
+	)
 endif()
 
 # shared libs
