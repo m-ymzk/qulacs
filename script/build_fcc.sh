@@ -3,6 +3,8 @@
 #export CC="${TCSDS_PATH}/bin/fcc -Nclang -Kfast -Knolargepage -lpthread"
 #export CXX="${TCSDS_PATH}/bin/FCC -Nclang -Kfast -Knolargepage -lpthread"
 
+set -ex
+
 GCC_COMMAND="mpifcc"
 GXX_COMMAND="mpiFCC"
 

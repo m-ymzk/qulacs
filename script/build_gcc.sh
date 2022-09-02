@@ -2,6 +2,8 @@
 # if duplicate-definition error was occured,
 # rm -rf include build
 
+set -ex
+
 GCC_COMMAND="$C_COMPILER"
 GXX_COMMAND="$CXX_COMPILER"
 
