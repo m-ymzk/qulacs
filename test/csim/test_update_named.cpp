@@ -352,7 +352,7 @@ TEST(UpdateTest, SWAPGate) {
 #endif
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "SWAPGate", SWAP_gate_single_simd, get_eigen_matrix_full_qubit_SWAP);
+        6, "SWAPGate", SWAP_gate_parallel_simd, get_eigen_matrix_full_qubit_SWAP);
 #ifdef _OPENMP
     test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_simd,
         get_eigen_matrix_full_qubit_SWAP);
