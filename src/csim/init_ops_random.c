@@ -5,6 +5,9 @@
 
 #include "init_ops.h"
 #include "utility.h"
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
 
 // state randomization
 unsigned long xor128(unsigned long* state);

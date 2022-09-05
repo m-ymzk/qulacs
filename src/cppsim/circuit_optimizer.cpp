@@ -692,7 +692,7 @@ void QuantumCircuitOptimizer::add_swaps_to_reorder(QubitTable &qt) {
 UINT QuantumCircuitOptimizer::gather_current_local_gates(UINT gate_idx, QubitTable &qt, std::multimap<const QuantumGateBase*, const QuantumGateBase*> &dep_map) {
     std::unordered_set<const QuantumGateBase*> solved_gates;
 
-    for (UINT i = 0; (i + 1) < gate_idx; i++) {
+    for (UINT i = 0; i < gate_idx; i++) {
         solved_gates.insert(circuit->gate_list[i]);
     }
 

@@ -6,9 +6,6 @@
 #include <time.h>
 
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 CTYPE* dm_allocate_quantum_state(ITYPE dim) {
     CTYPE* state = (CTYPE*)malloc((size_t)(sizeof(CTYPE) * dim * dim));

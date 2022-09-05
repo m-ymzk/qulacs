@@ -8,10 +8,6 @@
 #include "update_ops.h"
 #include "utility.h"
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
 #include <intrin.h>

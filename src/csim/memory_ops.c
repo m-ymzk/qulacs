@@ -4,9 +4,6 @@
 #include <stdlib.h>
 
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 #ifdef _MSC_VER
 #define aligned_free _aligned_free;
@@ -20,8 +17,13 @@
 
 // memory allocation
 CTYPE* allocate_quantum_state(ITYPE dim) {
+#if defined(__ARM_FEATURE_SVE)
+    CTYPE* state;
+    posix_memalign((void**)&state, 256, (size_t)(sizeof(CTYPE) * dim));
+#else
     CTYPE* state = (CTYPE*)malloc((size_t)(sizeof(CTYPE) * dim));
     // CTYPE* state = (CTYPE*)_aligned_malloc((size_t)(sizeof(CTYPE)*dim), 32);
+#endif
 
     if (!state) {
         fprintf(stderr, "Out of memory\n");
@@ -50,7 +52,7 @@ typedef svfloat64_t SV_FTYPE
 void memcpy_sve(double* Out, double* In, ITYPE Num) {
     ITYPE i;
 
-    UINT threshold = 256;
+    UINT threshold = 1024;
     if (Num * sizeof(double) >= threshold * 1024) {
         ITYPE vec_len = svcntd();
 

@@ -7,6 +7,9 @@
 #include "memory_ops.h"
 #include "update_ops.h"
 #include "utility.h"
+#ifdef _USE_MPI
+#include "MPIutil.h"
+#endif
 
 #ifdef _USE_SIMD
 #ifdef _MSC_VER
@@ -24,11 +27,9 @@ void SWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 #endif
 
 #ifdef _USE_SIMD
-    SWAP_gate_parallel_simd(
-        target_qubit_index_0, target_qubit_index_1, state, dim);
+    SWAP_gate_simd(target_qubit_index_0, target_qubit_index_1, state, dim);
 #else
-    SWAP_gate_parallel_unroll(
-        target_qubit_index_0, target_qubit_index_1, state, dim);
+    SWAP_gate_unroll(target_qubit_index_0, target_qubit_index_1, state, dim);
 #endif
 
 #ifdef _OPENMP
@@ -36,8 +37,8 @@ void SWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 #endif
 }
 
-void SWAP_gate_parallel_unroll(UINT target_qubit_index_0,
-    UINT target_qubit_index_1, CTYPE* state, ITYPE dim) {
+void SWAP_gate_unroll(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE* state, ITYPE dim) {
     const ITYPE loop_dim = dim / 4;
 
     const ITYPE mask_0 = 1ULL << target_qubit_index_0;
@@ -87,8 +88,8 @@ void SWAP_gate_parallel_unroll(UINT target_qubit_index_0,
 }
 
 #ifdef _USE_SIMD
-void SWAP_gate_parallel_simd(UINT target_qubit_index_0,
-    UINT target_qubit_index_1, CTYPE* state, ITYPE dim) {
+void SWAP_gate_simd(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE* state, ITYPE dim) {
     const ITYPE loop_dim = dim / 4;
 
     const ITYPE mask_0 = 1ULL << target_qubit_index_0;

@@ -7,9 +7,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 /**
  * perform multi_qubit_Pauli_gate with XZ mask.
