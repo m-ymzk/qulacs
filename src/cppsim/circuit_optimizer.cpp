@@ -131,13 +131,6 @@ void QuantumCircuitOptimizer::optimize(
     QuantumCircuit* circuit_, UINT max_block_size, UINT swap_level) {
     circuit = circuit_;
 
-    if (max_block_size > 0 && swap_level >= 1) {
-        std::cerr
-            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
-               ": using both gate merge and swap optimization is not tested"
-            << std::endl;
-    }
-
     insert_fswap(swap_level);
 
 #ifdef _USE_MPI
@@ -236,13 +229,6 @@ target_qubits);
 
 void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap_level) {
     this->circuit = circuit_;
-
-    if (swap_level >= 1) {
-        std::cerr
-            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize_light(circuit, swap_level) "
-               ": using both gate merge and swap optimization is not tested"
-            << std::endl;
-    }
 
 #ifdef _USE_MPI
     MPIutil mpiutil = get_mpiutil();
