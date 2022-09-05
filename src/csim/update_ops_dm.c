@@ -7,9 +7,6 @@
 
 #include "constant.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 void dm_normalize(double squared_norm, CTYPE* state, ITYPE dim) {
     const ITYPE loop_dim = dim;

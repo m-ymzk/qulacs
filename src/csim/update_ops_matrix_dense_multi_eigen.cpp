@@ -1,15 +1,18 @@
 
-#ifndef _MSC_VER
+#include <Eigen/Core>
+#include <functional>
 #include "update_ops_cpp.hpp"
+#ifndef _MSC_VER
 extern "C" {
 #include "utility.h"
 }
 #else
-#include "update_ops_cpp.hpp"
 #include "utility.h"
 #endif
-#include <Eigen/Core>
-#include <functional>
+
+#if _USE_MPI
+#include "MPIutil.h"
+#endif
 
 void multi_qubit_dense_matrix_gate_eigen(const UINT* target_qubit_index_list,
     UINT target_qubit_index_count, const CTYPE* matrix, CTYPE* state,

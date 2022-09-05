@@ -7,9 +7,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 void single_qubit_Pauli_gate(UINT target_qubit_index, UINT Pauli_operator_type,
     CTYPE* state, ITYPE dim) {

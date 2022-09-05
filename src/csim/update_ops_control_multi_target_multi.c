@@ -6,9 +6,6 @@
 #include "constant.h"
 #include "update_ops.h"
 #include "utility.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 void multi_qubit_control_multi_qubit_dense_matrix_gate(
     const UINT* control_qubit_index_list, const UINT* control_value_list,
