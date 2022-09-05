@@ -1316,11 +1316,14 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         UINT n_expected_swaps = 0;
         switch (outer_qc) {
         case 1:
-            n_expected_swaps = 15;
+            n_expected_swaps = 14;
+            break;
         case 2:
-            n_expected_swaps = 20;
+            n_expected_swaps = 18;
+            break;
         case 3:
-            n_expected_swaps = 34;
+            n_expected_swaps = 23;
+            break;
         default:
             n_expected_swaps = 1000;
         }
@@ -1335,14 +1338,43 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         UINT n_expected_swaps = 0;
         switch (outer_qc) {
         case 1:
-            n_expected_swaps = 10;
+            n_expected_swaps = 6;
+            break;
         case 2:
-            n_expected_swaps = 14;
+            n_expected_swaps = 10;
+            break;
         case 3:
-            n_expected_swaps = 29;
+            n_expected_swaps = 22;
+            break;
         default:
             n_expected_swaps = 1000;
         }
         _ApplyOptimizer(&circuit, 0, 2, n_expected_swaps);
+    }
+
+    // check for a reorder bug
+    if(outer_qc == 1){
+        random.set_seed(2022);
+        QuantumCircuit circuit(n);
+        for (UINT i = 0; i < n; i++) {
+            circuit.add_RX_gate(i, random.uniform()*3.14159);
+        }
+        {
+            QuantumGateBase* merged_gates = gate::RY(0,random.uniform()*3.14159);
+            for (UINT i = 1; i + 1 < n; i++) {
+                merged_gates = gate::merge(merged_gates, gate::RY(i,random.uniform()*3.14159));
+            }
+            circuit.add_gate(merged_gates);
+        }
+        circuit.add_RY_gate(n-1, random.uniform()*3.14159);
+        {
+            QuantumGateBase* merged_gates = gate::RZ(0,random.uniform()*3.14159);
+            for (UINT i = 1; i + 1 < n; i++) {
+                merged_gates = gate::merge(merged_gates, gate::RZ(i,random.uniform()*3.14159));
+            }
+            circuit.add_gate(merged_gates);
+        }
+
+        _ApplyOptimizer(&circuit, 0, 2, 2);
     }
 }

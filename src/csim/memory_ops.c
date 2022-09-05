@@ -55,7 +55,7 @@ typedef svfloat64_t SV_FTYPE
 void memcpy_sve(double* Out, double* In, ITYPE Num) {
     ITYPE i;
 
-    UINT threshold = 256;
+    UINT threshold = 1024;
     if (Num * sizeof(double) >= threshold * 1024) {
         ITYPE vec_len = svcntd();
 
