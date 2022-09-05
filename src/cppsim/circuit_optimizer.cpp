@@ -165,8 +165,9 @@ void QuantumCircuitOptimizer::optimize(
                     continue;
 
                 // 通信必要なSWAPとはマージしない
-                if (is_excluded_for_merge(ind1, local_qc) ||
-                    is_excluded_for_merge(ind2, local_qc))
+                if ((swap_level > 0) &&
+                    (is_excluded_for_merge(ind1, local_qc) ||
+                     is_excluded_for_merge(ind2, local_qc)))
                     continue;
 
                 // if they are separated by not-commutive gate, we cannot merge
@@ -280,8 +281,9 @@ void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap
         if (hit != -1) parent_qubits = current_step[hit].second;
         if (std::includes(parent_qubits.begin(), parent_qubits.end(),
                 target_qubits.begin(), target_qubits.end())) {
-            if ((!is_excluded_for_merge(pos, local_qc)) &&
-                (!is_excluded_for_merge(ind1, local_qc))) {
+            if ((swap_level == 0) ||
+                (!is_excluded_for_merge(pos, local_qc) &&
+                 !is_excluded_for_merge(ind1, local_qc))) {
                 auto merged_gate = gate::merge(circuit->gate_list[pos], gate);
                 circuit->remove_gate(ind1);
                 circuit->add_gate(merged_gate, pos + 1);
