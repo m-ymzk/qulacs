@@ -41,10 +41,8 @@ DllExport void X_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 DllExport void X_gate_mpi(
     UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
 #endif
-void X_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void X_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void X_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void X_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void X_gate_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void X_gate_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 
 /**
  * \~english
@@ -70,13 +68,10 @@ DllExport void Y_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 DllExport void Y_gate_mpi(
     UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
 #endif
-void Y_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Y_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Y_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Y_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Y_gate_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Y_gate_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-void Y_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Y_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Y_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
 /**
@@ -103,10 +98,8 @@ DllExport void Z_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 DllExport void Z_gate_mpi(
     UINT target_qubit_index, CTYPE *state, ITYPE dim, UINT inner_qc);
 #endif
-void Z_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Z_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Z_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void Z_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Z_gate_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void Z_gate_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 
 /**
  * \~english
@@ -336,13 +329,10 @@ DllExport void sqrtYdag_gate_mpi(
  *
  */
 DllExport void H_gate(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_single_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_single_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_unroll(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_simd(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
-void H_gate_single_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void H_gate_parallel_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
+void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_MPI
 DllExport void H_gate_mpi(
@@ -374,22 +364,14 @@ void _H_gate_mpi(CTYPE *t, CTYPE *si, ITYPE dim, int flag);
  */
 DllExport void CNOT_gate(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_unroll(
+void CNOT_gate_unroll(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_simd(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_unroll(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_simd(
+void CNOT_gate_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 void CNOT_gate_sve(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 void CNOT_gate_sve_gather_scatter_unroll4(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_single_sve(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CNOT_gate_parallel_sve(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 #ifdef _USE_MPI
@@ -422,13 +404,9 @@ void CNOT_gate_single_unroll_cin_tout(
  */
 DllExport void CZ_gate(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CZ_gate_single_unroll(
+void CZ_gate_unroll(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CZ_gate_parallel_unroll(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CZ_gate_single_simd(
-    UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
-void CZ_gate_parallel_simd(
+void CZ_gate_simd(
     UINT control_qubit_index, UINT target_qubit_index, CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void CZ_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
@@ -456,10 +434,10 @@ DllExport void CZ_gate_mpi(UINT control_qubit_index, UINT target_qubit_index,
  */
 DllExport void SWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
     CTYPE *state, ITYPE dim);
-void SWAP_gate_parallel_unroll(UINT target_qubit_index_0,
-    UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
-void SWAP_gate_parallel_simd(UINT target_qubit_index_0,
-    UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
+void SWAP_gate_unroll(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE *state, ITYPE dim);
+void SWAP_gate_simd(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE *state, ITYPE dim);
 #ifdef _USE_MPI
 DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
     UINT target_qubit_index_1, CTYPE *state, ITYPE dim, UINT inner_qc);

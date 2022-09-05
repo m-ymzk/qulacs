@@ -53,30 +53,19 @@ TEST(UpdateTest, XGate) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 0, 1, 1, 0;
     test_single_qubit_named_gate(6, "XGate", X_gate, mat);
-    test_single_qubit_named_gate(6, "XGate", X_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "XGate", X_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "XGate", X_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "XGate", X_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "XGate", X_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "XGate", X_gate_simd, mat);
 #endif
 }
+
 TEST(UpdateTest, YGate) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 0, -1.i, 1.i, 0;
     test_single_qubit_named_gate(6, "YGate", Y_gate, mat);
-    test_single_qubit_named_gate(6, "YGate", Y_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "YGate", Y_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "YGate", Y_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "YGate", Y_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "YGate", Y_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "YGate", Y_gate_simd, mat);
 #endif
 }
 
@@ -84,12 +73,8 @@ TEST(UpdateTest, YGate) {
 TEST(UpdateTest, YGateSVE) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 0, -1.i, 1.i, 0;
-    test_single_qubit_named_gate(1, "YGate", Y_gate_single_sve, mat);
-    test_single_qubit_named_gate(6, "YGate", Y_gate_single_sve, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(1, "YGate", Y_gate_parallel_sve, mat);
-    test_single_qubit_named_gate(6, "YGate", Y_gate_parallel_sve, mat);
-#endif
+    test_single_qubit_named_gate(1, "YGate", Y_gate_sve, mat);
+    test_single_qubit_named_gate(6, "YGate", Y_gate_sve, mat);
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
@@ -98,15 +83,9 @@ TEST(UpdateTest, ZGate) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 1, 0, 0, -1;
     test_single_qubit_named_gate(6, "ZGate", Z_gate, mat);
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "ZGate", Z_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "ZGate", Z_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "ZGate", Z_gate_simd, mat);
 #endif
 }
 TEST(UpdateTest, HGate) {
@@ -115,15 +94,9 @@ TEST(UpdateTest, HGate) {
     mat << 1, 1, 1, -1;
     mat /= sqrt(2.);
     test_single_qubit_named_gate(n, "HGate", H_gate, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_unroll, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_unroll, mat);
-#endif
+    test_single_qubit_named_gate(6, "HGate", H_gate_unroll, mat);
 #ifdef _USE_SIMD
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_simd, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_simd, mat);
-#endif
+    test_single_qubit_named_gate(6, "HGate", H_gate_simd, mat);
 #endif
 }
 
@@ -132,12 +105,8 @@ TEST(UpdateTest, HGateSVE) {
     Eigen::MatrixXcd mat(2, 2);
     mat << 1, 1, 1, -1;
     mat /= sqrt(2.);
-    test_single_qubit_named_gate(1, "HGate", H_gate_single_sve, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_single_sve, mat);
-#ifdef _OPENMP
-    test_single_qubit_named_gate(1, "HGate", H_gate_parallel_sve, mat);
-    test_single_qubit_named_gate(6, "HGate", H_gate_parallel_sve, mat);
-#endif
+    test_single_qubit_named_gate(1, "HGate", H_gate_sve, mat);
+    test_single_qubit_named_gate(6, "HGate", H_gate_sve, mat);
 }
 #endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 
@@ -305,38 +274,31 @@ TEST(UpdateTest, CNOTGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(
         n, "CNOT", CNOT_gate, get_eigen_matrix_full_qubit_CNOT);
-    test_two_qubit_named_gate(6, "CNOTGate", CNOT_gate_single_unroll,
-        get_eigen_matrix_full_qubit_CNOT);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "CNOTGate", CNOT_gate_parallel_unroll,
-        get_eigen_matrix_full_qubit_CNOT);
-#endif
+    test_two_qubit_named_gate(
+        6, "CNOTGate", CNOT_gate_unroll, get_eigen_matrix_full_qubit_CNOT);
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "CNOTGate", CNOT_gate_single_simd, get_eigen_matrix_full_qubit_CNOT);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "CNOTGate", CNOT_gate_parallel_simd,
-        get_eigen_matrix_full_qubit_CNOT);
-#endif
+        6, "CNOTGate", CNOT_gate_simd, get_eigen_matrix_full_qubit_CNOT);
 #endif
 }
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+TEST(UpdateTest, CNOTGateSVE) {
+    const UINT n = 4;
+    test_two_qubit_named_gate(
+        n, "CNOT", CNOT_gate, get_eigen_matrix_full_qubit_CNOT);
+    test_two_qubit_named_gate(
+        6, "CNOTGate", CNOT_gate_sve, get_eigen_matrix_full_qubit_CNOT);
+}
+#endif
 
 TEST(UpdateTest, CZGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(n, "CZ", CZ_gate, get_eigen_matrix_full_qubit_CZ);
     test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_single_unroll, get_eigen_matrix_full_qubit_CZ);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_parallel_unroll, get_eigen_matrix_full_qubit_CZ);
-#endif
+        6, "CZGate", CZ_gate_unroll, get_eigen_matrix_full_qubit_CZ);
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_single_simd, get_eigen_matrix_full_qubit_CZ);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(
-        6, "CZGate", CZ_gate_parallel_simd, get_eigen_matrix_full_qubit_CZ);
-#endif
+        6, "CZGate", CZ_gate_simd, get_eigen_matrix_full_qubit_CZ);
 #endif
 }
 
@@ -344,18 +306,10 @@ TEST(UpdateTest, SWAPGate) {
     const UINT n = 4;
     test_two_qubit_named_gate(
         n, "SWAP", SWAP_gate, get_eigen_matrix_full_qubit_SWAP);
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
+    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_unroll,
         get_eigen_matrix_full_qubit_SWAP);  // change from single
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_unroll,
-        get_eigen_matrix_full_qubit_SWAP);
-#endif
 #ifdef _USE_SIMD
     test_two_qubit_named_gate(
-        6, "SWAPGate", SWAP_gate_parallel_simd, get_eigen_matrix_full_qubit_SWAP);
-#ifdef _OPENMP
-    test_two_qubit_named_gate(6, "SWAPGate", SWAP_gate_parallel_simd,
-        get_eigen_matrix_full_qubit_SWAP);
-#endif
+        6, "SWAPGate", SWAP_gate_simd, get_eigen_matrix_full_qubit_SWAP);
 #endif
 }
