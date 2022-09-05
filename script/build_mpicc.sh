@@ -2,6 +2,8 @@
 # if duplicate-definition error was occured,
 # rm -rf include build
 
+set -ex
+
 GCC_COMMAND="mpicc"
 GXX_COMMAND="mpic++"
 
