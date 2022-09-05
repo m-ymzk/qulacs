@@ -158,6 +158,8 @@ void QuantumCircuitOptimizer::optimize(
                     continue;
 
                 // 通信必要なSWAPとはマージしない
+                // ただし、複数プロセス実行+非分散回路の場合を考慮して
+                // swap_level == 0の場合はマージを行う
                 if ((swap_level > 0) &&
                     (is_excluded_for_merge(ind1, local_qc) ||
                      is_excluded_for_merge(ind2, local_qc)))
@@ -267,6 +269,9 @@ void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap
         if (hit != -1) parent_qubits = current_step[hit].second;
         if (std::includes(parent_qubits.begin(), parent_qubits.end(),
                 target_qubits.begin(), target_qubits.end())) {
+            // 通信必要なSWAPとはマージしない
+            // ただし、複数プロセス実行+非分散回路の場合を考慮して
+            // swap_level == 0の場合はマージを行う
             if ((swap_level == 0) ||
                 (!is_excluded_for_merge(pos, local_qc) &&
                  !is_excluded_for_merge(ind1, local_qc))) {
