@@ -165,12 +165,16 @@
       - swap_level = 0
         - SWAP/FusedSWAPゲートの挿入なし
       - swap_level = 1
-        - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
+        - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する
       - swap_level = 2
-        - ゲート順序の変更を行いつつSWAP/FusedSWAPゲートを挿入する (block_size >= 1との併用は未対応)
+        - ゲート順序の変更を行いつつSWAP/FusedSWAPゲートを挿入する
     - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - SWAP/FusedSWAPゲートの挿入なし
+      - swap_level = 1
+        - ゲート順序の変更はせずにSWAP/FusedSWAPゲートを挿入する
+      - swap_level = 2
+        - ゲート順序の変更を行いつつSWAP/FusedSWAPゲートを挿入する
 
   - circuit.update_quantum_state(state, seed)
     - 乱数の種を指定して状態ベクトルの更新処理を行います
