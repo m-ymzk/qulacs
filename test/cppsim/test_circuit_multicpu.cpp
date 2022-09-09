@@ -1060,156 +1060,192 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_nocomm_6qubits) {
 
     Random random;
 
+    std::vector<int> block_sizes = {0, (int)n, -1}; // -1 means using optimize_light
+    const UINT swap_lv = 1;
+    const UINT depth = 2;
+
+    for (auto block_size : block_sizes) {
     // X, Yゲートはouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            circuit.add_X_gate(i);
-            circuit.add_Y_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < inner_qc; i++) {
+                circuit.add_X_gate(i);
+                circuit.add_Y_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // CNOTゲートはtargetでouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            if ((i + 1) % n < inner_qc) {
-                circuit.add_CNOT_gate(i, (i + 1) % n);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                if ((i + 1) % n < inner_qc) {
+                    circuit.add_CNOT_gate(i, (i + 1) % n);
+                }
             }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // Hゲートはouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            circuit.add_H_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < inner_qc; i++) {
+                circuit.add_H_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // RX, RYゲートはouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            circuit.add_RX_gate(i, random.uniform() * 3.14159);
-            circuit.add_RY_gate(i, random.uniform() * 3.14159);
+        for (UINT d = 0; d < depth; d++) {
+
+            for (UINT i = 0; i < inner_qc; i++) {
+                circuit.add_RX_gate(i, random.uniform() * 3.14159);
+                circuit.add_RY_gate(i, random.uniform() * 3.14159);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // SqrtX, SqrtXdag, SqrtY, SqrtYdagゲートはtargetでouter
     // qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            circuit.add_sqrtX_gate(i);
-            circuit.add_sqrtXdag_gate(i);
-            circuit.add_sqrtY_gate(i);
-            circuit.add_sqrtYdag_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < inner_qc; i++) {
+                circuit.add_sqrtX_gate(i);
+                circuit.add_sqrtXdag_gate(i);
+                circuit.add_sqrtY_gate(i);
+                circuit.add_sqrtYdag_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // U1, U2, U3ゲートはtargetでouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            circuit.add_U1_gate(i, random.uniform() * 3.14159);
-            circuit.add_U2_gate(
-                i, random.uniform() * 3.14159, random.uniform() * 3.14159);
-            circuit.add_U3_gate(i, random.uniform() * 3.14159,
-                random.uniform() * 3.14159, random.uniform() * 3.14159);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < inner_qc; i++) {
+                circuit.add_U1_gate(i, random.uniform() * 3.14159);
+                circuit.add_U2_gate(i, random.uniform() * 3.14159,
+                                       random.uniform() * 3.14159);
+                circuit.add_U3_gate(i, random.uniform() * 3.14159,
+                                       random.uniform() * 3.14159,
+                                       random.uniform() * 3.14159);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // DenseMatrixゲートはtargetでouter qubitを使わなければFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < inner_qc; i++) {
-            std::vector<UINT> target{i};
-            ComplexMatrix mat = get_eigen_matrix_random_single_qubit_unitary();
-            auto DenseMatrix_gate = gate::DenseMatrix(target, mat);
-            circuit.add_gate(DenseMatrix_gate);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < inner_qc; i++) {
+                std::vector<UINT> target{i};
+                ComplexMatrix mat = get_eigen_matrix_random_single_qubit_unitary();
+                auto DenseMatrix_gate = gate::DenseMatrix(target, mat);
+                circuit.add_gate(DenseMatrix_gate);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
 
     // Zゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            circuit.add_Z_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_Z_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // CZゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            circuit.add_CZ_gate(i, (i + 1) % n);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_CZ_gate(i, (i + 1) % n);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // Iゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            auto I_gate = gate::Identity(i);
-            circuit.add_gate(I_gate);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                auto I_gate = gate::Identity(i);
+                circuit.add_gate(I_gate);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // P0, P1ゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            circuit.add_P0_gate(i);
-            circuit.add_P1_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_P0_gate(i);
+                circuit.add_P1_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // RZゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            circuit.add_RZ_gate(i, random.uniform() * 3.14159);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_RZ_gate(i, random.uniform() * 3.14159);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // S, Sdag, T, Tdagゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            circuit.add_S_gate(i);
-            circuit.add_Sdag_gate(i);
-            circuit.add_T_gate(i);
-            circuit.add_Tdag_gate(i);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                circuit.add_S_gate(i);
+                circuit.add_Sdag_gate(i);
+                circuit.add_T_gate(i);
+                circuit.add_Tdag_gate(i);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
     }
     // DiagonalMatrixゲートは全てのパターンでFSWAP不要
     {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
-        for (UINT i = 0; i < n; i++) {
-            std::vector<UINT> target{i};
-            ComplexVector diag =
-                get_eigen_diagonal_matrix_random_multi_qubit_unitary(1);
-            auto DiagonalMatrix_gate = gate::DiagonalMatrix(target, diag);
-            circuit.add_gate(DiagonalMatrix_gate);
+        for (UINT d = 0; d < depth; d++) {
+            for (UINT i = 0; i < n; i++) {
+                std::vector<UINT> target{i};
+                ComplexVector diag =
+                    get_eigen_diagonal_matrix_random_multi_qubit_unitary(1);
+                auto DiagonalMatrix_gate = gate::DiagonalMatrix(target, diag);
+                circuit.add_gate(DiagonalMatrix_gate);
+            }
         }
-        _ApplyOptimizer(&circuit, 0, 1, 0);
+        _ApplyOptimizer(&circuit, block_size, swap_lv, 0);
+    }
     }
 }
 
@@ -1308,8 +1344,11 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
 
     Random random;
 
+
+    std::vector<int> block_sizes = {0, (int)n, -1};
+
     // Qulacs Benchmark
-    {
+    for (int block_size : block_sizes) {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
         _BuildQulacsBenchmark(circuit, n, 9, random);
@@ -1327,11 +1366,11 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         default:
             n_expected_swaps = 1000;
         }
-        _ApplyOptimizer(&circuit, 0, 2, n_expected_swaps);
+        _ApplyOptimizer(&circuit, block_size, 2, n_expected_swaps);
     }
 
     // QVolume Benchmark
-    {
+    for (int block_size : block_sizes) {
         random.set_seed(2022);
         QuantumCircuit circuit(n);
         _BuildQVolumeBenchmark(circuit, n, 10, random);

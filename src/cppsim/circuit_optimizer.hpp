@@ -51,6 +51,7 @@ private:
     UINT get_leftmost_commute_index(UINT gate_index);
     UINT get_merged_gate_size(UINT gate_index1, UINT gate_index2);
     bool is_neighboring(UINT gate_index1, UINT gate_index2);
+    bool is_excluded_for_merge(UINT gate_idx, UINT local_qc);
     void insert_fswap(UINT level);
     std::vector<UINT> get_comm_qubits(UINT gate_index);
     bool need_comm(UINT gate_index, QubitTable& qt);

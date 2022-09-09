@@ -87,18 +87,59 @@ bool QuantumCircuitOptimizer::is_neighboring(
     return ind2_left <= ind1_right + 1;
 }
 
+static bool is_no_comm_gate(std::string& gate_name) {
+    return (gate_name == "I" ||
+            gate_name == "Z" ||
+            gate_name == "Z-rotation" ||
+            gate_name == "CZ" ||
+            gate_name == "Projection-0" ||
+            gate_name == "Projection-1" ||
+            gate_name == "S" ||
+            gate_name == "Sdag" ||
+            gate_name == "T" ||
+            gate_name == "Tdag" ||
+            gate_name == "DiagonalMatrix"
+            );
+}
+
+bool QuantumCircuitOptimizer::is_excluded_for_merge(UINT gate_idx, UINT local_qc) {
+    auto& gate = circuit->gate_list[gate_idx];
+    auto gate_name = gate->get_name();
+    if (gate_name == "SWAP" || gate_name == "FusedSWAP" ||
+        gate_name == "CNOT" ||
+        is_no_comm_gate(gate_name)) {
+        // target, control qubitのいずれかがglobal qubitであれば除外する
+        // control qubitも含めるのはマージするとcontrolもtargetに変化するから
+
+        auto t_index_list = gate->get_target_index_list();
+        for (auto t_idx : t_index_list) {
+            if (t_idx >= local_qc) {
+                return true;
+            }
+        }
+        auto c_index_list = gate->get_control_index_list();
+        for (auto c_idx : c_index_list) {
+            if (c_idx >= local_qc) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void QuantumCircuitOptimizer::optimize(
     QuantumCircuit* circuit_, UINT max_block_size, UINT swap_level) {
     circuit = circuit_;
 
-    if (max_block_size > 0 && swap_level >= 1) {
-        std::cerr
-            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize(circuit, max_block_size, swap_level) "
-               ": using both gate merge and swap optimization is not tested"
-            << std::endl;
-    }
-
     insert_fswap(swap_level);
+
+#ifdef _USE_MPI
+    MPIutil mpiutil = get_mpiutil();
+    const UINT mpisize = mpiutil->get_size();
+    const UINT local_qc = circuit->qubit_count - std::log2(mpisize);
+#else
+    const UINT local_qc = circuit->qubit_count;
+#endif
 
     bool merged_flag = true;
     while (merged_flag) {
@@ -114,6 +155,14 @@ void QuantumCircuitOptimizer::optimize(
                 // if merged block size is larger than max_block_size, we cannot
                 // merge them
                 if (this->get_merged_gate_size(ind1, ind2) > max_block_size)
+                    continue;
+
+                // 通信必要なSWAPとはマージしない
+                // ただし、複数プロセス実行+非分散回路の場合を考慮して
+                // swap_level == 0の場合はマージを行う
+                if ((swap_level > 0) &&
+                    (is_excluded_for_merge(ind1, local_qc) ||
+                     is_excluded_for_merge(ind2, local_qc)))
                     continue;
 
                 // if they are separated by not-commutive gate, we cannot merge
@@ -183,16 +232,19 @@ target_qubits);
 void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap_level) {
     this->circuit = circuit_;
 
-    if (swap_level >= 1) {
-        std::cerr
-            << "Warning: QuantumCircuit::QuantumCircuitOptimizer::optimize_light(circuit, swap_level) "
-               ": using both gate merge and swap optimization is not tested"
-            << std::endl;
-    }
+#ifdef _USE_MPI
+    MPIutil mpiutil = get_mpiutil();
+    const UINT mpisize = mpiutil->get_size();
+    const UINT local_qc = circuit->qubit_count - std::log2(mpisize);
+#else
+    const UINT local_qc = circuit->qubit_count;
+#endif
 
     insert_fswap(swap_level);
 
     UINT qubit_count = circuit->qubit_count;
+
+    // (qubit_idx, (最終更新gate_idx, 最終更新gateの全target&control qubit)
     std::vector<std::pair<int, std::vector<UINT>>> current_step(
         qubit_count, std::make_pair(-1, std::vector<UINT>()));
     for (UINT ind1 = 0; ind1 < circuit->gate_list.size(); ++ind1) {
@@ -217,11 +269,18 @@ void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap
         if (hit != -1) parent_qubits = current_step[hit].second;
         if (std::includes(parent_qubits.begin(), parent_qubits.end(),
                 target_qubits.begin(), target_qubits.end())) {
-            auto merged_gate = gate::merge(circuit->gate_list[pos], gate);
-            circuit->remove_gate(ind1);
-            circuit->add_gate(merged_gate, pos + 1);
-            circuit->remove_gate(pos);
-            ind1--;
+            // 通信必要なSWAPとはマージしない
+            // ただし、複数プロセス実行+非分散回路の場合を考慮して
+            // swap_level == 0の場合はマージを行う
+            if ((swap_level == 0) ||
+                (!is_excluded_for_merge(pos, local_qc) &&
+                 !is_excluded_for_merge(ind1, local_qc))) {
+                auto merged_gate = gate::merge(circuit->gate_list[pos], gate);
+                circuit->remove_gate(ind1);
+                circuit->add_gate(merged_gate, pos + 1);
+                circuit->remove_gate(pos);
+                ind1--;
+            }
 
             // std::cout << "merge ";
             // for (auto val : target_qubits) std::cout << val << " ";
@@ -318,12 +377,7 @@ std::vector<UINT> QuantumCircuitOptimizer::get_comm_qubits(UINT gate_index) {
 
     // CZはouterのtarget_qubitを使用しても通信不要
     auto gate_name = gate->get_name();
-    if (gate_name == "I" ||
-        gate_name == "Z" || gate_name == "Z-rotation" || gate_name == "CZ" ||
-        gate_name == "Projection-0" || gate_name == "Projection-1" ||
-        gate_name == "S" || gate_name == "Sdag" ||
-        gate_name == "T" || gate_name == "Tdag" ||
-        gate_name == "DiagonalMatrix") {
+    if (is_no_comm_gate(gate_name)) {
         return std::vector<UINT>();
     }
     
@@ -690,10 +744,10 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     return;
 #endif
 
-    if (outer_qc == 0 || inner_qc == 0) {
+    if (outer_qc == 0 || inner_qc <= 1) {
         std::cerr
             << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
-               ": insert_swap is no effect when MPI size = 1 or 2^inner_qc"
+               ": insert_swap is no effect when MPI size = 1 or inner_qc <= 1"
             << std::endl;
         return;
     }

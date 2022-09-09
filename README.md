@@ -166,12 +166,16 @@
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
       - swap_level = 1
-        - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order (not supported with block_size >= 1)
+        - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order
       - swap_level = 2
-        - Insert SWAP/FusedSWAP gates to reduce communication with changing gate order (not supported with block_size >= 1)
+        - Insert SWAP/FusedSWAP gates to reduce communication with changing gate order
     - optimize_light(circuit, swap_level=0)
       - swap_level = 0
         - No SWAP/FusedSWAP gate insertion
+      - swap_level = 1
+        - Insert SWAP/FusedSWAP gates to reduce communication without changing gate order
+      - swap_level = 2
+        - Insert SWAP/FusedSWAP gates to reduce communication with changing gate order
 
   - circuit.update_quantum_state(state, seed)
     - Enables updating of the state vector with a random number of seeds
