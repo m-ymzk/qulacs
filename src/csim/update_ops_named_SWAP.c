@@ -21,6 +21,21 @@
 
 void SWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
     CTYPE* state, ITYPE dim) {
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
+#ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 13);
+#endif  // ifdef _OPENMP
+
+    SWAP_gate_sve(target_qubit_index_0, target_qubit_index_1, state, dim);
+
+#ifdef _OPENMP
+    omputil->reset_qulacs_num_threads();
+#endif
+
+#else  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+
 #ifdef _OPENMP
     OMPutil omputil = get_omputil();
     omputil->set_qulacs_num_threads(dim, 13);
@@ -35,6 +50,7 @@ void SWAP_gate(UINT target_qubit_index_0, UINT target_qubit_index_1,
 #ifdef _OPENMP
     omputil->reset_qulacs_num_threads();
 #endif
+#endif  // if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
 }
 
 void SWAP_gate_unroll(UINT target_qubit_index_0, UINT target_qubit_index_1,
@@ -263,3 +279,367 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     }
 }
 #endif
+
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void SWAP_gate_sve(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE* state, ITYPE dim) {
+    const ITYPE loop_dim = dim / 4;
+
+    const ITYPE mask_0 = 1ULL << target_qubit_index_0;
+    const ITYPE mask_1 = 1ULL << target_qubit_index_1;
+    const ITYPE mask = mask_0 + mask_1;
+
+    const UINT min_qubit_index =
+        get_min_ui(target_qubit_index_0, target_qubit_index_1);
+    const UINT max_qubit_index =
+        get_max_ui(target_qubit_index_0, target_qubit_index_1);
+    const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+    const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+    const ITYPE low_mask = min_qubit_mask - 1;
+    const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+    const ITYPE high_mask = ~(max_qubit_mask - 1);
+
+    ITYPE state_index = 0;
+
+    // In case of process parallel.
+    // Get # of elements in SVE registers
+    // note: # of complex numbers is halved.
+    ITYPE vec_len = getVecLength();
+
+    if (dim >= vec_len) {
+        // Create an all 1's predicate variable
+        SV_PRED pg = Svptrue();
+
+        ITYPE vec_step = (vec_len >> 1);
+        if (min_qubit_mask >= vec_step) {
+#pragma omp parallel for
+            for (state_index = 0; state_index < loop_dim;
+                 state_index += vec_step) {
+                // Calculate indices
+                ITYPE basis_0 = (state_index & low_mask) +
+                                ((state_index & mid_mask) << 1) +
+                                ((state_index & high_mask) << 2) + mask_0;
+                ITYPE basis_1 = basis_0 ^ mask;
+
+                /* PREFETCH */
+                if ((4 <= target_qubit_index_0 && target_qubit_index_0 <= 11) ||
+                    (4 <= target_qubit_index_1 && target_qubit_index_1 <= 11)) {
+                    // L1 prefetch
+#undef _PRF_L1_ITR
+#define _PRF_L1_ITR 8
+                    ITYPE basis_index_l1pf0 =
+                        ((state_index + vec_step * _PRF_L1_ITR) & low_mask) +
+                        (((state_index + vec_step * _PRF_L1_ITR) & mid_mask)
+                            << 1) +
+                        (((state_index + vec_step * _PRF_L1_ITR) & high_mask)
+                            << 2) +
+                        mask_0;
+                    ITYPE basis_index_l1pf1 = basis_index_l1pf0 ^ mask;
+                    __builtin_prefetch(&state[basis_index_l1pf0], 1, 3);
+                    __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
+
+                    // L2 prefetch
+#undef _PRF_L2_ITR
+#define _PRF_L2_ITR 64
+                    ITYPE basis_index_l2pf0 =
+                        ((state_index + vec_step * _PRF_L2_ITR) & low_mask) +
+                        (((state_index + vec_step * _PRF_L2_ITR) & mid_mask)
+                            << 1) +
+                        (((state_index + vec_step * _PRF_L2_ITR) & high_mask)
+                            << 2) +
+                        mask_0;
+                    ITYPE basis_index_l2pf1 = basis_index_l2pf0 ^ mask;
+                    __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+                    __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+                }
+
+                // Load values
+                SV_FTYPE input0 = svld1(pg, (ETYPE*)&state[basis_0]);
+                SV_FTYPE input1 = svld1(pg, (ETYPE*)&state[basis_1]);
+
+                // Store values
+                svst1(pg, (ETYPE*)&state[basis_0], input1);
+                svst1(pg, (ETYPE*)&state[basis_1], input0);
+            }
+        } else {  // if (min_qubit_mask >= vec_step)
+            if ((loop_dim % (vec_step * 4)) == 0) {
+                SWAP_gate_sve_gather_scatter_unroll4(
+                    target_qubit_index_0, target_qubit_index_1, state, dim);
+            } else {
+#pragma omp parallel for
+                for (state_index = 0; state_index < loop_dim; ++state_index) {
+                    ITYPE basis_index_0 = (state_index & low_mask) +
+                                          ((state_index & mid_mask) << 1) +
+                                          ((state_index & high_mask) << 2) +
+                                          mask_0;
+                    ITYPE basis_index_1 = basis_index_0 ^ mask;
+                    CTYPE temp = state[basis_index_0];
+                    state[basis_index_0] = state[basis_index_1];
+                    state[basis_index_1] = temp;
+                }
+            }
+        }     // if (min_qubit_mask >= vec_step)
+    } else {  // if (dim >= vec_len)
+#pragma omp parallel for
+        for (state_index = 0; state_index < loop_dim; ++state_index) {
+            ITYPE basis_index_0 = (state_index & low_mask) +
+                                  ((state_index & mid_mask) << 1) +
+                                  ((state_index & high_mask) << 2) + mask_0;
+            ITYPE basis_index_1 = basis_index_0 ^ mask;
+            CTYPE temp = state[basis_index_0];
+            state[basis_index_0] = state[basis_index_1];
+            state[basis_index_1] = temp;
+        }
+    }  // if (dim >= vec_len)
+}
+
+void SWAP_gate_sve_gather_scatter_unroll4(UINT target_qubit_index_0,
+    UINT target_qubit_index_1, CTYPE* state, ITYPE dim) {
+    const ITYPE loop_dim = dim / 4;
+
+    const ITYPE mask_0 = 1ULL << target_qubit_index_0;
+    const ITYPE mask_1 = 1ULL << target_qubit_index_1;
+    const ITYPE mask = mask_0 + mask_1;
+
+    const UINT min_qubit_index =
+        get_min_ui(target_qubit_index_0, target_qubit_index_1);
+    const UINT max_qubit_index =
+        get_max_ui(target_qubit_index_0, target_qubit_index_1);
+    const ITYPE min_qubit_mask = 1ULL << min_qubit_index;
+    const ITYPE max_qubit_mask = 1ULL << (max_qubit_index - 1);
+    const ITYPE low_mask = min_qubit_mask - 1;
+    const ITYPE mid_mask = (max_qubit_mask - 1) ^ low_mask;
+    const ITYPE high_mask = ~(max_qubit_mask - 1);
+
+    ITYPE vec_len =
+        getVecLength();  // length of SVE registers (# of 64-bit elements)
+
+    SV_PRED pg = Svptrue();  // this predicate register is all 1.
+
+    SV_ITYPE sv_low_mask = SvdupI(low_mask);
+    SV_ITYPE sv_mid_mask = SvdupI(mid_mask);
+    SV_ITYPE sv_high_mask = SvdupI(high_mask);
+    SV_ITYPE sv_mask0 = SvdupI(mask_0);
+    SV_ITYPE sv_mask = SvdupI(mask);
+
+    SV_ITYPE vec_index = SvindexI(0, 1);    // {0,1,2,3,4,..,7}
+    vec_index = svlsr_z(pg, vec_index, 1);  // {0,0,1,1,2,..,3}
+
+    UINT vec_step = (vec_len >> 1);
+    UINT loop_step = vec_step * 4;  // unroll 4
+
+    ITYPE state_index;
+
+#pragma omp parallel for
+    for (state_index = 0; state_index < loop_dim; state_index += loop_step) {
+        SV_ITYPE sv_vec_index1 = SvdupI(state_index);
+        SV_ITYPE sv_vec_index2 = SvdupI(state_index + vec_step);
+        SV_ITYPE sv_vec_index3 = SvdupI(state_index + vec_step * 2);
+        SV_ITYPE sv_vec_index4 = SvdupI(state_index + vec_step * 3);
+        sv_vec_index1 = svadd_z(pg, sv_vec_index1, vec_index);
+        sv_vec_index2 = svadd_z(pg, sv_vec_index2, vec_index);
+        sv_vec_index3 = svadd_z(pg, sv_vec_index3, vec_index);
+        sv_vec_index4 = svadd_z(pg, sv_vec_index4, vec_index);
+
+        /* prefetch */
+        if ((6 <= target_qubit_index_0 && target_qubit_index_0 <= 9) ||
+            (6 <= target_qubit_index_1 && target_qubit_index_1 <= 9)) {
+            // L1 prefetch
+#undef _PRF_L1_ITR
+#define _PRF_L1_ITR 4
+            ITYPE basis_index_l1pf0 =
+                ((state_index + loop_step * _PRF_L1_ITR) & low_mask) +
+                (((state_index + loop_step * _PRF_L1_ITR) & mid_mask) << 1) +
+                (((state_index + loop_step * _PRF_L1_ITR) & high_mask) << 2) +
+                mask_0;
+            ITYPE basis_index_l1pf1 = basis_index_l1pf0 + mask;
+            ITYPE basis_index_l1pf2 =
+                ((state_index + loop_step * _PRF_L1_ITR + vec_step) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L1_ITR + vec_step) & mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L1_ITR + vec_step) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l1pf3 = basis_index_l1pf2 + mask;
+            ITYPE basis_index_l1pf4 =
+                ((state_index + loop_step * _PRF_L1_ITR + (vec_step * 2)) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L1_ITR + (vec_step * 2)) &
+                     mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L1_ITR + (vec_step * 2)) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l1pf5 = basis_index_l1pf4 + mask;
+            ITYPE basis_index_l1pf6 =
+                ((state_index + loop_step * _PRF_L1_ITR + (vec_step + 3)) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L1_ITR + (vec_step + 3)) &
+                     mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L1_ITR + (vec_step + 3)) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l1pf7 = basis_index_l1pf6 + mask;
+
+            __builtin_prefetch(&state[basis_index_l1pf0], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf1], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf2], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf3], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf4], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf5], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf6], 1, 3);
+            __builtin_prefetch(&state[basis_index_l1pf7], 1, 3);
+            // L2 prefetch
+#undef _PRF_L2_ITR
+#define _PRF_L2_ITR 32
+            ITYPE basis_index_l2pf0 =
+                ((state_index + loop_step * _PRF_L2_ITR) & low_mask) +
+                (((state_index + loop_step * _PRF_L2_ITR) & mid_mask) << 1) +
+                (((state_index + loop_step * _PRF_L2_ITR) & high_mask) << 2) +
+                mask_0;
+            ITYPE basis_index_l2pf1 = basis_index_l2pf0 + mask;
+            ITYPE basis_index_l2pf2 =
+                ((state_index + loop_step * _PRF_L2_ITR + vec_step) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L2_ITR + vec_step) & mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L2_ITR + vec_step) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l2pf3 = basis_index_l2pf2 + mask;
+            ITYPE basis_index_l2pf4 =
+                ((state_index + loop_step * _PRF_L2_ITR + (vec_step * 2)) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L2_ITR + (vec_step * 2)) &
+                     mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L2_ITR + (vec_step * 2)) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l2pf5 = basis_index_l2pf4 + mask;
+            ITYPE basis_index_l2pf6 =
+                ((state_index + loop_step * _PRF_L2_ITR + (vec_step + 3)) &
+                    low_mask) +
+                (((state_index + loop_step * _PRF_L2_ITR + (vec_step + 3)) &
+                     mid_mask)
+                    << 1) +
+                (((state_index + loop_step * _PRF_L2_ITR + (vec_step + 3)) &
+                     high_mask)
+                    << 2) +
+                mask_0;
+            ITYPE basis_index_l2pf7 = basis_index_l2pf6 + mask;
+
+            __builtin_prefetch(&state[basis_index_l2pf0], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf1], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf2], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf3], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf4], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf5], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf6], 1, 2);
+            __builtin_prefetch(&state[basis_index_l2pf7], 1, 2);
+        }
+
+        /* calclate the index */
+        // (state_index & low_mask) 1/4
+        SV_ITYPE sv_tmp_index1 = svand_z(pg, sv_vec_index1, sv_low_mask);
+        // ((state_index & mid_mask) << 1) 1/4
+        SV_ITYPE sv_tmp_index2 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index1, sv_mid_mask), SvdupI(1));
+        // (state_index & high_mask) << 2 1/4
+        SV_ITYPE sv_tmp_index3 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index1, sv_high_mask), SvdupI(2));
+        // (state_index & low_mask) 2/4
+        SV_ITYPE sv_tmp_index4 = svand_z(pg, sv_vec_index2, sv_low_mask);
+        // ((state_index & mid_mask) << 1) 2/4
+        SV_ITYPE sv_tmp_index5 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index2, sv_mid_mask), SvdupI(1));
+        // (state_index & high_mask) << 2 2/4
+        SV_ITYPE sv_tmp_index6 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index2, sv_high_mask), SvdupI(2));
+        // (state_index & low_mask) 3/4
+        SV_ITYPE sv_tmp_index7 = svand_z(pg, sv_vec_index3, sv_low_mask);
+        // ((state_index & mid_mask) << 1) 3/4
+        SV_ITYPE sv_tmp_index8 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index3, sv_mid_mask), SvdupI(1));
+        // (state_index & high_mask) << 2 3/4
+        SV_ITYPE sv_tmp_index9 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index3, sv_high_mask), SvdupI(2));
+        // (state_index & low_mask) 4/4
+        SV_ITYPE sv_tmp_index10 = svand_z(pg, sv_vec_index4, sv_low_mask);
+        // ((state_index & mid_mask) << 1) 4/4
+        SV_ITYPE sv_tmp_index11 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index4, sv_mid_mask), SvdupI(1));
+        // (state_index & high_mask) << 2 4/4
+        SV_ITYPE sv_tmp_index12 =
+            svlsl_z(pg, svand_z(pg, sv_vec_index4, sv_high_mask), SvdupI(2));
+
+        SV_ITYPE sv_basis_0, sv_basis_1;
+        sv_basis_0 = svadd_z(pg, sv_tmp_index1, sv_tmp_index2);
+        sv_basis_0 = svadd_z(pg, sv_basis_0, sv_tmp_index3);
+        sv_basis_0 = svadd_z(pg, sv_basis_0, sv_mask0);
+        sv_basis_1 = sveor_z(pg, sv_basis_0, sv_mask);
+        SV_ITYPE sv_basis_2, sv_basis_3;
+        sv_basis_2 = svadd_z(pg, sv_tmp_index4, sv_tmp_index5);
+        sv_basis_2 = svadd_z(pg, sv_basis_2, sv_tmp_index6);
+        sv_basis_2 = svadd_z(pg, sv_basis_2, sv_mask0);
+        sv_basis_3 = sveor_z(pg, sv_basis_2, sv_mask);
+        SV_ITYPE sv_basis_4, sv_basis_5;
+        sv_basis_4 = svadd_z(pg, sv_tmp_index7, sv_tmp_index8);
+        sv_basis_4 = svadd_z(pg, sv_basis_4, sv_tmp_index9);
+        sv_basis_4 = svadd_z(pg, sv_basis_4, sv_mask0);
+        sv_basis_5 = sveor_z(pg, sv_basis_4, sv_mask);
+        SV_ITYPE sv_basis_6, sv_basis_7;
+        sv_basis_6 = svadd_z(pg, sv_tmp_index10, sv_tmp_index11);
+        sv_basis_6 = svadd_z(pg, sv_basis_6, sv_tmp_index12);
+        sv_basis_6 = svadd_z(pg, sv_basis_6, sv_mask0);
+        sv_basis_7 = sveor_z(pg, sv_basis_6, sv_mask);
+
+        // complex -> double
+        SV_ITYPE zero_one = svzip1(SvdupI(0), SvdupI(1));
+        sv_basis_0 = svmul_z(pg, sv_basis_0, SvdupI(2));
+        sv_basis_1 = svmul_z(pg, sv_basis_1, SvdupI(2));
+        sv_basis_0 = svadd_z(pg, sv_basis_0, zero_one);
+        sv_basis_1 = svadd_z(pg, sv_basis_1, zero_one);
+        sv_basis_2 = svmul_z(pg, sv_basis_2, SvdupI(2));
+        sv_basis_3 = svmul_z(pg, sv_basis_3, SvdupI(2));
+        sv_basis_2 = svadd_z(pg, sv_basis_2, zero_one);
+        sv_basis_3 = svadd_z(pg, sv_basis_3, zero_one);
+        sv_basis_4 = svmul_z(pg, sv_basis_4, SvdupI(2));
+        sv_basis_5 = svmul_z(pg, sv_basis_5, SvdupI(2));
+        sv_basis_4 = svadd_z(pg, sv_basis_4, zero_one);
+        sv_basis_5 = svadd_z(pg, sv_basis_5, zero_one);
+        sv_basis_6 = svmul_z(pg, sv_basis_6, SvdupI(2));
+        sv_basis_7 = svmul_z(pg, sv_basis_7, SvdupI(2));
+        sv_basis_6 = svadd_z(pg, sv_basis_6, zero_one);
+        sv_basis_7 = svadd_z(pg, sv_basis_7, zero_one);
+
+        // Load values (Gather)
+        ETYPE* ptr = (ETYPE*)&state[0];
+        const SV_FTYPE input0 = svld1_gather_index(pg, ptr, sv_basis_0);
+        const SV_FTYPE input1 = svld1_gather_index(pg, ptr, sv_basis_1);
+        const SV_FTYPE input2 = svld1_gather_index(pg, ptr, sv_basis_2);
+        const SV_FTYPE input3 = svld1_gather_index(pg, ptr, sv_basis_3);
+        const SV_FTYPE input4 = svld1_gather_index(pg, ptr, sv_basis_4);
+        const SV_FTYPE input5 = svld1_gather_index(pg, ptr, sv_basis_5);
+        const SV_FTYPE input6 = svld1_gather_index(pg, ptr, sv_basis_6);
+        const SV_FTYPE input7 = svld1_gather_index(pg, ptr, sv_basis_7);
+
+        // Store values (Scatter)
+        svst1_scatter_index(pg, ptr, sv_basis_0, input1);
+        svst1_scatter_index(pg, ptr, sv_basis_1, input0);
+        svst1_scatter_index(pg, ptr, sv_basis_2, input3);
+        svst1_scatter_index(pg, ptr, sv_basis_3, input2);
+        svst1_scatter_index(pg, ptr, sv_basis_4, input5);
+        svst1_scatter_index(pg, ptr, sv_basis_5, input4);
+        svst1_scatter_index(pg, ptr, sv_basis_6, input7);
+        svst1_scatter_index(pg, ptr, sv_basis_7, input6);
+    }
+}
+#endif  // #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
