@@ -448,6 +448,7 @@ void SWAP_gate_sve(UINT target_qubit_index_0, UINT target_qubit_index_1,
 void SWAP_gate_sve_gather_scatter_unroll4(UINT target_qubit_index_0,
     UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
 #endif
+
 /**
  * \~english
  * Apply the BlockSWAP to the quantum state.
