@@ -190,7 +190,11 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 CTYPE* si = si0;
                 CTYPE* ti = t_send;
                 for (ITYPE k = 0; k < num_elem_block; ++k) {
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
                     si += (rtgt_blk_dim << 1);
                     ti += rtgt_blk_dim;
                 }
@@ -202,7 +206,11 @@ void SWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
                 si = t_recv;
                 ti = si0;
                 for (ITYPE k = 0; k < num_elem_block; ++k) {
+#if defined(__ARM_FEATURE_SVE)
+                    memcpy_sve((double*)ti, (double*)si, rtgt_blk_dim * 2);
+#else
                     memcpy(ti, si, rtgt_blk_dim * sizeof(CTYPE));
+#endif
                     si += rtgt_blk_dim;
                     ti += (rtgt_blk_dim << 1);
                 }
