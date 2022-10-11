@@ -66,7 +66,6 @@ class TestQuantumState(unittest.TestCase):
         self.state.load(state_ref)
         entropy_ref = state_ref.get_entropy()
         entropy_test = self.state.get_entropy()
-        print("#", entropy_test, entropy_ref)
         self.assertTrue((abs(entropy_test - entropy_ref) < 1e-10), msg="check set_computational_basis")
 
 class TestQuantumCircuit(unittest.TestCase):

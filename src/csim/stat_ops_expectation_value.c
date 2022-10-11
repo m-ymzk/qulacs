@@ -408,7 +408,7 @@ double expectation_value_multi_qubit_Pauli_operator_partial_list(
                 bit_flip_mask, phase_flip_mask, global_phase_90rot_count,
                 pivot_qubit_index, state, dim, outer_qc, inner_qc);
         }
-        m->s_D_allreduce_ordersafe(&result);
+        m->s_D_allreduce_ordered(&result);
     } else
 #endif
     {

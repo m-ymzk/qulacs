@@ -544,7 +544,11 @@ public:
      * @return エントロピー
      */
     virtual double get_entropy() const override {
-        return measurement_distribution_entropy(this->data_c(), _dim);
+		double measured = measurement_distribution_entropy(this->data_c(), _dim);
+#ifdef _USE_MPI
+        if (this->outer_qc > 0) mpiutil->s_D_allreduce_ordered(&measured);
+#endif  //#ifdef _USE_MPI
+        return measured;
     }
 
     /**
