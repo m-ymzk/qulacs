@@ -31,6 +31,7 @@
       - copy
       - load
       - get_device_name
+      - get_entropy
       - get_vector
       - normalize
       - sampling
@@ -79,6 +80,8 @@
       - permutate_qubit
       - drop_qubit
       - partial_trace
+      - get_zero_probability
+      - get_marginal_probability
   - QuantumGateBase
   - QuantumGateMatrix
   - GeneralQuantumOperator.get_transition_amplitude( )
