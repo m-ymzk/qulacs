@@ -49,8 +49,8 @@ class TestQASMBenchSmall(unittest.TestCase):
             len_part = len(vec_part)
             vector_len = len_part * mpisize
             vector = np.zeros(vector_len, dtype=np.complex128)
-            comm.Allgather([vec_part, MPI.DOUBLE_COMPLEX],
-                           [vector, MPI.DOUBLE_COMPLEX])
+            comm.Allgather([vec_part, MPI.C_DOUBLE_COMPLEX],
+                           [vector, MPI.C_DOUBLE_COMPLEX])
             return vector
         else:
             return state.get_vector()
