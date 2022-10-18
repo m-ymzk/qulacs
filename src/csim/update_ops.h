@@ -442,6 +442,12 @@ void SWAP_gate_simd(UINT target_qubit_index_0, UINT target_qubit_index_1,
 DllExport void SWAP_gate_mpi(UINT target_qubit_index_0,
     UINT target_qubit_index_1, CTYPE *state, ITYPE dim, UINT inner_qc);
 #endif
+#if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
+void SWAP_gate_sve(UINT target_qubit_index_0, UINT target_qubit_index_1,
+    CTYPE *state, ITYPE dim);
+void SWAP_gate_sve_gather_scatter_unroll4(UINT target_qubit_index_0,
+    UINT target_qubit_index_1, CTYPE *state, ITYPE dim);
+#endif
 
 /**
  * \~english
