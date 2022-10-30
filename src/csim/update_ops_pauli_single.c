@@ -123,6 +123,7 @@ void RZ_gate(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim) {
         target_qubit_index, diagonal_matrix, state, dim);
 }
 
+#ifdef _USE_MPI
 void RZ_gate_mpi(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim,
     UINT inner_qc) {
     CTYPE diagonal_matrix[2];
@@ -135,3 +136,4 @@ void RZ_gate_mpi(UINT target_qubit_index, double angle, CTYPE* state, ITYPE dim,
             target_qubit_index, diagonal_matrix, state, dim, inner_qc);
     }
 }
+#endif // #ifdef _USE_MPI

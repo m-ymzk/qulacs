@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <gtest/gtest.h>
 
 //#define _USE_MATH_DEFINES
@@ -1417,3 +1418,4 @@ TEST(CircuitTest_multicpu, FSWAPOptimizer_reorder_6qubits) {
         _ApplyOptimizer(&circuit, 0, 2, 2);
     }
 }
+#endif // #ifdef _USE_MPI

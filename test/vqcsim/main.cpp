@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <mpi.h>
 #include <gtest/gtest.h>
 
@@ -12,3 +13,4 @@ GTEST_API_ int main(int argc, char **argv) {
 
     return ret;
 }
+#endif // #ifdef _USE_MPI

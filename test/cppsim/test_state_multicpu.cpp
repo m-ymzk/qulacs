@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <gtest/gtest.h>
 
 #include <cppsim/state.hpp>
@@ -371,3 +372,4 @@ TEST(StateTest_multicpu, LoadState) {
                 eps);
     }
 }
+#endif // #ifdef _USE_MPI

@@ -52,7 +52,9 @@ private:
     UINT get_merged_gate_size(UINT gate_index1, UINT gate_index2);
     bool is_neighboring(UINT gate_index1, UINT gate_index2);
     bool is_excluded_for_merge(UINT gate_idx, UINT local_qc);
+#ifdef _USE_MPI
     void insert_fswap(UINT level);
+#endif // #ifdef _USE_MPI
     std::vector<UINT> get_comm_qubits(UINT gate_index);
     bool need_comm(UINT gate_index, QubitTable& qt);
     std::unordered_set<UINT> find_next_inner_qubits(UINT start_gate_idx);

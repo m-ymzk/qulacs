@@ -39,11 +39,16 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
         comm_flag = bit_flip_mask >> inner_qc;
     }
 
+#ifdef _USE_MPI
     MPIutil m = get_mpiutil();
     int mpirank = m->get_rank();
+#else
+    int mpirank = 0;
+#endif
     int pair_rank = mpirank ^ comm_flag;
     ITYPE global_offset = mpirank << inner_qc;
 
+#ifdef _USE_MPI
     if (comm_flag) {
         ITYPE dim_work = dim;
         ITYPE num_work = 0;
@@ -61,8 +66,10 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
             const CTYPE* sendptr = state + dim_work * i;
 
             if (mpirank < pair_rank) {
+#ifdef _USE_MPI
                 // recv
                 m->m_DC_recv(recvptr, dim_work, pair_rank);
+#endif
 
 #if defined(__ARM_FEATURE_SVE) && defined(_USE_SVE)
                 ITYPE vec_len =
@@ -166,11 +173,9 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                             count_population(basis_0 & phase_flip_mask) % 2;
 
                         sum += creal(state[basis_0 & inner_mask] *
-                                     conj(recvptr[basis_1 & (dim_work - 1)]) *
-                                     PHASE_90ROT[(global_phase_90rot_count +
-                                                     sign_0 * 2) %
-                                                 4] *
-                                     2.0);
+                            conj(recvptr[basis_1 & (dim_work - 1)]) *
+                            PHASE_90ROT[(global_phase_90rot_count +
+                                sign_0 * 2) % 4] * 2.0);
                     }
                 }
                 state_index += dim_work;
@@ -183,6 +188,9 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
         omputil->reset_qulacs_num_threads();
 #endif
     } else {
+#else // #ifdef _USE_MPI
+    {
+#endif // #ifdef _USE_MPI
         const ITYPE loop_dim = dim / 2;
 #ifdef _OPENMP
         OMPutil omputil = get_omputil();

@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -1683,3 +1684,4 @@ TEST(GateTest_multicpu, DuplicateIndex) {
                 ASSERT_EQ(NULL, gate2);
         }
 }
+#endif // #ifdef _USE_MPI

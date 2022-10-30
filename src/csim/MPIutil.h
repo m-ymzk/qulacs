@@ -1,6 +1,7 @@
 //
 #pragma once
 
+#ifdef _USE_MPI
 #include <mpi.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -50,3 +51,5 @@ MPIutil get_mpiutil(void);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+
+#endif // #ifdef _USE_MPI

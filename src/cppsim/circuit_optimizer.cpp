@@ -131,9 +131,9 @@ void QuantumCircuitOptimizer::optimize(
     QuantumCircuit* circuit_, UINT max_block_size, UINT swap_level) {
     circuit = circuit_;
 
+#ifdef _USE_MPI
     insert_fswap(swap_level);
 
-#ifdef _USE_MPI
     MPIutil mpiutil = get_mpiutil();
     const UINT mpisize = mpiutil->get_size();
     const UINT local_qc = circuit->qubit_count - std::log2(mpisize);
@@ -236,11 +236,10 @@ void QuantumCircuitOptimizer::optimize_light(QuantumCircuit* circuit_, UINT swap
     MPIutil mpiutil = get_mpiutil();
     const UINT mpisize = mpiutil->get_size();
     const UINT local_qc = circuit->qubit_count - std::log2(mpisize);
+    insert_fswap(swap_level);
 #else
     const UINT local_qc = circuit->qubit_count;
 #endif
-
-    insert_fswap(swap_level);
 
     UINT qubit_count = circuit->qubit_count;
 
@@ -354,6 +353,7 @@ bool QuantumCircuitOptimizer::QubitTable::swap(const UINT i, const UINT j) {
     return true;
 }
 
+#ifdef _USE_MPI
 bool QuantumCircuitOptimizer::QubitTable::fswap(const UINT i, const UINT j, const UINT width) {
    if (i + width > _nc || j + width > _nc) {
        std::cerr << "QubitTable::fswap() out of qubit range" << std::endl;
@@ -722,7 +722,6 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
         return;
     }
 
-#ifdef _USE_MPI
     MPIutil mpiutil = get_mpiutil();
     UINT mpisize = mpiutil->get_size();
 #ifndef NDEBUG
@@ -736,13 +735,12 @@ void QuantumCircuitOptimizer::insert_fswap(UINT level) {
     UINT log_nodes = std::log2(mpisize);
     inner_qc = circuit->qubit_count - log_nodes;
     outer_qc = log_nodes;
-#else
-    std::cerr
-        << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
-        ": insert_swap is no effect to non MPI build"
-        << std::endl;
-    return;
-#endif
+//#else
+//    std::cerr
+//        << "Error: QuantumCircuit::QuantumCircuitOptimizer::insert_fswap(level) "
+//        ": insert_swap is no effect to non MPI build"
+//        << std::endl;
+//    return;
 
     if (outer_qc == 0 || inner_qc <= 1) {
         std::cerr
@@ -914,3 +912,4 @@ static std::multimap<const QuantumGateBase*, const QuantumGateBase*> make_dep_ma
 
     return dep_map;
 }
+#endif

@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <gtest/gtest.h>
 #include <csim/constant.h>
 #include <cppsim/type.hpp>
@@ -324,3 +325,4 @@ TEST(ObservableTest_multicpu, CheckSplitObservable){
     ASSERT_NEAR(non_diag_res.imag(), 0, eps);
 
 }
+#endif // #ifdef _USE_MPI

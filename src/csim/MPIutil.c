@@ -1,13 +1,12 @@
 //
+#ifdef _USE_MPI
 #include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "utility.h"
-#ifdef _USE_MPI
 #include "MPIutil.h"
-#endif
 
 //#define _NQUBIT_WORK 5 // small buffer(5 qubit/proc.) for test
 #define _NQUBIT_WORK 22  // 4 Mi x 16 Byte(CTYPE)
@@ -236,3 +235,4 @@ MPIutil get_mpiutil() {
 }
 
 #undef REGISTER_METHOD_POINTER
+#endif
