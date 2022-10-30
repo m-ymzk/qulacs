@@ -98,6 +98,7 @@ class CMakeBuild(build_ext):
             opt_flags = None
         if opt_flags:
             cmake_args += ['-DOPT_FLAGS=' + opt_flags]
+        cmake_args += ['-DUSE_MPI=Yes']
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),

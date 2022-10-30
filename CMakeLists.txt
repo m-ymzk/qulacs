@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8)
 
 # Set default behavior #####
 set(DEFAULT_USE_OMP Yes)
-set(DEFAULT_USE_MPI Yes)
+set(DEFAULT_USE_MPI No)
 set(DEFAULT_USE_GPU No)
 set(DEFAULT_USE_SVE No)
 set(DEFAULT_USE_PYTHON Yes)
