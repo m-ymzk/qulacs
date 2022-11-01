@@ -60,6 +60,13 @@ class TestQuantumState(unittest.TestCase):
             vector_ans[pos] = 1.
         self.assertTrue(((vector - vector_ans) < 1e-10).all(), msg="check set_computational_basis")
 
+    def test_state_entropy(self):
+        state_ref = qulacs.QuantumState(self.n)
+        state_ref.set_Haar_random_state()
+        self.state.load(state_ref)
+        entropy_ref = state_ref.get_entropy()
+        entropy_test = self.state.get_entropy()
+        self.assertTrue((abs(entropy_test - entropy_ref) < 1e-10), msg="check set_computational_basis")
 
 class TestQuantumCircuit(unittest.TestCase):
     def setUp(self):
