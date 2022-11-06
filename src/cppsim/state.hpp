@@ -33,16 +33,12 @@ class QuantumStateBase {
 protected:
     ITYPE _dim;
     UINT _qubit_count;
-    UINT _inner_qc; /**< \~japanese-en ノード内量子ビット数 */
-    UINT _outer_qc; /**< \~japanese-en ノード外量子ビット数 */
+    UINT _inner_qc;
+    UINT _outer_qc;
     bool _is_state_vector;
     std::vector<UINT> _classical_register;
     UINT _device_number;
     void* _cuda_stream;
-#ifdef _USE_MPI
-    MPI_Comm _comm;
-    MPIutil mpiutil;
-#endif // #ifdef _USE_MPI
 
 public:
     const UINT& qubit_count; /**< \~japanese-en 量子ビット数 */
@@ -65,9 +61,9 @@ public:
           dim(_dim),
           classical_register(_classical_register),
           device_number(_device_number) {
+        this->_qubit_count = qubit_count_;
         this->_inner_qc = qubit_count_;
         this->_outer_qc = 0;
-        this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number = 0;
@@ -82,15 +78,10 @@ public:
           classical_register(_classical_register),
           device_number(_device_number) {
 #ifdef _USE_MPI
-        mpiutil = get_mpiutil();
+        MPIutil mpiutil = get_mpiutil();
         UINT mpirank = mpiutil->get_rank();
         UINT mpisize = mpiutil->get_size();
-#else
-        UINT mpirank = 0;
-        UINT mpisize = 1;
-#endif
         assert(!(mpisize & (mpisize - 1)));  // mpi-size must be power of 2
-
         UINT log_nodes = std::log2(mpisize);
         if (use_multi_cpu &&
             (qubit_count_ > (log_nodes + 1))) {  // minimum inner_qc=2
@@ -100,11 +91,19 @@ public:
             this->_inner_qc = qubit_count_;
             this->_outer_qc = 0;
         }
-
+#else
+        (void) use_multi_cpu; // UNUSED
+        this->_inner_qc = qubit_count_;
+        this->_outer_qc = 0;
+#endif
         this->_qubit_count = qubit_count_;
         this->_dim = 1ULL << _inner_qc;  // qubit_count_;
         this->_is_state_vector = is_state_vector;
+#ifdef _USE_MPI
         this->_device_number = mpirank;
+#else
+        this->_device_number = 0;
+#endif
     }
 
     QuantumStateBase(
@@ -117,6 +116,8 @@ public:
           device_number(_device_number) {
         assert(false);  // "not supported in mpi-mode"
         this->_qubit_count = qubit_count_;
+        this->_inner_qc = qubit_count_;
+        this->_outer_qc = 0;
         this->_dim = 1ULL << qubit_count_;
         this->_is_state_vector = is_state_vector;
         this->_device_number = device_number_;
@@ -335,13 +336,14 @@ public:
         std::stringstream os;
         ITYPE dim_out;
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         UINT mpirank = mpiutil->get_rank();
         UINT mpisize = mpiutil->get_size();
 #else
         UINT mpirank = 0;
         UINT mpisize = 1;
 #endif // #ifdef _USE_MPI
-        if (this->outer_qc > 0)
+        if (outer_qc)
             dim_out = std::max(
                 (ITYPE)2, std::min(MAX_OUTPUT_ELEMS / mpisize, this->dim));
         else
@@ -357,7 +359,7 @@ public:
             os << " *** Quantum State ***" << std::endl;
             // os << " * MPI rank / size : " << this->mpirank << " / " <<
             // this->mpisize << std::endl;
-            if (this->outer_qc == 0) {
+            if (outer_qc == 0) {
                 os << " * Qubit Count : " << this->qubit_count << std::endl;
                 os << " * Dimension   : " << this->dim << std::endl;
                 if (dim_out < this->dim) {
@@ -367,8 +369,8 @@ public:
                 os << " * State vector: \n" << eigen_state << std::endl;
             } else {
                 os << " * Qubit Count : " << this->qubit_count
-                   << " (local / global : " << this->_inner_qc << " / "
-                   << this->outer_qc << " )" << std::endl;
+                   << " (local / global : " << inner_qc << " / "
+                   << outer_qc << " )" << std::endl;
                 os << " * Dimension   : " << this->dim * mpisize << std::endl;
                 if (dim_out < this->dim) {
                     os << " * state vector is too long, so the (" << dim_out
@@ -379,7 +381,7 @@ public:
                    << eigen_state << std::endl;
             }
         } else {
-            if (this->outer_qc > 0) {
+            if (outer_qc) {
                 os << " * State vector (rank " << mpirank << "): \n"
                    << eigen_state << std::endl;
                 // os.seekg(0, std::ios::end);
@@ -431,7 +433,7 @@ public:
         this->_state_vector =
             reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
 #ifdef _USE_MPI
-        initialize_quantum_state_mpi(this->data_c(), _dim, this->outer_qc);
+        initialize_quantum_state_mpi(this->data_c(), _dim, outer_qc);
 #else
         initialize_quantum_state(this->data_c(), _dim);
 #endif
@@ -441,7 +443,7 @@ public:
         this->_state_vector =
             reinterpret_cast<CPPCTYPE*>(allocate_quantum_state(this->_dim));
 #ifdef _USE_MPI
-        initialize_quantum_state_mpi(this->data_c(), _dim, this->outer_qc);
+        initialize_quantum_state_mpi(this->data_c(), _dim, outer_qc);
 #else
         initialize_quantum_state(this->data_c(), _dim);
 #endif
@@ -451,6 +453,7 @@ public:
      */
     virtual ~QuantumStateCpu() {
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         mpiutil->release_workarea();
 #endif // #ifdef _USE_MPI
         release_quantum_state(this->data_c());
@@ -459,11 +462,11 @@ public:
      * \~japanese-en 量子状態を計算基底の0状態に初期化する
      */
     virtual void set_zero_state() override {
-        if (this->outer_qc == 0)
+        if (outer_qc == 0)
             initialize_quantum_state(this->data_c(), _dim);
 #ifdef _USE_MPI
         else
-            initialize_quantum_state_mpi(this->data_c(), _dim, this->outer_qc);
+            initialize_quantum_state_mpi(this->data_c(), _dim, _outer_qc);
 #endif // #ifdef _USE_MPI
     }
     /**
@@ -482,11 +485,14 @@ public:
         }
         set_zero_state();
         _state_vector[0] = 0.;
-        if (this->outer_qc == 0 
 #ifdef _USE_MPI
-        || (comp_basis >> this->inner_qc == (ITYPE)mpiutil->get_rank())
-#endif // #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
+        if (outer_qc == 0 
+            || (comp_basis >> inner_qc == (ITYPE)mpiutil->get_rank())
         ) _state_vector[comp_basis & (_dim - 1)] = 1.;
+#else
+        if (outer_qc == 0) _state_vector[comp_basis & (_dim - 1)] = 1.;
+#endif // #ifdef _USE_MPI
     }
     /**
      * \~japanese-en 量子状態をHaar
@@ -495,6 +501,7 @@ public:
     virtual void set_Haar_random_state() override {
         UINT seed = random.int32();
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif  //#ifdef _USE_MPI
         set_Haar_random_state(seed);
@@ -506,9 +513,10 @@ public:
     virtual void set_Haar_random_state(UINT seed) override {
         UINT seed_rank = seed;
 #ifdef _USE_MPI
-        if (this->outer_qc > 0) seed_rank += mpiutil->get_rank();
+        MPIutil mpiutil = get_mpiutil();
+        if (outer_qc) seed_rank += mpiutil->get_rank();
         initialize_Haar_random_state_mpi_with_seed(
-            this->data_c(), _dim, this->outer_qc, seed_rank);
+            this->data_c(), _dim, outer_qc, seed_rank);
 #else
         initialize_Haar_random_state_with_seed(
             this->data_c(), _dim, seed_rank);
@@ -582,7 +590,7 @@ public:
     virtual double get_squared_norm() const override {
         double norm;
 #ifdef _USE_MPI
-        if (this->outer_qc > 0)
+        if (outer_qc)
             norm = state_norm_squared_mpi(this->data_c(), _dim);
         else
 #endif
@@ -616,7 +624,7 @@ public:
      */
     virtual QuantumStateBase* copy() const override {
 #ifdef _USE_MPI
-        if (this->_outer_qc > 0)
+        if (outer_qc)
             return this->copy_multicpu();
         else
 #endif // #ifdef _USE_MPI
@@ -631,7 +639,8 @@ public:
     QuantumStateBase* copy_cpu() const {
         QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 0);
 #ifdef _USE_MPI
-        if (this->_outer_qc > 0) {  // copy multicpu -> (single)cpu
+        if (outer_qc) {  // copy multicpu -> (single)cpu
+            MPIutil mpiutil = get_mpiutil();
             mpiutil->m_DC_allgather(
                 this->data_cpp(), new_state->data_cpp(), _dim);
             for (UINT i = 0; i < _classical_register.size(); ++i)
@@ -656,12 +665,13 @@ public:
 #ifdef _USE_MPI
     virtual QuantumStateBase* copy_multicpu() const {
         QuantumStateCpu* new_state = new QuantumStateCpu(this->_qubit_count, 1);
-        if (this->_outer_qc > 0) {  // copy multicpu -> multicpu
+        MPIutil mpiutil = get_mpiutil();
+        if (outer_qc) {  // copy multicpu -> multicpu
             memcpy(new_state->data_cpp(), _state_vector,
                 (size_t)(sizeof(CPPCTYPE) * _dim));
             for (UINT i = 0; i < _classical_register.size(); ++i)
                 new_state->set_classical_value(i, _classical_register[i]);
-        } else if (new_state->_outer_qc > 0) {  // copy (single)cpu -> multicpu
+        } else if (new_state->outer_qc) {  // copy (single)cpu -> multicpu
             ITYPE offs = (_dim / mpiutil->get_size()) * mpiutil->get_rank();
             memcpy(new_state->data_cpp(), _state_vector + offs,
                 (size_t)(sizeof(CPPCTYPE) * _dim / mpiutil->get_size()));
@@ -695,6 +705,7 @@ public:
             free(ptr);
 #ifdef _USE_MPI
         } else if (_state->get_device_name() == "multi-cpu") {
+            MPIutil mpiutil = get_mpiutil();
             if (this->get_device_name() == "multi-cpu") {
                 // load multicpu to multicpu
                 memcpy(this->data_cpp(), _state->data_cpp(),
@@ -708,6 +719,7 @@ public:
         } else {
 #ifdef _USE_MPI
             if (this->get_device_name() == "multi-cpu") {
+                MPIutil mpiutil = get_mpiutil();
                 // load cpu to multicpu
                 ITYPE offs = _dim * mpiutil->get_rank();
                 memcpy(this->data_cpp(), _state->data_cpp() + offs,
@@ -748,7 +760,7 @@ public:
      * 量子状態が配置されているメモリを保持するデバイス名を取得する。
      */
     virtual const std::string get_device_name() const override {
-        if (this->outer_qc == 0)
+        if (outer_qc == 0)
             return "cpu";
         else
             return "multi-cpu";
@@ -829,6 +841,7 @@ public:
     virtual std::vector<ITYPE> sampling(UINT sampling_count) override {
         UINT seed = rand();
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         if (mpiutil->get_size() > 1) mpiutil->s_u_bcast(&seed);
 #endif
         return this->sampling(sampling_count, seed);
@@ -852,9 +865,10 @@ public:
         }
 
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         UINT mpirank = mpiutil->get_rank();
         UINT mpisize = mpiutil->get_size();
-        if (_outer_qc > 0) {
+        if (outer_qc) {
             double* sumrank_prob;
             sumrank_prob = new double[mpisize];
 
@@ -880,7 +894,7 @@ public:
         }
 
 #ifdef _USE_MPI
-        if (_outer_qc > 0) {
+        if (outer_qc) {
             ITYPE geta = mpirank * this->dim;
             for (UINT i = 0; i < sampling_count; ++i) {
                 if (result[i] == -1ULL or result[i] == this->dim)
