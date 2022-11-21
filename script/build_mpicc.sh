@@ -1,16 +1,12 @@
 #!/bin/sh
-# if duplicate-definition error was occured,
-# rm -rf include build
 
-set -ex
+set -eux
 
-GCC_COMMAND="mpicc"
-GXX_COMMAND="mpic++"
+export C_COMPILER="mpicc"
+export CXX_COMPILER="mpic++"
+unset QULACS_OPT_FLAGS
+export USE_MPI=Yes
+export USE_TEST=Yes
 
-mkdir ./build
-cd ./build
-cmake -G "Unix Makefiles" -D CMAKE_C_COMPILER=$GCC_COMMAND -D CMAKE_CXX_COMPILER=$GXX_COMMAND -D CMAKE_BUILD_TYPE=Release ..
-make -j 40
-make python
-cd ../
+./script/build_gcc.sh
 

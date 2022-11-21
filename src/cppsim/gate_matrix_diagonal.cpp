@@ -120,10 +120,12 @@ void QuantumGateDiagonalMatrix::update_quantum_state(QuantumStateBase* state) {
                 if (state->outer_qc == 0)
                     single_qubit_diagonal_matrix_gate(target_index[0],
                         diagonal_ptr, state->data_c(), state->dim);
+#ifdef _USE_MPI
                 else
                     single_qubit_diagonal_matrix_gate_mpi(target_index[0],
                         diagonal_ptr, state->data_c(), state->dim,
                         state->inner_qc);
+#endif // #ifdef _USE_MPI
             } else {
                 if (state->outer_qc == 0)
                     multi_qubit_diagonal_matrix_gate(target_index.data(),

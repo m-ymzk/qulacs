@@ -1,39 +1,25 @@
 #!/bin/sh
-# if duplicate-definition error was occured,
-# rm -rf include build
 
-set -ex
+set -eux
 
-GCC_COMMAND="$C_COMPILER"
-GXX_COMMAND="$CXX_COMPILER"
+GCC_COMMAND=${C_COMPILER:-"gcc"}
+GXX_COMMAND=${CXX_COMPILER:-"g++"}
+USE_GPU="${USE_GPU:-No}"
+USE_MPI="${USE_MPI:-No}"
+USE_TEST="${USE_TEST:-No}"
 
-if [ -z "$GCC_COMMAND" ]; then
-  GCC_COMMAND="gcc"
-fi
-
-if [ -z "$GXX_COMMAND" ]; then
-  GXX_COMMAND="g++"
-fi
-
-# if gcc/g++ version is less than 8, use gcc-8/g++-8
-GCC_VERSION=$($GCC_COMMAND -dumpfullversion -dumpversion | awk -F. '{printf "%2d%02d%02d", $1,$2,$3}')
-if [ "$GCC_VERSION" -lt 80000 ]; then
-  GCC_COMMAND=gcc-7
-elif [ "$GCC_VERSION" -lt 90000 ]; then
-  GCC_COMMAND=gcc
-fi
-
-GXX_VERSION=$($GXX_COMMAND -dumpfullversion -dumpversion | awk -F. '{printf "%2d%02d%02d", $1,$2,$3}')
-if [ "$GXX_VERSION" -lt 80000 ]; then
-  GXX_COMMAND=g++-7
-elif [ "$GXX_VERSION" -lt 90000 ]; then
-  GXX_COMMAND=g++
-fi
-
-mkdir ./build
+mkdir -p ./build
 cd ./build
-cmake -G "Unix Makefiles" -D CMAKE_C_COMPILER=$GCC_COMMAND -D CMAKE_CXX_COMPILER=$GXX_COMMAND -D CMAKE_BUILD_TYPE=Release ..
-make -j 40
-make python
-cd ../
+if [ "${QULACS_OPT_FLAGS:-"__UNSET__"}" = "__UNSET__" ]; then
+    DEFINE_OPT_FLAGS=""
+else
+    DEFINE_OPT_FLAGS="-D OPT_FLAGS=\"${QULACS_OPT_FLAGS}\""
+fi
 
+cmake -G "Unix Makefiles" -D CMAKE_C_COMPILER=$GCC_COMMAND -D CMAKE_CXX_COMPILER=$GXX_COMMAND \
+      $DEFINE_OPT_FLAGS \
+      -D CMAKE_BUILD_TYPE=Release -D USE_GPU=$USE_GPU -D USE_TEST=$USE_TEST -D USE_MPI=$USE_MPI \
+      ..
+
+make -j $(nproc)
+cd ../

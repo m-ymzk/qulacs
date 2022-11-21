@@ -1,3 +1,4 @@
+#ifdef _USE_MPI
 #include <gtest/gtest.h>
 #include "../util/util.h"
 
@@ -29,3 +30,4 @@ TEST(PauliOperatorTest_multicpu, PauliQubitOverflow) {
 	CPPCTYPE value = pauli.get_expectation_value(&state);
 	ASSERT_NE(value, value); // (value != value is true) if and only if value is NaN.
 }
+#endif // #ifdef _USE_MPI

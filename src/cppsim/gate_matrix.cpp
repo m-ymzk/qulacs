@@ -131,10 +131,12 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                 if (state->outer_qc == 0)
                     single_qubit_dense_matrix_gate(target_index[0], matrix_ptr,
                         state->data_c(), state->dim);
+#ifdef _USE_MPI
                 else  // for distributed-state vector
                     single_qubit_dense_matrix_gate_mpi(target_index[0],
                         matrix_ptr, state->data_c(), state->dim,
                         state->inner_qc);
+#endif // #ifdef _USE_MPI
 #endif
             }
             // single control qubit
@@ -155,11 +157,13 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                     single_qubit_control_single_qubit_dense_matrix_gate(
                         control_index[0], control_value[0], target_index[0],
                         matrix_ptr, state->data_c(), state->dim);
+#ifdef _USE_MPI
                 else  // for distributed-state vector
                     single_qubit_control_single_qubit_dense_matrix_gate_mpi(
                         control_index[0], control_value[0], target_index[0],
                         matrix_ptr, state->data_c(), state->dim,
                         state->inner_qc);
+#endif // #ifdef _USE_MPI
 #endif
             }
             // multiple control qubits
@@ -221,10 +225,12 @@ void QuantumGateMatrix::update_quantum_state(QuantumStateBase* state) {
                     multi_qubit_dense_matrix_gate(target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
                         state->data_c(), state->dim);
+#ifdef _USE_MPI
                 else  // for distributed-state vector
                     multi_qubit_dense_matrix_gate_mpi(target_index.data(),
                         (UINT)(target_index.size()), matrix_ptr,
                         state->data_c(), state->dim, state->inner_qc);
+#endif // #ifdef _USE_MPI
 #endif
             }
             // single control qubit

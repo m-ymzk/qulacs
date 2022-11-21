@@ -10,7 +10,7 @@ extern "C" {
 #include "utility.h"
 #endif
 
-#if _USE_MPI
+#ifdef _USE_MPI
 #include "MPIutil.h"
 #endif
 

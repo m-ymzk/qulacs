@@ -22,26 +22,30 @@ void initialize_Haar_random_state(CTYPE* state, ITYPE dim) {
 }
 void initialize_Haar_random_state_with_seed(
     CTYPE* state, ITYPE dim, UINT seed) {
-    initialize_Haar_random_state_mpi_with_seed(state, dim, 0, seed);
+#ifdef _OPENMP
+    OMPutil omputil = get_omputil();
+    omputil->set_qulacs_num_threads(dim, 8);
+    initialize_Haar_random_state_with_seed_parallel(state, dim, 0, seed);
+    omputil->reset_qulacs_num_threads();
+#else
+    initialize_Haar_random_state_with_seed_single(state, dim, 0, seed);
+#endif
 }
 
+#ifdef _USE_MPI
 void initialize_Haar_random_state_mpi_with_seed(
     CTYPE* state, ITYPE dim, UINT outer_qc, UINT seed) {
     // printf("# enter init-Haar-rand-stat(seed), %lld, %d\n", dim, seed);
 #ifdef _OPENMP
     OMPutil omputil = get_omputil();
     omputil->set_qulacs_num_threads(dim, 8);
-    // if (dim < (((ITYPE)1) << threshold)) {
-    //    initialize_Haar_random_state_with_seed_single(
-    //        state, dim, outer_qc, seed);
-    //} else {
     initialize_Haar_random_state_with_seed_parallel(state, dim, outer_qc, seed);
-    //}
     omputil->reset_qulacs_num_threads();
 #else
     initialize_Haar_random_state_with_seed_single(state, dim, outer_qc, seed);
 #endif
 }
+#endif // #ifdef _USE_MPI
 
 // single thread
 void initialize_Haar_random_state_with_seed_single(
