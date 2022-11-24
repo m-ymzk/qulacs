@@ -580,6 +580,7 @@ public:
     virtual double get_entropy() const override {
 		double measured = measurement_distribution_entropy(this->data_c(), _dim);
 #ifdef _USE_MPI
+        MPIutil mpiutil = get_mpiutil();
         if (this->outer_qc > 0) mpiutil->s_D_allreduce_ordered(&measured);
 #endif  //#ifdef _USE_MPI
         return measured;
