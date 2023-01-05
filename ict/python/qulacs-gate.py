@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 #import pytest
 import numpy as np
 from qulacs import QuantumCircuit, QuantumState
-from qulacs.gate import X, T, H, CNOT, ParametricRZ, ParametricRX, DenseMatrix, merge
+from qulacs.gate import X, T, H, RX, CNOT, ParametricRZ, ParametricRX, DenseMatrix, merge
 #from qulacs.circuit import QuantumCircuitOptimizer as QCO
 import time
 from mpi4py import MPI
@@ -11,19 +11,60 @@ def get_option():
     argparser = ArgumentParser()
     argparser.add_argument('-n', '--nqubits', type=int,
             default=4, help='Number of qbits')
+    argparser.add_argument('-r', '--repeats', type=int,
+            default=6, help='Number of repeats')
     argparser.add_argument('-g', '--gate', type=str,
             default="RX", help='Target gate : RX, RZ, H, RU, CNOT or SWAP')
+    argparser.add_argument('-s', '--step', type=int,
+            default=4, help='Number of step')
     argparser.add_argument('-o', '--opt', type=int,
             default=-1, help='Enable QuantumCircuitOptimizer: 0 is light, 1-4 is opt, 5 is merge_full')
     return argparser.parse_args()
 
-def build_circuit(nqubits, tgt, depth, gate):
+def build_circuit(nqubits, tgt, depth, gate, step):
     circuit = QuantumCircuit(nqubits)
-    tgt2 = (tgt + 1) % nqubits
+    tgt2 = (tgt + step) % nqubits
+    tgt3 = (tgt + 2*step) % nqubits
+    tgt4 = (tgt + 3*step) % nqubits
+    tgt5 = (tgt + 4*step) % nqubits
 
     for j in range(depth):
         if gate == "RX":
             circuit.add_RX_gate(tgt, np.random.rand())
+        elif gate == "RX2":
+            g1 = RX(tgt, np.random.rand())
+            g2 = RX(tgt2, np.random.rand())
+            circuit.add_gate(merge(g1, g2))
+        elif gate == "RX3":
+            g1 = RX(tgt, np.random.rand())
+            g2 = RX(tgt2, np.random.rand())
+            g3 = RX(tgt3, np.random.rand())
+            g = merge(g1, g2)
+            circuit.add_gate(merge(g, g3))
+        elif gate == "RX3r":
+            g1 = RX(tgt, np.random.rand())
+            g2 = RX(tgt2, np.random.rand())
+            g3 = RX(tgt3, np.random.rand())
+            g = merge(g3, g2)
+            circuit.add_gate(merge(g, g1))
+        elif gate == "RX4":
+            g1 = RX(tgt, np.random.rand())
+            g2 = RX(tgt2, np.random.rand())
+            g3 = RX(tgt3, np.random.rand())
+            g4 = RX(tgt4, np.random.rand())
+            g = merge(g1, g2)
+            g = merge(g, g3)
+            circuit.add_gate(merge(g, g4))
+        elif gate == "RX5":
+            g1 = RX(tgt, np.random.rand())
+            g2 = RX(tgt2, np.random.rand())
+            g3 = RX(tgt3, np.random.rand())
+            g4 = RX(tgt4, np.random.rand())
+            g5 = RX(tgt5, np.random.rand())
+            g = merge(g1, g2)
+            g = merge(g, g3)
+            g = merge(g, g4)
+            circuit.add_gate(merge(g, g5))
         elif gate == "RZ":
             circuit.add_RZ_gate(tgt, np.random.rand())
         elif gate == "H":
@@ -51,7 +92,7 @@ if __name__ == '__main__':
 
     args = get_option()
     nqubits=args.nqubits
-    numRepeats = 5
+    numRepeats = args.repeats
 
     np.random.seed(seed=32)
     mode = args.gate + "gate"
@@ -63,7 +104,7 @@ if __name__ == '__main__':
     #for tgt in range(nqubits - 10, nqubits):
     for tgt in range(nqubits):
         constStart = time.perf_counter()
-        circuit = build_circuit(nqubits, tgt, 1, args.gate)
+        circuit = build_circuit(nqubits, tgt, 1, args.gate, args.step)
         constTime = time.perf_counter() - constStart
 
         comm.Barrier()
