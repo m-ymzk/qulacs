@@ -30,14 +30,15 @@ def get_option():
             help='Print Circuit')
     argparser.add_argument('-s', '--seed', type=int,
             default=-1, help='Random Seed')
+    argparser.add_argument('-c', '--check', action='store_true', help='Check each values of the state vector between with and without multi-cpu')
     return argparser.parse_args()
 
 def print_circuit(circuit):
     print(circuit)
-    print('### name, target, control')
+    print('### name, target, control, matrix')
     for i in range(circuit.get_gate_count()):
         g = circuit.get_gate(i)
-        print('{}, {}, {}'.format(g.get_name(), g.get_target_index_list(), g.get_control_index_list()))
+        print('{}, {}, {}'.format(g.get_name(), g.get_target_index_list(), g.get_control_index_list()), g.get_matrix())
     print('###')
 
 if __name__ == '__main__':
@@ -54,11 +55,22 @@ if __name__ == '__main__':
 
     simTimes = np.zeros(repeats)
     st = QuantumState(n, use_multi_cpu=True)
+    if args.check:
+        st_ref = QuantumState(n)
+
     #for i in range(repeats):
     #
     if args.seed >= 0:
         random.seed(args.seed)
         rng = np.random.default_rng(seed=args.seed)
+
+        # to fix random generator in qulacs
+        dmy_state = QuantumState(1)
+        #dmy_state.set_Haar_random_state(args.seed)
+        dmy_circuit = QuantumCircuit(1)
+        dmy_circuit.update_quantum_state(dmy_state, args.seed)
+        del dmy_state
+        del dmy_circuit
     else: rng = np.random.default_rng()
 
     constStart = time.perf_counter()
@@ -68,10 +80,12 @@ if __name__ == '__main__':
             depth=args.depth,
             verbose=(args.verbose and (mpirank == 0)),
             random_gen=rng)
+    #mpicomm.bcast(circuit, root=0)
+    if args.check:
+        circuit_ref = circuit.copy()
     if args.printcircuit and args.opt == -1 and mpirank == 0: print_circuit(circuit)
     if args.printcircuit and mpirank == 0: print(circuit)
     if args.opt == 99:
-        if mpirank == 0: print("#qco.optimize_light(circuit,", args.fused)
         if args.fused == -1:
             qco.optimize_light(circuit)
         else:
@@ -90,6 +104,17 @@ if __name__ == '__main__':
     for i in range(repeats):
         simStart = time.perf_counter()
         circuit.update_quantum_state(st)
+
+        if args.check:
+            circuit_ref.update_quantum_state(st_ref)
+            vec = st.get_vector()
+            vec_ref = st_ref.get_vector()
+            offs = (1 << (args.nqubits - int(np.log2(mpisize)))) * mpirank
+            if np.allclose(vec, vec_ref[offs:offs+len(vec)]):
+                print("# check OK!")
+            else:
+                print("# check NG! ", mpirank, ": ", vec, ", " , vec_ref[offs:offs+len(vec)])
+                exit()
         mpicomm.Barrier()
         simTimes[i] = time.perf_counter() - simStart
 
