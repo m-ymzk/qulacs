@@ -44,7 +44,11 @@ if __name__ == '__main__':
     args = get_option()
     n = args.nqubits
     repeats = args.repeats
-    if args.opt >= 0: qco = QCO()
+    global_nqubits = 0
+    if args.opt >= 0:
+        qco = QCO()
+    if args.fused == -1:
+        global_nqubits=int(np.log2(mpisize))
 
     mode = "QuantumVolume" + str(args.depth)
 
@@ -60,7 +64,7 @@ if __name__ == '__main__':
     constStart = time.perf_counter()
     circuit = get_circuit("quantumvolume",
             nqubits=args.nqubits,
-            global_nqubits=int(np.log2(mpisize)),
+            global_nqubits=global_nqubits,
             depth=args.depth,
             verbose=(args.verbose and (mpirank == 0)),
             random_gen=rng)
