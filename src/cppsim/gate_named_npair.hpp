@@ -88,10 +88,12 @@ public:
         this->_update_func_mpi = FusedSWAP_gate_mpi;
 #endif
         this->_name = "FusedSWAP";
-        this->_target_qubit_list.push_back(
-            TargetQubitInfo(target_qubit_index1, 0));
-        this->_target_qubit_list.push_back(
-            TargetQubitInfo(target_qubit_index2, 0));
+        for (int i = 0; i < block_size; ++i) {
+            this->_target_qubit_list.push_back(
+                TargetQubitInfo(target_qubit_index1 + i, 0));
+            this->_target_qubit_list.push_back(
+                TargetQubitInfo(target_qubit_index2 + i, 0));
+        }
         this->_block_size = block_size;
         this->_gate_property = FLAG_CLIFFORD;
         // matrix生成
