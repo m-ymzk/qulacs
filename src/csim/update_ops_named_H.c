@@ -145,11 +145,12 @@ void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
     if (mask >= (vec_len >> 1)) {
         SV_PRED pg = Svptrue();
 
+#pragma omp parallel
+        {
         SV_FTYPE factor = SvdupF(sqrt2inv);
         SV_FTYPE input0, input1, output0, output1;
 
-#pragma omp parallel for private(input0, input1, output0, output1) \
-    shared(pg, factor)
+#pragma omp for
         for (state_index = 0; state_index < loop_dim;
              state_index += (vec_len >> 1)) {
             ITYPE basis_index_0 =
@@ -176,7 +177,10 @@ void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
             svst1(pg, (ETYPE *)&state[basis_index_0], output0);
             svst1(pg, (ETYPE *)&state[basis_index_1], output1);
         }
+        }
     } else if (dim >= vec_len) {
+#pragma omp parallel
+        {
         SV_PRED pg = Svptrue();
         SV_PRED select_flag;
 
@@ -192,8 +196,7 @@ void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
         SV_FTYPE input0, input1, output0, output1;
         SV_FTYPE shuffle0, shuffle1;
 
-#pragma omp parallel for private(input0, input1, output0, output1, shuffle0, \
-    shuffle1) shared(pg, select_flag, vec_index, vec_shuffle_table, factor)
+#pragma omp for
         for (state_index = 0; state_index < dim; state_index += vec_len) {
             input0 = svld1(pg, (ETYPE *)&state[state_index]);
             input1 = svld1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)]);
@@ -217,6 +220,7 @@ void H_gate_sve(UINT target_qubit_index, CTYPE *state, ITYPE dim) {
 
             svst1(pg, (ETYPE *)&state[state_index], output0);
             svst1(pg, (ETYPE *)&state[state_index + (vec_len >> 1)], output1);
+        }
         }
     } else {
 #pragma omp parallel for
