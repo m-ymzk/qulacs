@@ -23,8 +23,8 @@ elseif("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES
   if(${CMAKE_C_COMPILER} MATCHES "mpifcc*")
     set(DEFAULT_USE_SVE Yes)
     set(DEFAULT_OPT_FLAGS
-        "-Nclang -Kfast -Knolargepage -lpthread -Nlst -Koptmsg=2 -fopenmp-simd")
-    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static -lmpi")
+        "-Nclang -Kfast -Knolargepage -Kopenmp -lpthread -Nlst -Koptmsg=2 -fopenmp-simd")
+    set(CMAKE_EXE_LINKER_FLAGS "-L/opt/FJSVstclanga/v1.1.0/lib64 -static-libgcc -static-libstdc++ -static -lmpi")
   elseif(${CMAKE_C_COMPILER} MATCHES "mpicc")
     if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
         set(DEFAULT_USE_SVE Yes)
@@ -116,8 +116,7 @@ if(USE_TEST)
   FetchContent_Declare(
     googletest_fetch
     GIT_REPOSITORY https://github.com/google/googletest
-    GIT_TAG release-1.8.1
-    PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/gtest-death-test.patch)
+    GIT_TAG release-1.10.0)
   FetchContent_GetProperties(googletest_fetch)
   if(NOT googletest_fetch_POPULATED)
     message(STATUS "Fetch googletest for C++ testing")
