@@ -39,7 +39,7 @@ void test_single_control_single_target(
     auto state = allocate_quantum_state(dim);
     initialize_Haar_random_state(state, dim);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
 
     Eigen::MatrixXcd whole_I = Eigen::MatrixXcd::Identity(dim, dim);
 
@@ -110,7 +110,7 @@ void test_two_control_single_target(std::function<void(
     auto state = allocate_quantum_state(dim);
     initialize_Haar_random_state(state, dim);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
 
     Eigen::MatrixXcd whole_I = Eigen::MatrixXcd::Identity(dim, dim);
 
@@ -184,7 +184,7 @@ TEST(UpdateTest, SingleQubitControlTwoQubitDenseMatrixTest) {
     auto state = allocate_quantum_state(dim);
     initialize_Haar_random_state(state, dim);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
 
     Eigen::MatrixXcd whole_I = Eigen::MatrixXcd::Identity(dim, dim);
 
@@ -232,7 +232,7 @@ TEST(UpdateTest, TwoQubitControlTwoQubitDenseMatrixTest) {
     auto state = allocate_quantum_state(dim);
     initialize_Haar_random_state(state, dim);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
 
     Eigen::MatrixXcd whole_I = Eigen::MatrixXcd::Identity(dim, dim);
 

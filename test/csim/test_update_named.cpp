@@ -31,7 +31,7 @@ void test_single_qubit_named_gate(UINT n, std::string name,
     initialize_Haar_random_state_with_seed(state, dim, 0);
 
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
     std::vector<UINT> indices;
     for (UINT i = 0; i < n; ++i) indices.push_back(i);
 
@@ -163,7 +163,7 @@ void test_projection_gate(std::function<void(UINT, CTYPE*, ITYPE)> func,
             target = indices[i];
             initialize_Haar_random_state(state, dim);
             Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-            for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+            for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
 
             // Z-projection operators
             prob = prob_func(target, state, dim);
@@ -215,7 +215,7 @@ TEST(UpdateTest, SingleQubitRotationGateTest) {
     auto state = allocate_quantum_state(dim);
     initialize_Haar_random_state(state, dim);
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
     typedef std::tuple<std::function<void(UINT, double, CTYPE*, ITYPE)>,
         Eigen::MatrixXcd, std::string>
         testset;
@@ -252,7 +252,7 @@ void test_two_qubit_named_gate(UINT n, std::string name,
     initialize_Haar_random_state_with_seed(state, dim, 0);
 
     Eigen::VectorXcd test_state = Eigen::VectorXcd::Zero(dim);
-    for (ITYPE i = 0; i < dim; ++i) test_state[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) test_state[i] = std::complex<double>(state[i]);
     std::vector<UINT> indices;
     for (UINT i = 0; i < n; ++i) indices.push_back(i);
 
