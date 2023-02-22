@@ -24,7 +24,7 @@ elseif("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES
     set(DEFAULT_USE_SVE Yes)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Nclang -w")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Nclang -w")
-    set(DEFAULT_OPT_FLAGS "-Kfast -Knolargepage -Kopenmp -lpthread -Nlst -Koptmsg=2 -fopenmp-simd")
+    set(DEFAULT_OPT_FLAGS "-Kfast -Knolargepage -Kopenmp -lpthread -Nlst -fopenmp-simd")
   elseif(${CMAKE_C_COMPILER} MATCHES "mpicc")
     if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
         set(DEFAULT_USE_SVE Yes)
