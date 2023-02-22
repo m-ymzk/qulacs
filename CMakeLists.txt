@@ -96,7 +96,8 @@ include(${CMAKE_SOURCE_DIR}/FetchContent.cmake)
 # Eigen
 if(NOT DEFINED EIGEN_INCLUDE_DIR)
 set(EIGEN_BUILD_DIR ${CMAKE_BINARY_DIR}/eigen)
-set(EIGEN_INSTALL_DIR /vol0001/hp210263/yamazaki/workfcc/opt/eigen-3.4.0fcc)
+set(EIGEN_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
+set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR})
 ExternalProject_Add(
   eigen
   URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
