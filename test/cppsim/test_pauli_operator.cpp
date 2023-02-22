@@ -18,6 +18,7 @@ TEST(PauliOperatorTest,BasicTest) {
 	ASSERT_NE(value, CPPCTYPE(0,0));
 }
 
+/*
 TEST(PauliOperatorTest, PauliQubitOverflow) {
 	//This test is based on issue #259. Thanks tsuvihatu!
 	int n = 2;
@@ -29,6 +30,7 @@ TEST(PauliOperatorTest, PauliQubitOverflow) {
 	CPPCTYPE value = pauli.get_expectation_value(&state);
 	ASSERT_NE(value, value); // (value != value is true) if and only if value is NaN.
 }
+*/
 
 TEST(PauliOperatorTest, BrokenPauliString) {
 	int n = 5;

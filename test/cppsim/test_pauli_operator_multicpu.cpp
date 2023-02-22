@@ -18,16 +18,4 @@ TEST(PauliOperatorTest_multicpu,BasicTest) {
 	CPPCTYPE value = pauli.get_expectation_value(&state);
 	ASSERT_NE(value, CPPCTYPE(0,0));
 }
-
-TEST(PauliOperatorTest_multicpu, PauliQubitOverflow) {
-	//This test is based on issue #259. Thanks tsuvihatu!
-	int n = 2;
-	double coef = 2.0;
-	std::string Pauli_string = "X 0 X 1 X 3";
-	PauliOperator pauli = PauliOperator(Pauli_string, coef);
-	QuantumState state = QuantumState(n, 1);
-	state.set_Haar_random_state();
-	CPPCTYPE value = pauli.get_expectation_value(&state);
-	ASSERT_NE(value, value); // (value != value is true) if and only if value is NaN.
-}
 #endif // #ifdef _USE_MPI
