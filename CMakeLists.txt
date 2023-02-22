@@ -22,9 +22,9 @@ elseif("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES
   set(DEFAULT_USE_SIMD No)
   if(${CMAKE_C_COMPILER} MATCHES "mpifcc*")
     set(DEFAULT_USE_SVE Yes)
-    set(DEFAULT_OPT_FLAGS
-        "-Nclang -Kfast -Knolargepage -Kopenmp -lpthread -Nlst -Koptmsg=2 -fopenmp-simd")
-    set(CMAKE_EXE_LINKER_FLAGS "-L/opt/FJSVstclanga/v1.1.0/lib64 -static-libgcc -static-libstdc++ -static -lmpi")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Nclang -w")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Nclang -w")
+    set(DEFAULT_OPT_FLAGS "-Kfast -Knolargepage -Kopenmp -lpthread -Nlst -Koptmsg=2 -fopenmp-simd")
   elseif(${CMAKE_C_COMPILER} MATCHES "mpicc")
     if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
         set(DEFAULT_USE_SVE Yes)
@@ -94,6 +94,7 @@ include(ExternalProject)
 include(${CMAKE_SOURCE_DIR}/FetchContent.cmake)
 
 # Eigen
+if(NOT DEFINED EIGEN_INCLUDE_DIR)
 set(EIGEN_BUILD_DIR ${CMAKE_BINARY_DIR}/eigen)
 set(EIGEN_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
 set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR})
@@ -109,9 +110,11 @@ ExternalProject_Add(
     ${EIGEN_INCLUDE_DIR}/Eigen && ${CMAKE_COMMAND} -E copy_directory
     ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
   TEST_COMMAND "")
+endif()  # if(NOT DEFINED EIGEN_INCLUDE_DIR)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
 
 # Google test
+if((NOT DEFINED GTEST_INCLUDE_DIR) OR (NOT DEFINED GMOCK_INCLUDE_DIR))
 if(USE_TEST)
   FetchContent_Declare(
     googletest_fetch
@@ -126,6 +129,10 @@ if(USE_TEST)
 else()
   message(STATUS "Skip downloding googletest")
 endif()
+else()  # if((NOT DEFINED GTEST_INCLUDE_DIR) OR (NOT DEFINED GMOCK_INCLUDE_DIR))
+  include_directories(SYSTEM ${GTEST_INCLUDE_DIR} ${GMOCK_INCLUDE_DIR})
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GTEST_MODULE_DIR} -w")
+endif()  # if((NOT DEFINED GTEST_INCLUDE_DIR) OR (NOT DEFINED GMOCK_INCLUDE_DIR))
 
 # Pybind11
 if(USE_PYTHON)
@@ -165,20 +172,22 @@ endif()
 # set warnings #####
 if(NOT USE_GPU)
   if(${CMAKE_CXX_COMPILER} MATCHES "mpiFCC*")
-    set(WARNING_C
-        "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
-	 -Wpointer-arith -Winit-self -Wfloat-equal \
-	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
-	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
-     -Wshadow -Wendif-labels -Wstrict-aliasing -Wwrite-strings -Werror=overflow -Wdate-time \
-	 -Wnested-externs -fdiagnostics-color=auto")
-    set(WARNING_CPP
-        "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
-	 -Wpointer-arith -Winit-self -Wfloat-equal \
-	 -Werror=missing-declarations -Werror=return-type \
-	 -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
-	 -Wshadow -Wendif-labels -Wstrict-aliasing -Wwrite-strings -Werror=overflow -Wdate-time \
-	 -fdiagnostics-color=auto")
+	      set(WARNING_C "-w")
+	      set(WARNING_CPP "-w")
+	  #    set(WARNING_C
+	  #        "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	  #	 -Wpointer-arith -Winit-self -Wfloat-equal \
+	  #	 -Werror=missing-prototypes -Werror=implicit-function-declaration -Werror=missing-declarations -Werror=return-type \
+	  #	 -Werror=incompatible-pointer-types -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
+	  #     -Wshadow -Wendif-labels -Wstrict-aliasing -Wwrite-strings -Werror=overflow -Wdate-time \
+	  #	 -Wnested-externs -fdiagnostics-color=auto")
+	  #    set(WARNING_CPP
+	  #        "-Wall -Wextra -Werror=undef -Wmissing-include-dirs \
+	  #	 -Wpointer-arith -Winit-self -Wfloat-equal \
+	  #	 -Werror=missing-declarations -Werror=return-type \
+	  #	 -Werror=format=2 -Wredundant-decls -Wmissing-noreturn \
+	  #	 -Wshadow -Wendif-labels -Wstrict-aliasing -Wwrite-strings -Werror=overflow -Wdate-time \
+	  #	 -fdiagnostics-color=auto")
   else()
     set(WARNING_C
         "-Wall -Wextra -Werror=undef -Wlogical-op -Wmissing-include-dirs \

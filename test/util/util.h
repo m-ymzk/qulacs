@@ -150,7 +150,8 @@ static std::string convert_CTYPE_array_to_string(const CTYPE* state, ITYPE dim) 
 
 static Eigen::VectorXcd convert_CTYPE_array_to_eigen_vector(const CTYPE* state, ITYPE dim) {
     Eigen::VectorXcd vec(dim);
-    for (ITYPE i = 0; i < dim; ++i) vec[i] = state[i];
+    for (ITYPE i = 0; i < dim; ++i) vec[i] = std::complex<double>(state[i]);
+    //for (ITYPE i = 0; i < dim; ++i) vec[i] = (Eigen::VectorXcd)state[i];
     return vec;
 }
 

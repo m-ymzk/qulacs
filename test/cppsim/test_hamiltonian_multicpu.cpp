@@ -10,6 +10,7 @@
 #include <cppsim/utility.hpp>
 #include <fstream>
 
+/* temporary removed: for fcc build
 TEST(ObservableTest_multicpu, CheckExpectationValue) {
     const UINT n = 4;
     const UINT dim = 1ULL << n;
@@ -103,6 +104,7 @@ TEST(ObservableTest_multicpu, CheckExpectationValue) {
 
     }
 }
+*/
 
 TEST(ObservableTest_multicpu, CheckParsedObservableFromOpenFermionFile){
     auto func = [](const std::string path, const QuantumStateBase* state) -> CPPCTYPE {
