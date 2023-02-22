@@ -16,7 +16,8 @@ def _is_valid_compiler(cmd):
     try:
         out = subprocess.check_output([cmd, '-dumpfullversion', '-dumpversion']).decode()
         version = LooseVersion(out)
-        return version >= LooseVersion('7.0.0')
+        #return version >= LooseVersion('7.0.0')
+        return True
     except:
         return False
 
@@ -70,14 +71,14 @@ class CMakeBuild(build_ext):
             if env_gcc:
                 gcc_candidates = [env_gcc]
             else:
-                gcc_candidates = ['mpicc', 'gcc', 'gcc-9', 'gcc-8', 'gcc-7']
+                gcc_candidates = ['mpifcc', 'mpicc', 'gcc', 'gcc-9', 'gcc-8', 'gcc-7']
             gcc = next(iter(filter(_is_valid_compiler, gcc_candidates)), None)
 
             env_gxx = os.getenv('CXX_COMPILER')
             if env_gxx:
                 gxx_candidates = [env_gxx]
             else:
-                gxx_candidates = ['mpic++', 'g++', 'g++-9', 'g++-8', 'g++-7']
+                gxx_candidates = ['mpiFCC', 'mpic++', 'g++', 'g++-9', 'g++-8', 'g++-7']
             gxx = next(iter(filter(_is_valid_compiler, gxx_candidates)), None)
 
             if gcc is None or gxx is None:
