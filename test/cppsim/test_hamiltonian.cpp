@@ -10,7 +10,6 @@
 #include <fstream>
 
 
-/* temporary removed: for fcc build
 TEST(ObservableTest, CheckExpectationValue) {
     const UINT n = 4;
     const UINT dim = 1ULL << n;
@@ -35,7 +34,7 @@ TEST(ObservableTest, CheckExpectationValue) {
     test_observable += coef*get_expanded_eigen_matrix_with_identity(0, X, n);
 
     res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
+    test_res = (test_state.adjoint() * test_observable * test_state)(0, 0);
     ASSERT_NEAR(test_res.real(), res.real(), eps);
     ASSERT_NEAR(res.imag(), 0, eps);
     ASSERT_NEAR(test_res.imag(), 0, eps);
@@ -43,7 +42,7 @@ TEST(ObservableTest, CheckExpectationValue) {
     state.set_Haar_random_state();
     for (ITYPE i = 0; i < dim; ++i) test_state[i] = state.data_cpp()[i];
     res = observable.get_expectation_value(&state);
-    test_res = (test_state.adjoint() * test_observable * test_state);
+    test_res = (test_state.adjoint() * test_observable * test_state)(0, 0);
     ASSERT_NEAR(test_res.real(), res.real(), eps);
     ASSERT_NEAR(res.imag(), 0, eps);
     ASSERT_NEAR(test_res.imag(), 0, eps);
@@ -84,14 +83,13 @@ TEST(ObservableTest, CheckExpectationValue) {
         for (ITYPE i = 0; i < dim; ++i) test_state[i] = state.data_cpp()[i];
 
         res = rand_observable.get_expectation_value(&state);
-        test_res = test_state.adjoint() * test_rand_observable * test_state;
+        test_res = (test_state.adjoint() * test_rand_observable * test_state)(0, 0);
         ASSERT_NEAR(test_res.real(), res.real(), eps);
         ASSERT_NEAR(res.imag(), 0, eps);
         ASSERT_NEAR(test_res.imag(), 0, eps);
 
     }
 }
-*/
 
 TEST(ObservableTest, CheckParsedObservableFromOpenFermionFile){
     auto func = [](const std::string path, const QuantumStateBase* state) -> CPPCTYPE {

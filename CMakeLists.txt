@@ -106,9 +106,8 @@ ExternalProject_Add(
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   INSTALL_COMMAND
-    ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen
-    ${EIGEN_INCLUDE_DIR}/Eigen && ${CMAKE_COMMAND} -E copy_directory
-    ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
+    ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen ${EIGEN_INCLUDE_DIR}/Eigen &&
+	${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
   TEST_COMMAND "")
 endif()  # if(NOT DEFINED EIGEN_INCLUDE_DIR)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
@@ -131,7 +130,7 @@ else()
 endif()
 else()  # if((NOT DEFINED GTEST_INCLUDE_DIR) OR (NOT DEFINED GMOCK_INCLUDE_DIR))
   include_directories(SYSTEM ${GTEST_INCLUDE_DIR} ${GMOCK_INCLUDE_DIR})
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GTEST_MODULE_DIR} -w")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GTEST_MODULE_DIR}")
 endif()  # if((NOT DEFINED GTEST_INCLUDE_DIR) OR (NOT DEFINED GMOCK_INCLUDE_DIR))
 
 # Pybind11
