@@ -374,6 +374,20 @@ if(USE_TEST)
       COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/cppsim_test
       COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/vqcsim_test)
   endif()
+  if(USE_GPU)
+    add_custom_target(
+      buildtest
+      DEPENDS csim_test
+      DEPENDS cppsim_test
+      DEPENDS gpusim_test
+      DEPENDS vqcsim_test)
+  else()
+    add_custom_target(
+      buildtest
+      DEPENDS csim_test
+      DEPENDS cppsim_test
+      DEPENDS vqcsim_test)
+  endif()
 endif()
 
 # benchmark
