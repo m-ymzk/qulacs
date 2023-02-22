@@ -76,7 +76,7 @@ double expectation_value_multi_qubit_Pauli_operator_XZ_mask(ITYPE bit_flip_mask,
                     getVecLength();  // # of double elements in a vector
                 if (dim_work >= vec_len) {
                     // TODO: Currently supports only 512-bit SVE instructions
-                    assert(vec_len == 16);
+                    assert(vec_len == 8);
                     assert(sizeof(ETYPE) == sizeof(double));
 
 #pragma omp parallel reduction(+ : sum)
