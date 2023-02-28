@@ -77,6 +77,8 @@ def build_circuit(nqubits, tgt, depth, gate, step):
             circuit.add_CNOT_gate(tgt, tgt2)
         elif gate == "SWAP":
             circuit.add_SWAP_gate(tgt, tgt2)
+        elif gate == "FusedSWAP":
+            circuit.add_FusedSWAP_gate(tgt, tgt2, step)
         else:
             print("# not defined!")
             exit(1)

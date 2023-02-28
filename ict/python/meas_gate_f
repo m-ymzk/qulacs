@@ -1,0 +1,16 @@
+#
+
+. ../../../setenv-python310-fcc
+. ../../../qenv310-fcc/bin/activate
+
+for n in {27..32}; do
+  mpirun -n 4 python qulacs-gate.py -g H -n ${n}
+done
+
+for n in {27..32}; do
+  mpirun -n 4 python qulacs-gate.py -g SWAP -n ${n} -s 2
+done
+
+for n in {27..32}; do
+  mpirun -n 4 python qulacs-gate.py -g FusedSWAP -n ${n} -s 2
+done
