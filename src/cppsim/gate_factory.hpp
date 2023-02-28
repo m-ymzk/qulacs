@@ -354,6 +354,8 @@ DllExport QuantumGateBase* DiagonalMatrix(
  */
 DllExport QuantumGateMatrix* RandomUnitary(
     std::vector<UINT> target_qubit_index_list);
+DllExport QuantumGateMatrix* RandomUnitary(
+    std::vector<UINT> target_qubit_index_list, UINT seed);
 
 /**
  * \f$n\f$-qubit の可逆古典回路を作用する。

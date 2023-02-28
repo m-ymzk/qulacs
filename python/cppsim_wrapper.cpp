@@ -487,7 +487,8 @@ PYBIND11_MODULE(qulacs, m) {
         .def("add_multi_Pauli_rotation_gate", (void (QuantumCircuit::*)(const PauliOperator&))&QuantumCircuit::add_multi_Pauli_rotation_gate, "Add multi-qubit Pauli gate", py::arg("pauli"))
         .def("add_dense_matrix_gate", (void (QuantumCircuit::*)(unsigned int, const ComplexMatrix&))&QuantumCircuit::add_dense_matrix_gate, "Add dense matrix gate", py::arg("index"), py::arg("matrix"))
         .def("add_dense_matrix_gate", (void (QuantumCircuit::*)(std::vector<unsigned int>, const ComplexMatrix&))&QuantumCircuit::add_dense_matrix_gate, py::arg("index_list"), py::arg("matrix"))
-        .def("add_random_unitary_gate", &QuantumCircuit::add_random_unitary_gate, "Add random unitary gate", py::arg("index_list"))
+        .def("add_random_unitary_gate", py::overload_cast<std::vector<UINT>>(&QuantumCircuit::add_random_unitary_gate), "Add random unitary gate", py::arg("index_list"))
+        .def("add_random_unitary_gate", py::overload_cast<std::vector<UINT>, UINT>(&QuantumCircuit::add_random_unitary_gate), py::arg("index_list"), py::arg("seed"))
         .def("add_diagonal_observable_rotation_gate", &QuantumCircuit::add_diagonal_observable_rotation_gate, "Add diagonal observable rotation gate", py::arg("observable"), py::arg("angle"))
         .def("add_observable_rotation_gate", &QuantumCircuit::add_observable_rotation_gate, "Add observable rotation gate", py::arg("observable"), py::arg("angle"), py::arg("repeat"))
             
