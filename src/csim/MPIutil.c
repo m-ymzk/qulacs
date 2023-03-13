@@ -101,30 +101,35 @@ static void barrier() { MPI_Barrier(mpicomm); }
 static void m_DC_ialltoall(void *sendbuf, void *recvbuf, int count) {
     MPI_Request *alltoall_request = get_request();
 
-    MPI_Ialltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
+    UINT ret = MPI_Ialltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
                   recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, mpicomm,
                   alltoall_request);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_alltoall(void *sendbuf, void *recvbuf, int count) {
-    MPI_Alltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
+    UINT ret = MPI_Alltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
                  recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
-    MPI_Allgather(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, recvbuf, count,
+    UINT ret = MPI_Allgather(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, recvbuf, count,
         MPI_CXX_DOUBLE_COMPLEX, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_send(void *sendbuf, int count, int pair_rank) {
     int tag0 = get_tag();
-    MPI_Send(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm);
+    UINT ret = MPI_Send(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_recv(void *recvbuf, int count, int pair_rank) {
     int tag0 = get_tag();
-    MPI_Recv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm,
+    UINT ret = MPI_Recv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, tag0, mpicomm,
         &mpistat);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_sendrecv(
@@ -136,17 +141,19 @@ static void m_DC_sendrecv(
     // int mpi_tag2 = mpi_tag1 ^ 1;
     // printf("#%d: m_DC_sendrecv: %d, %d, %d, %d, %d\n", mpirank, count,
     // mpirank, pair_rank, mpi_tag1, mpi_tag2);
-    MPI_Sendrecv(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+    UINT ret = MPI_Sendrecv(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
         recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2, mpicomm,
         &mpistat);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_sendrecv_replace(void *buf, int count, int pair_rank) {
     int tag0 = get_tag();
     int mpi_tag1 = tag0 + ((mpirank & pair_rank) << 1) + (mpirank > pair_rank);
     int mpi_tag2 = mpi_tag1 ^ 1;
-    MPI_Sendrecv_replace(buf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank,
+    UINT ret = MPI_Sendrecv_replace(buf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank,
         mpi_tag1, pair_rank, mpi_tag2, mpicomm, &mpistat);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_DC_isendrecv(
@@ -157,28 +164,34 @@ static void m_DC_isendrecv(
     MPI_Request *send_request = get_request();
     MPI_Request *recv_request = get_request();
 
-    MPI_Isend(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
+    UINT ret = MPI_Isend(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag1,
         mpicomm, send_request);
-    MPI_Irecv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2,
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
+    ret = MPI_Irecv(recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, pair_rank, mpi_tag2,
         mpicomm, recv_request);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void m_I_allreduce(void *buf, UINT count) {
-    MPI_Allreduce(
+    UINT ret = MPI_Allreduce(
         MPI_IN_PLACE, buf, count, MPI_LONG_LONG_INT, MPI_SUM, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void s_D_allgather(double a, void *recvbuf) {
-    MPI_Allgather(&a, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
+    UINT ret = MPI_Allgather(&a, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void s_D_allreduce(void *buf) {
-    MPI_Allreduce(MPI_IN_PLACE, buf, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
+    UINT ret = MPI_Allreduce(MPI_IN_PLACE, buf, 1, MPI_DOUBLE, MPI_SUM, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
 }
 
 static void s_D_allreduce_ordered(void *buf) {
     double *recvbuf = malloc(mpisize * sizeof(double));
-    MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
+    UINT ret = MPI_Allgather(buf, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
     double *sum = buf;
     *sum = 0.;
     for (int idx = 0; idx < mpisize; ++idx) {
@@ -202,7 +215,8 @@ mpi_tag1, mpi_tag2); MPI_Sendrecv(&a, 1, MPI_DOUBLE, pair_rank, mpi_tag1, &ret,
 
 static void s_u_bcast(UINT *a) {
     // printf("#%d: s_u_bcast(result): %d\n", mpirank, *a);
-    MPI_Bcast(a, 1, MPI_INT, 0, mpicomm);
+    UINT ret = MPI_Bcast(a, 1, MPI_INT, 0, mpicomm);
+    if (ret != MPI_SUCCESS) MPI_Abort(mpicomm, -1);
     // printf("#%d: s_ui_bcast: %d\n", mpirank, *a);
 }
 
