@@ -1,0 +1,47 @@
+#!/bin/bash
+#PJM -g hp210263
+#PJM -L "rscunit=rscunit_ft01,rscgrp=large"
+#PJM -L elapse=0:45:0
+#PJM -L "node=8x8x8"
+#PJM --rsc-list "retention_state=0"
+#PJM --mpi "max-proc-per-node=1"
+
+function log2 {
+    local x=0
+    for (( y=$1-1 ; $y > 0; y >>= 1 )) ; do
+        let x=$x+1
+    done
+    echo $x
+}
+
+echo `date` Start - mpirun proc.
+
+#for ttb
+#export SLURM_WHOLE=1
+
+#for fugaku
+. ../../../setenv-python310-fcc
+
+#echo `date` python version `python --version`
+
+#DEBUG=echo
+DEBUG=
+
+for NPROC in 256 512; do
+
+  #NPROC=$PJM_NODE
+  STEP=$(log2 $NPROC)
+  MINN=10
+  MAXN=30
+  #mpirun -npernode 1 ./job_ttb.sh
+  #sleep 60
+  #exit
+  
+  export QULACS_USE_ALLTOALL=0
+  export QULACS_NQUIBT_WORK=22
+  for BASE in `seq $MINN $MAXN`; do
+    #$DEBUG  mpirun -np $NPROC python qulacs-gate1.py -g H -n $((30 + $STEP)) -t $((29 + $STEP))
+    #$DEBUG  mpirun -np $NPROC python qulacs-gate1.py -g SWAP -n $((30 + $STEP)) -t $((30 - $STEP)) -s $STEP
+    $DEBUG  mpirun -np $NPROC python qulacs-gate1.py -g FusedSWAP -n $(($BASE + $STEP)) -t $(($BASE - $STEP)) -s $STEP
+  done
+done
