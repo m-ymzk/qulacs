@@ -65,8 +65,6 @@ static inline void _scatter(CTYPE* state, const CTYPE* t_recv, const UINT i,
 
 void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     UINT blk_qubits, CTYPE* state, ITYPE dim, UINT inner_qc) {
-    // printf("#call FusedSWAP_gate_mpi(%d, %d, %d)\n", target_qubit_index_0,
-    // target_qubit_index_1, blk_qubits); fflush(stdout);
     if (blk_qubits == 0) return;
 #if 0
     for (UINT i = 0; i < blk_qubits; i++){
@@ -82,6 +80,30 @@ void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
         right_qubit = target_qubit_index_0;
     }
     assert(left_qubit > (right_qubit + blk_qubits - 1));
+
+    UINT _USE_ALLTOALL=0;
+    {
+        char* endp;
+        char* tmp = getenv("QULACS_USE_ALLTOALL");
+        if (tmp) {
+            const UINT tmp_val = strtol(tmp, &endp, 0);
+            if (0 < tmp_val && tmp_val < 2) _USE_ALLTOALL = tmp_val;
+        }
+    }
+
+    const MPIutil m = get_mpiutil();
+    const UINT rank = m->get_rank();
+    const UINT size = m->get_size();
+    UINT num_outer_qc = count_population(size - 1);
+    if ((left_qubit == inner_qc)
+         && (right_qubit == (inner_qc - blk_qubits))
+         && (blk_qubits == num_outer_qc)
+         && (_USE_ALLTOALL == 1)) {
+        printf("#call FusedSWAP_gate_mpi(%d, %d, %d) using mpi_alltoall\n", target_qubit_index_0,
+            target_qubit_index_1, blk_qubits); fflush(stdout);
+        m->m_DC_alltoall(state, state, dim / size);
+        return;
+    }
 
     UINT act_bs = blk_qubits;
     if ((left_qubit + blk_qubits - 1) < inner_qc) {  // all swaps are in inner
@@ -130,8 +152,6 @@ void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     /*  FusedSWAP main */
     /* All remained swaps are pairs of inner and outer */
 
-    const MPIutil m = get_mpiutil();
-    const UINT rank = m->get_rank();
     ITYPE dim_work = dim;
     ITYPE num_work = 0;
     CTYPE* t = m->get_workarea(&dim_work, &num_work);

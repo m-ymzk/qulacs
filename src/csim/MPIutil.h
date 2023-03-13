@@ -27,6 +27,8 @@ typedef struct {
     void (*barrier)();
     void (*mpi_wait)(UINT count);
     void (*m_DC_allgather)(void *sendbuf, void *recvbuf, int count);
+    void (*m_DC_alltoall)(void *sendbuf, void *recvbuf, int count);
+    void (*m_DC_ialltoall)(void *sendbuf, void *recvbuf, int count);
     void (*m_DC_send)(void *sendbuf, int count, int pair_rank);
     void (*m_DC_recv)(void *recvbuf, int count, int pair_rank);
     void (*m_DC_sendrecv)(

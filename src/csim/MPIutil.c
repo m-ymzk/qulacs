@@ -9,7 +9,7 @@
 #include "MPIutil.h"
 
 //#define _NQUBIT_WORK 5 // small buffer(5 qubit/proc.) for test
-#define _NQUBIT_WORK 22  // 4 Mi x 16 Byte(CTYPE)
+//#define _NQUBIT_WORK 22  // 4 Mi x 16 Byte(CTYPE)
 
 static MPI_Comm mpicomm = 0;
 static int mpirank = 0;
@@ -71,14 +71,21 @@ static void release_workarea() {
 
 static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
     ITYPE dim = *dim_work;
-    *dim_work = get_min_ll(1 << _NQUBIT_WORK, dim);
-    *num_work = get_max_ll(1, dim >> _NQUBIT_WORK);
+    UINT NQUBIT_WORK=22;
+    char* endp;
+    char* tmp = getenv("QULACS_NQUIBT_WORK");
+    if (tmp) {
+        const UINT tmp_val = strtol(tmp, &endp, 0);
+        if (0 < tmp_val && tmp_val < 33) NQUBIT_WORK = tmp_val;
+    }
+    *dim_work = get_min_ll(1 << NQUBIT_WORK, dim);
+    *num_work = get_max_ll(1, dim >> NQUBIT_WORK);
     if (workarea == NULL) {
 #if defined(__ARM_FEATURE_SVE)
         posix_memalign(
-            (void **)&workarea, 256, sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+            (void **)&workarea, 256, sizeof(CTYPE) * (1 << NQUBIT_WORK));
 #else
-        workarea = (CTYPE *)malloc(sizeof(CTYPE) * (1 << _NQUBIT_WORK));
+        workarea = (CTYPE *)malloc(sizeof(CTYPE) * (1 << NQUBIT_WORK));
 #endif
         if (workarea == NULL) {
             fprintf(stderr, "Can't malloc for variable, %s, %d\n", __FILE__,
@@ -90,6 +97,19 @@ static CTYPE *get_workarea(ITYPE *dim_work, ITYPE *num_work) {
 }
 
 static void barrier() { MPI_Barrier(mpicomm); }
+
+static void m_DC_ialltoall(void *sendbuf, void *recvbuf, int count) {
+    MPI_Request *alltoall_request = get_request();
+
+    MPI_Ialltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
+                  recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, mpicomm,
+                  alltoall_request);
+}
+
+static void m_DC_alltoall(void *sendbuf, void *recvbuf, int count) {
+    MPI_Alltoall(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX,
+                 recvbuf, count, MPI_CXX_DOUBLE_COMPLEX, mpicomm);
+}
 
 static void m_DC_allgather(void *sendbuf, void *recvbuf, int count) {
     MPI_Allgather(sendbuf, count, MPI_CXX_DOUBLE_COMPLEX, recvbuf, count,
@@ -216,6 +236,8 @@ MPIutil get_mpiutil() {
     REGISTER_METHOD_POINTER(release_workarea)
     REGISTER_METHOD_POINTER(barrier)
     REGISTER_METHOD_POINTER(mpi_wait)
+    REGISTER_METHOD_POINTER(m_DC_alltoall)
+    REGISTER_METHOD_POINTER(m_DC_ialltoall)
     REGISTER_METHOD_POINTER(m_DC_allgather)
     REGISTER_METHOD_POINTER(m_DC_send)
     REGISTER_METHOD_POINTER(m_DC_recv)

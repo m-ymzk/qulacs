@@ -8,7 +8,7 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-_VERSION = '1.3.0'
+_VERSION = '1.3.1a-fcc'
 
 project_name = 'mpiQulacs'
 
