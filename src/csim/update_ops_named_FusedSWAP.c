@@ -81,7 +81,7 @@ void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     }
     assert(left_qubit > (right_qubit + blk_qubits - 1));
 
-    UINT _USE_ALLTOALL=0;
+    UINT _USE_ALLTOALL = 0;
     {
         char* endp;
         char* tmp = getenv("QULACS_USE_ALLTOALL");
@@ -95,14 +95,29 @@ void FusedSWAP_gate_mpi(UINT target_qubit_index_0, UINT target_qubit_index_1,
     const UINT rank = m->get_rank();
     const UINT size = m->get_size();
     UINT num_outer_qc = count_population(size - 1);
-    if ((left_qubit == inner_qc)
-         && (right_qubit == (inner_qc - blk_qubits))
-         && (blk_qubits == num_outer_qc)
-         && (_USE_ALLTOALL == 1)) {
-        printf("#call FusedSWAP_gate_mpi(%d, %d, %d) using mpi_alltoall\n", target_qubit_index_0,
-            target_qubit_index_1, blk_qubits); fflush(stdout);
-        m->m_DC_alltoall(state, state, dim / size);
-        return;
+    if (_USE_ALLTOALL == 1) {
+        if (rank == 0) {
+            printf("#set USE_ALLTOALL (%d, %d, %d)\n", target_qubit_index_0,
+                target_qubit_index_1, blk_qubits);
+            fflush(stdout);
+        }
+        if ((left_qubit >= inner_qc) &&
+            (right_qubit <= (inner_qc - blk_qubits))) {
+            const ITYPE dimcell = 1ULL << right_qubit;
+            const UINT color_mask = ((2 << blk__qubits) - 1)
+                                    << (left_qubit - inner_qc);
+            // todo multi-all2all
+            if ((left_qubit == inner_qc) &&
+                (right_qubit == (inner_qc - blk_qubits)) &&
+                (blk_qubits == num_outer_qc)) {
+                m->m_DC_alltoall(state, dimcell);
+                return;
+            }
+        }
+        if (rank == 0) {
+            printf("# cannot use mpi_alltoall\n");
+            fflush(stdout);
+        }
     }
 
     UINT act_bs = blk_qubits;
