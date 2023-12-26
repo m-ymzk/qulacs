@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from qulacs import QuantumCircuit, QuantumState
+from qulacs.gate import Measurement
 
 
 class TestQuantumCircuit:
@@ -28,3 +29,10 @@ class TestQuantumCircuit:
         vector_ans[0] = np.sqrt(0.5)
         vector_ans[3] = np.sqrt(0.5)
         assert ((vector - vector_ans) < 1e-10).all(), "check make bell state"
+
+    def test_measurement(self, init_circuit) -> None:
+        self.circuit.add_H_gate(0)
+        self.circuit.add_gate(Measurement(0, 0))
+        self.circuit.update_quantum_state(self.state)
+        print("val0=", self.state.get_classical_value(0))
+
